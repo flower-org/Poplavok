@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+
+<?import javafx.scene.control.SeparatorMenuItem?>
+<VBox prefHeight="400.0" prefWidth="478.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.poplavok.forms.MainForm">
+    <MenuBar VBox.vgrow="NEVER">
+        <Menu mnemonicParsing="false" text="Test">
+            <MenuItem mnemonicParsing="false" onAction="#showTestForm" text="Open Test tab" />
+            <SeparatorMenuItem fx:id="separatorBeforeStaticButtons"  />
+            <MenuItem mnemonicParsing="false" onAction="#closeAllTabs" text="Close all tabs" />
+            <MenuItem mnemonicParsing="false" onAction="#quit" text="Quit" />
+        </Menu>
+        <Menu mnemonicParsing="false" text="Help">
+            <MenuItem mnemonicParsing="false" onAction="#showAboutDialog" text="About" />
+        </Menu>
+    </MenuBar>
+    <AnchorPane VBox.vgrow="ALWAYS">
+      <children>
+          <TabPane fx:id="tabs" tabClosingPolicy="ALL_TABS" tabDragPolicy="REORDER" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                   AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"/>
+      </children>
+    </AnchorPane>
+    <AnchorPane maxHeight="20.0" minHeight="20.0" prefHeight="20.0" prefWidth="241.0">
+        <Label fx:id="serverInfoLabel" alignment="CENTER_RIGHT" layoutX="3.0" layoutY="2.0" prefHeight="16.0" prefWidth="235.0" text="Server not assigned" textAlignment="RIGHT" AnchorPane.leftAnchor="3.0" AnchorPane.rightAnchor="3.0" />
+    </AnchorPane>
+</VBox>
