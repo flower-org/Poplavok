@@ -35,7 +35,7 @@ public class App extends Application {
                 Platform.exit();
             });
 
-            mainStage.setTitle("JavaFX stub");
+            mainStage.setTitle("Poplavok");
             mainStage.setScene(mainScene);
             mainStage.setResizable(true);
             mainStage.show();
