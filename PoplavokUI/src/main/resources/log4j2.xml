@@ -8,7 +8,7 @@
         <Console name="console" target="SYSTEM_OUT" follow="true">
             <PatternLayout pattern="${LOG_PATTERN}"/>
         </Console>
-        <RollingFile name="file" fileName="JavaFXStub.log" filePattern="JavaFXStub.%d{yyyy-MM-dd}.log"
+        <RollingFile name="file" fileName="Poplavok.log" filePattern="Poplavok.%d{yyyy-MM-dd}.log"
                      immediateFlush="true" append="true">
             <PatternLayout pattern="${LOG_PATTERN}"/>
             <Policies>
