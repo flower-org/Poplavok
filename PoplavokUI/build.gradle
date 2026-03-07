@@ -30,8 +30,8 @@ compileTestJava {
 }
 
 sourceSets {
-    main { java { srcDir 'src/main' } }
-    test { java { srcDir 'src/test' } }
+    main { java { srcDir 'src/main/java' } }
+    test { java { srcDir 'src/test/java' } }
 }
 
 tasks.withType(JavaCompile) {
@@ -44,14 +44,14 @@ javafx {
 }
 
 dependencies {
-    annotationProcessor "org.immutables:value:2.9.2"
+    annotationProcessor "org.immutables:value:2.10.1"
     annotationProcessor "com.uber.nullaway:nullaway:0.10.26"
 
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.20.1'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-guava:2.20.1'
 
-    implementation "org.immutables:value-annotations:2.9.2"
+    implementation "org.immutables:value-annotations:2.10.1"
 
     implementation 'org.apache.logging.log4j:log4j-api:2.25.3'
     implementation 'org.apache.logging.log4j:log4j-core:2.25.3'
@@ -60,7 +60,7 @@ dependencies {
 
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'com.google.guava:guava:33.5.0-jre'
-    implementation 'com.google.guava:guava-testlib:31.1-jre'
+    implementation 'com.google.guava:guava-testlib:33.3.1-jre'
 
     implementation group: 'org.openjfx', name: 'javafx-base', version: javafx.version, classifier: 'win'
     implementation group: 'org.openjfx', name: 'javafx-base', version: javafx.version, classifier: 'mac'
@@ -87,9 +87,10 @@ dependencies {
     //implementation group: 'org.openjfx', name: 'javafx-media', version: javafx.version, classifier: 'mac-aarch64'
     implementation group: 'org.openjfx', name: 'javafx-media', version: javafx.version, classifier: 'linux'
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.1'
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.9.1'
-    testImplementation 'org.mockito:mockito-all:1.10.19'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.0'
+    testImplementation 'org.mockito:mockito-core:5.14.2'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.14.2'
 
     annotationProcessor "com.uber.nullaway:nullaway:0.10.26"
     compileOnly "com.google.code.findbugs:jsr305:3.0.2"

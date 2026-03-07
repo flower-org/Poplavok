@@ -39,6 +39,7 @@ public class DataModelTest {
         if (session != null && session.isOpen()) {
             session.close();
         }
+        HibernateUtil.closeSessionFactory();
     }
 
     @Test
@@ -173,9 +174,15 @@ public class DataModelTest {
         );
         session.persist(poplavok);
 
+        // Create a level since OperationHistory requires non-null level
+        Level level = new Level(1, poplavok, new BigDecimal("0.1"), new BigDecimal("5000"),
+                new BigDecimal("60000"), LocalDateTime.now());
+        poplavok.addLevel(level);
+        session.persist(level);
+
         OperationHistory operation = new OperationHistory(
-                poplavok, null, OperationType.CREATION,
-                null, new BigDecimal("60000"), LocalDateTime.now(),
+                poplavok, level, OperationType.CREATION,
+                new BigDecimal("1.0"), new BigDecimal("60000"), LocalDateTime.now(),
                 "Poplavok created"
         );
         poplavok.addOperationHistory(operation);
