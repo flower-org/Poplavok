@@ -1,4 +1,4 @@
-package com.poplavok.data.config;
+package com.poplavok.data.utils;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;

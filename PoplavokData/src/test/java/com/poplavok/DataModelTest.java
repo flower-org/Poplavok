@@ -1,6 +1,6 @@
 package com.poplavok;
 
-import com.poplavok.data.config.HibernateUtil;
+import com.poplavok.data.utils.HibernateUtil;
 import com.poplavok.data.model.Account;
 import com.poplavok.data.model.Currency;
 import com.poplavok.data.model.Level;
@@ -11,7 +11,7 @@ import com.poplavok.data.model.OperationHistory;
 import com.poplavok.data.model.OperationType;
 import com.poplavok.data.model.Poplavok;
 import com.poplavok.data.model.Repayment;
-import com.poplavok.data.model.Ticker;
+import com.poplavok.data.model.MarketTicker;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -51,19 +51,19 @@ public class DataModelTest {
         session.persist(btc);
         session.persist(usdt);
 
-        Ticker ticker = new Ticker(btc, usdt, new BigDecimal("0.001"));
-        session.persist(ticker);
+        MarketTicker marketTicker = new MarketTicker(btc, usdt, "BTCUSDT");
+        session.persist(marketTicker);
 
         tx.commit();
         session.clear();
 
-        List<Ticker> tickers = session
-                .createQuery("from Ticker", Ticker.class)
+        List<MarketTicker> marketTickers = session
+                .createQuery("from MarketTicker", MarketTicker.class)
                 .list();
 
-        assertEquals(1, tickers.size());
-        assertEquals("BTC", tickers.get(0).getBase().getName());
-        assertEquals("USDT", tickers.get(0).getQuote().getName());
+        assertEquals(1, marketTickers.size());
+        assertEquals("BTC", marketTickers.get(0).getBase().getCurrency());
+        assertEquals("USDT", marketTickers.get(0).getQuote().getCurrency());
     }
 
     @Test
@@ -75,11 +75,11 @@ public class DataModelTest {
         session.persist(btc);
         session.persist(usdt);
 
-        Ticker ticker = new Ticker(btc, usdt, new BigDecimal("0.001"));
-        session.persist(ticker);
+        MarketTicker marketTicker = new MarketTicker(btc, usdt, "BTCUSDT");
+        session.persist(marketTicker);
 
         Poplavok poplavok = new Poplavok(
-                ticker,
+                marketTicker,
                 LevelStrategy.LINEAR,
                 "{}",
                 new BigDecimal("50000"),
@@ -150,7 +150,7 @@ public class DataModelTest {
                 .list();
 
         assertEquals(1, accounts.size());
-        assertEquals("BTC", accounts.get(0).getCurrency().getName());
+        assertEquals("BTC", accounts.get(0).getCurrency().getCurrency());
     }
 
     @Test
@@ -162,11 +162,11 @@ public class DataModelTest {
         session.persist(btc);
         session.persist(usdt);
 
-        Ticker ticker = new Ticker(btc, usdt, new BigDecimal("0.001"));
-        session.persist(ticker);
+        MarketTicker marketTicker = new MarketTicker(btc, usdt, "BTCUSDT");
+        session.persist(marketTicker);
 
         Poplavok poplavok = new Poplavok(
-                ticker,
+                marketTicker,
                 LevelStrategy.EXPONENTIAL,
                 "{}",
                 new BigDecimal("60000"),
@@ -199,4 +199,3 @@ public class DataModelTest {
         assertNotNull(operations.get(0).getPoplavok());
     }
 }
-

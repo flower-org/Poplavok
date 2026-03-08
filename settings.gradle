@@ -1,3 +1,5 @@
 rootProject.name = 'Poplavok'
 include 'PoplavokUI'
 include 'PoplavokData'
+include 'JavaFxUtils'
+include 'KucoinClient'

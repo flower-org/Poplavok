@@ -44,6 +44,10 @@ javafx {
 }
 
 dependencies {
+    implementation project(':PoplavokData')
+    implementation project(':JavaFxUtils')
+    implementation project(':KucoinClient')
+
     annotationProcessor "org.immutables:value:2.10.1"
     annotationProcessor "com.uber.nullaway:nullaway:0.10.26"
 
@@ -61,6 +65,8 @@ dependencies {
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'com.google.guava:guava:33.5.0-jre'
     implementation 'com.google.guava:guava-testlib:33.3.1-jre'
+
+    implementation 'org.hibernate.orm:hibernate-core:7.2.6.Final'
 
     implementation group: 'org.openjfx', name: 'javafx-base', version: javafx.version, classifier: 'win'
     implementation group: 'org.openjfx', name: 'javafx-base', version: javafx.version, classifier: 'mac'

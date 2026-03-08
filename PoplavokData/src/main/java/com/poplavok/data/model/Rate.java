@@ -27,7 +27,7 @@ public class Rate {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ticker_id", nullable = false)
     @Nullable
-    private Ticker ticker;
+    private MarketTicker marketTicker;
 
     @Column(nullable = false, precision = 20, scale = 8)
     @Nullable
@@ -44,8 +44,8 @@ public class Rate {
     public Rate() {
     }
 
-    public Rate(Ticker ticker, BigDecimal price, BigDecimal tickerPrice, LocalDateTime timestamp) {
-        this.ticker = ticker;
+    public Rate(MarketTicker marketTicker, BigDecimal price, BigDecimal tickerPrice, LocalDateTime timestamp) {
+        this.marketTicker = marketTicker;
         this.price = price;
         this.tickerPrice = tickerPrice;
         this.timestamp = timestamp;
@@ -55,12 +55,12 @@ public class Rate {
         return checkNotNull(id);
     }
 
-    public Ticker getTicker() {
-        return checkNotNull(ticker);
+    public MarketTicker getTicker() {
+        return checkNotNull(marketTicker);
     }
 
-    public void setTicker(Ticker ticker) {
-        this.ticker = ticker;
+    public void setTicker(MarketTicker marketTicker) {
+        this.marketTicker = marketTicker;
     }
 
     public BigDecimal getPrice() {

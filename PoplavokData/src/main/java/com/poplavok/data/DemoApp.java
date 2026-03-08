@@ -1,6 +1,6 @@
 package com.poplavok.data;
 
-import com.poplavok.data.config.HibernateUtil;
+import com.poplavok.data.utils.HibernateUtil;
 import com.poplavok.data.model.Account;
 import com.poplavok.data.model.Currency;
 import com.poplavok.data.model.Level;
@@ -10,7 +10,7 @@ import com.poplavok.data.model.LoanType;
 import com.poplavok.data.model.OperationHistory;
 import com.poplavok.data.model.OperationType;
 import com.poplavok.data.model.Poplavok;
-import com.poplavok.data.model.Ticker;
+import com.poplavok.data.model.MarketTicker;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import org.hibernate.Session;
@@ -28,7 +28,9 @@ public class DemoApp {
         session.persist(usdt);
 
         // Create ticker BTC/USDT
-        Ticker btcUsdt = new Ticker(btc, usdt, new BigDecimal("0.001"));
+        MarketTicker btcUsdt = new MarketTicker(btc, usdt, "BTCUSDT");
+        btcUsdt.setTakerFeeRate("0.001");
+        btcUsdt.setMakerFeeRate("0.001");
         session.persist(btcUsdt);
 
         // Create accounts

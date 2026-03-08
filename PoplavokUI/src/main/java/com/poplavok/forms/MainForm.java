@@ -54,4 +54,20 @@ public class MainForm {
     public void closeAllTabs() {
         Preconditions.checkNotNull(tabs).getTabs().clear();
     }
+
+    public void openCurrenciesTab() {
+        CurrencyTab currencyTab = new CurrencyTab(/*this*/);
+        final Tab tab = new Tab("Currencies", currencyTab);
+        tab.setClosable(true);
+
+        addTab(tab);
+    }
+
+    public void openMarketTickersTab() {
+        MarketTickerTab marketTickerTab = new MarketTickerTab(/*this*/);
+        final Tab tab = new Tab("MarketTickers", marketTickerTab);
+        tab.setClosable(true);
+
+        addTab(tab);
+    }
 }

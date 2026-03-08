@@ -1,0 +1,3 @@
+[submodule "JavaFxUtils"]
+	path = JavaFxUtils
+	url = https://github.com/flower-org/JavaFxUtils.git

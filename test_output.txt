@@ -1,0 +1,1472 @@
+Initialized native services in: /home/vh4kseqatgvr/.gradle/native
+Initialized jansi services in: /home/vh4kseqatgvr/.gradle/native
+The client will now receive all logging from the daemon (pid: 50800). The daemon log file: /home/vh4kseqatgvr/.gradle/daemon/8.14.4/daemon-50800.out.log
+Starting 9th build in daemon [uptime: 3 mins 22.31 secs, performance: 100%, GC rate: 0.00/s, heap usage: 0% of 512 MiB, non-heap usage: 21% of 384 MiB]
+Using 8 worker leases.
+Now considering [/home/vh4kseqatgvr/project/Poplavok] as hierarchies to watch
+Watching the file system is configured to be enabled if available
+File system watching is active
+Starting Build
+Settings evaluated using settings file '/home/vh4kseqatgvr/project/Poplavok/settings.gradle'.
+Projects loaded. Root project using build file '/home/vh4kseqatgvr/project/Poplavok/build.gradle'.
+Included projects: [root project 'Poplavok', project ':JavaFxUtils', project ':PoplavokData', project ':PoplavokUI']
+
+> Configure project :
+Evaluating root project 'Poplavok' using build file '/home/vh4kseqatgvr/project/Poplavok/build.gradle'.
+
+> Configure project :JavaFxUtils
+Evaluating project ':JavaFxUtils' using build file '/home/vh4kseqatgvr/project/Poplavok/JavaFxUtils/build.gradle'.
+Resolved plugin [id: 'java']
+Resolved plugin [id: 'org.openjfx.javafxplugin', version: '0.1.0']
+Resolved plugin [id: 'org.beryx.jlink', version: '2.24.1']
+Resolved plugin [id: 'net.ltgt.errorprone', version: '3.0.1']
+------------------------------------------------------------------------
+Detecting the operating system and CPU architecture
+------------------------------------------------------------------------
+os.detected.name=linux
+os.detected.arch=x86_64
+os.detected.bitness=64
+os.detected.version=6.14
+os.detected.version.major=6
+os.detected.version.minor=14
+os.detected.release=linuxmint
+os.detected.release.version=22.3
+os.detected.release.like.linuxmint=true
+os.detected.release.like.ubuntu=true
+os.detected.release.like.debian=true
+os.detected.classifier=linux-x86_64
+
+> Configure project :PoplavokData
+Evaluating project ':PoplavokData' using build file '/home/vh4kseqatgvr/project/Poplavok/PoplavokData/build.gradle'.
+Resolved plugin [id: 'java']
+Resolved plugin [id: 'application']
+Resolved plugin [id: 'net.ltgt.errorprone', version: '3.0.1']
+Resolved plugin [id: 'com.github.johnrengelman.shadow', version: '8.1.1']
+
+> Configure project :PoplavokUI
+Evaluating project ':PoplavokUI' using build file '/home/vh4kseqatgvr/project/Poplavok/PoplavokUI/build.gradle'.
+Resolved plugin [id: 'java']
+Resolved plugin [id: 'application']
+Resolved plugin [id: 'org.openjfx.javafxplugin', version: '0.1.0']
+Resolved plugin [id: 'org.beryx.jlink', version: '2.24.1']
+Resolved plugin [id: 'net.ltgt.errorprone', version: '3.0.1']
+Resolved plugin [id: 'com.github.johnrengelman.shadow', version: '8.1.1']
+------------------------------------------------------------------------
+Detecting the operating system and CPU architecture
+------------------------------------------------------------------------
+os.detected.name=linux
+os.detected.arch=x86_64
+os.detected.bitness=64
+os.detected.version=6.14
+os.detected.version.major=6
+os.detected.version.minor=14
+os.detected.release=linuxmint
+os.detected.release.version=22.3
+os.detected.release.like.linuxmint=true
+os.detected.release.like.ubuntu=true
+os.detected.release.like.debian=true
+os.detected.classifier=linux-x86_64
+All projects evaluated.
+Task path ':PoplavokData:test' matched project ':PoplavokData'
+Task name matched 'test'
+Selected primary task 'test' from project :PoplavokData
+Tasks to be executed: [task ':PoplavokData:compileJava', task ':PoplavokData:processResources', task ':PoplavokData:classes', task ':PoplavokData:compileTestJava', task ':PoplavokData:processTestResources', task ':PoplavokData:testClasses', task ':PoplavokData:test']
+Tasks that were excluded: []
+Resolve mutations for :PoplavokData:compileJava (Thread[Execution worker,5,main]) started.
+:PoplavokData:compileJava (Thread[Execution worker,5,main]) started.
+
+> Task :PoplavokData:compileJava UP-TO-DATE
+Custom actions are attached to task ':PoplavokData:compileJava'.
+Caching disabled for task ':PoplavokData:compileJava' because:
+  Build cache is disabled
+Skipping task ':PoplavokData:compileJava' as it is up-to-date.
+Resolve mutations for :PoplavokData:processResources (Thread[Execution worker Thread 2,5,main]) started.
+:PoplavokData:processResources (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :PoplavokData:processResources UP-TO-DATE
+Caching disabled for task ':PoplavokData:processResources' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':PoplavokData:processResources' as it is up-to-date.
+Resolve mutations for :PoplavokData:classes (Thread[Execution worker Thread 2,5,main]) started.
+:PoplavokData:classes (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :PoplavokData:classes UP-TO-DATE
+Skipping task ':PoplavokData:classes' as it has no actions.
+Resolve mutations for :PoplavokData:compileTestJava (Thread[Execution worker Thread 2,5,main]) started.
+:PoplavokData:compileTestJava (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :PoplavokData:compileTestJava UP-TO-DATE
+Custom actions are attached to task ':PoplavokData:compileTestJava'.
+Caching disabled for task ':PoplavokData:compileTestJava' because:
+  Build cache is disabled
+Skipping task ':PoplavokData:compileTestJava' as it is up-to-date.
+Resolve mutations for :PoplavokData:processTestResources (Thread[Execution worker Thread 3,5,main]) started.
+:PoplavokData:processTestResources (Thread[Execution worker Thread 3,5,main]) started.
+
+> Task :PoplavokData:processTestResources UP-TO-DATE
+Caching disabled for task ':PoplavokData:processTestResources' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':PoplavokData:processTestResources' as it is up-to-date.
+Resolve mutations for :PoplavokData:testClasses (Thread[Execution worker Thread 3,5,main]) started.
+:PoplavokData:testClasses (Thread[Execution worker Thread 3,5,main]) started.
+
+> Task :PoplavokData:testClasses UP-TO-DATE
+Skipping task ':PoplavokData:testClasses' as it has no actions.
+Resolve mutations for :PoplavokData:test (Thread[Execution worker Thread 3,5,main]) started.
+:PoplavokData:test (Thread[Execution worker Thread 4,5,main]) started.
+Gradle Test Executor 8 started executing tests.
+
+> Task :PoplavokData:test
+Caching disabled for task ':PoplavokData:test' because:
+  Build cache is disabled
+Task ':PoplavokData:test' is not up-to-date because:
+  Task has failed previously.
+Starting process 'Gradle Test Executor 8'. Working directory: /home/vh4kseqatgvr/project/Poplavok/PoplavokData Command: /home/vh4kseqatgvr/jdk-17.0.18+8/bin/java -Dorg.gradle.internal.worker.tmpdir=/home/vh4kseqatgvr/project/Poplavok/PoplavokData/build/tmp/test/work @/home/vh4kseqatgvr/.gradle/.tmp/gradle-worker-classpath2202380820253407832txt -Xmx512m -Dfile.encoding=UTF-8 -Duser.country=US -Duser.language=en -Duser.variant -ea worker.org.gradle.process.internal.worker.GradleWorkerMain 'Gradle Test Executor 8'
+Successfully started process 'Gradle Test Executor 8'
+
+DataModelTest > testLoanAndRepayment() STANDARD_OUT
+    Hibernate: 
+        drop table if exists account_history cascade 
+    Hibernate: 
+        drop table if exists accounts cascade 
+    Hibernate: 
+        drop table if exists currencies cascade 
+    Hibernate: 
+        drop table if exists external_loans cascade 
+    Hibernate: 
+        drop table if exists levels cascade 
+    Hibernate: 
+        drop table if exists loans cascade 
+    Hibernate: 
+        drop table if exists operation_history cascade 
+    Hibernate: 
+        drop table if exists poplavoks cascade 
+    Hibernate: 
+        drop table if exists rates cascade 
+    Hibernate: 
+        drop table if exists repayments cascade 
+    Hibernate: 
+        drop table if exists tickers cascade 
+    Hibernate: 
+        create table account_history (
+            availableAfter numeric(20,8) not null,
+            availableBefore numeric(20,8) not null,
+            borrowedAfter numeric(20,8) not null,
+            borrowedBefore numeric(20,8) not null,
+            account_id bigint not null,
+            id bigint generated by default as identity,
+            timestamp timestamp(6) not null,
+            description varchar(100),
+            primary key (id)
+        )
+    Hibernate: 
+        create table accounts (
+            available numeric(20,8) not null,
+            borrowed numeric(20,8) not null,
+            currency_id bigint not null,
+            id bigint generated by default as identity,
+            primary key (id)
+        )
+    Hibernate: 
+        create table currencies (
+            id bigint generated by default as identity,
+            currency varchar(20) not null unique,
+            fullName varchar(255),
+            name varchar(255),
+            primary key (id)
+        )
+    Hibernate: 
+        create table external_loans (
+            accrued_interest numeric(20,8),
+            daily_interest_rate numeric(10,8),
+            id bigint generated by default as identity,
+            last_interest_update timestamp(6),
+            loan_id bigint not null,
+            external_id varchar(100),
+            primary key (id)
+        )
+    Hibernate: 
+        create table levels (
+            amount_base numeric(20,8) not null,
+            amount_quote numeric(20,8) not null,
+            is_active boolean not null,
+            level_num integer not null,
+            level_price numeric(20,8) not null,
+            close_date timestamp(6),
+            creation_date timestamp(6) not null,
+            id bigint generated by default as identity,
+            poplavok_id bigint not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table loans (
+            amount numeric(20,8) not null,
+            interest_rate numeric(10,6),
+            is_active boolean not null,
+            currency_id bigint not null,
+            id bigint generated by default as identity,
+            level_id bigint,
+            loan_date timestamp(6) not null,
+            poplavok_id bigint,
+            loan_type enum ('EXTERNAL','POPLAVOK_FUNDED','SELF_FUNDED') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table operation_history (
+            amount numeric(20,8) not null,
+            price numeric(20,8) not null,
+            id bigint generated by default as identity,
+            level_id bigint not null,
+            poplavok_id bigint not null,
+            timestamp timestamp(6) not null,
+            details varchar(500),
+            operation_type enum ('BORROW','BUY','CLOSE','CREATION','INTEREST_ADDED','REPAY','SELL','TAKE_LOSS','TAKE_PROFIT') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table poplavoks (
+            entry_price numeric(20,8),
+            is_active boolean not null,
+            close_date timestamp(6),
+            creation_date timestamp(6) not null,
+            id bigint generated by default as identity,
+            ticker_id bigint not null,
+            strategy_parameters varchar(500),
+            level_strategy enum ('CUSTOM','EXPONENTIAL','FIBONACCI','LINEAR') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table rates (
+            price numeric(20,8) not null,
+            ticker_price numeric(20,8),
+            id bigint generated by default as identity,
+            ticker_id bigint not null,
+            timestamp timestamp(6) not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table repayments (
+            amount numeric(20,8) not null,
+            id bigint generated by default as identity,
+            loan_id bigint not null,
+            repayment_date timestamp(6) not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table tickers (
+            base_currency_id bigint not null,
+            id bigint generated by default as identity,
+            quote_currency_id bigint not null,
+            makerCoefficient varchar(255),
+            makerFeeRate varchar(255),
+            symbol varchar(255) not null,
+            symbolName varchar(255),
+            takerCoefficient varchar(255),
+            takerFeeRate varchar(255),
+            primary key (id)
+        )
+    Hibernate: 
+        alter table if exists account_history 
+           add constraint FKl7ey00g2lssau6dw0yekhodtw 
+           foreign key (account_id) 
+           references accounts
+    Hibernate: 
+        alter table if exists accounts 
+           add constraint FKs08d0ccyak63pou9tfk093dbk 
+           foreign key (currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists external_loans 
+           add constraint FKo4ybvxv4agbqkcfi5jgq83cky 
+           foreign key (loan_id) 
+           references loans
+    Hibernate: 
+        alter table if exists levels 
+           add constraint FKjppmynowjseamooiuf6cow06d 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKk3yafo135tt01cuminmbmpson 
+           foreign key (currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKpb18om8kfyjxo13fafb2jqcv7 
+           foreign key (level_id) 
+           references levels
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKib7td3vhfeb1xuoan13ni0294 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists operation_history 
+           add constraint FK1akgsehvl0aq3j1v564lx2l5g 
+           foreign key (level_id) 
+           references levels
+    Hibernate: 
+        alter table if exists operation_history 
+           add constraint FKb2wkp5vdyp95puirhg6qhwqxf 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists poplavoks 
+           add constraint FKqs1uktxa66fve0ypbxpt8g685 
+           foreign key (ticker_id) 
+           references tickers
+    Hibernate: 
+        alter table if exists rates 
+           add constraint FKjs57p1xa2mke1uwe0p00opmwe 
+           foreign key (ticker_id) 
+           references tickers
+    Hibernate: 
+        alter table if exists repayments 
+           add constraint FKhmj0ie2g9apcos3iihqek6qwj 
+           foreign key (loan_id) 
+           references loans
+    Hibernate: 
+        alter table if exists tickers 
+           add constraint FK1uq2ov2kjem92truxnqbvvdd0 
+           foreign key (base_currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists tickers 
+           add constraint FKelqeb4lq7tux9wcky5mkit6pl 
+           foreign key (quote_currency_id) 
+           references currencies
+    Hibernate: 
+        insert 
+        into
+            currencies
+            (currency, fullName, name, id) 
+        values
+            (?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            loans
+            (amount, currency_id, loan_date, interest_rate, is_active, level_id, loan_type, poplavok_id, id) 
+        values
+            (?, ?, ?, ?, ?, ?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            repayments
+            (amount, repayment_date, loan_id, id) 
+        values
+            (?, ?, ?, default)
+    Hibernate: 
+        select
+            l1_0.id,
+            l1_0.amount,
+            l1_0.currency_id,
+            l1_0.loan_date,
+            l1_0.interest_rate,
+            l1_0.is_active,
+            l1_0.level_id,
+            l1_0.loan_type,
+            l1_0.poplavok_id 
+        from
+            loans l1_0
+    Hibernate: 
+        select
+            r1_0.loan_id,
+            r1_0.id,
+            r1_0.amount,
+            r1_0.repayment_date 
+        from
+            repayments r1_0 
+        where
+            r1_0.loan_id=?
+
+DataModelTest > testAccountAndHistory() STANDARD_OUT
+    Hibernate: 
+        drop table if exists account_history cascade 
+    Hibernate: 
+        drop table if exists accounts cascade 
+    Hibernate: 
+        drop table if exists currencies cascade 
+    Hibernate: 
+        drop table if exists external_loans cascade 
+    Hibernate: 
+        drop table if exists levels cascade 
+    Hibernate: 
+        drop table if exists loans cascade 
+    Hibernate: 
+        drop table if exists operation_history cascade 
+    Hibernate: 
+        drop table if exists poplavoks cascade 
+    Hibernate: 
+        drop table if exists rates cascade 
+    Hibernate: 
+        drop table if exists repayments cascade 
+    Hibernate: 
+        drop table if exists tickers cascade 
+    Hibernate: 
+        create table account_history (
+            availableAfter numeric(20,8) not null,
+            availableBefore numeric(20,8) not null,
+            borrowedAfter numeric(20,8) not null,
+            borrowedBefore numeric(20,8) not null,
+            account_id bigint not null,
+            id bigint generated by default as identity,
+            timestamp timestamp(6) not null,
+            description varchar(100),
+            primary key (id)
+        )
+    Hibernate: 
+        create table accounts (
+            available numeric(20,8) not null,
+            borrowed numeric(20,8) not null,
+            currency_id bigint not null,
+            id bigint generated by default as identity,
+            primary key (id)
+        )
+    Hibernate: 
+        create table currencies (
+            id bigint generated by default as identity,
+            currency varchar(20) not null unique,
+            fullName varchar(255),
+            name varchar(255),
+            primary key (id)
+        )
+    Hibernate: 
+        create table external_loans (
+            accrued_interest numeric(20,8),
+            daily_interest_rate numeric(10,8),
+            id bigint generated by default as identity,
+            last_interest_update timestamp(6),
+            loan_id bigint not null,
+            external_id varchar(100),
+            primary key (id)
+        )
+    Hibernate: 
+        create table levels (
+            amount_base numeric(20,8) not null,
+            amount_quote numeric(20,8) not null,
+            is_active boolean not null,
+            level_num integer not null,
+            level_price numeric(20,8) not null,
+            close_date timestamp(6),
+            creation_date timestamp(6) not null,
+            id bigint generated by default as identity,
+            poplavok_id bigint not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table loans (
+            amount numeric(20,8) not null,
+            interest_rate numeric(10,6),
+            is_active boolean not null,
+            currency_id bigint not null,
+            id bigint generated by default as identity,
+            level_id bigint,
+            loan_date timestamp(6) not null,
+            poplavok_id bigint,
+            loan_type enum ('EXTERNAL','POPLAVOK_FUNDED','SELF_FUNDED') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table operation_history (
+            amount numeric(20,8) not null,
+            price numeric(20,8) not null,
+            id bigint generated by default as identity,
+            level_id bigint not null,
+            poplavok_id bigint not null,
+            timestamp timestamp(6) not null,
+            details varchar(500),
+            operation_type enum ('BORROW','BUY','CLOSE','CREATION','INTEREST_ADDED','REPAY','SELL','TAKE_LOSS','TAKE_PROFIT') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table poplavoks (
+            entry_price numeric(20,8),
+            is_active boolean not null,
+            close_date timestamp(6),
+            creation_date timestamp(6) not null,
+            id bigint generated by default as identity,
+            ticker_id bigint not null,
+            strategy_parameters varchar(500),
+            level_strategy enum ('CUSTOM','EXPONENTIAL','FIBONACCI','LINEAR') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table rates (
+            price numeric(20,8) not null,
+            ticker_price numeric(20,8),
+            id bigint generated by default as identity,
+            ticker_id bigint not null,
+            timestamp timestamp(6) not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table repayments (
+            amount numeric(20,8) not null,
+            id bigint generated by default as identity,
+            loan_id bigint not null,
+            repayment_date timestamp(6) not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table tickers (
+            base_currency_id bigint not null,
+            id bigint generated by default as identity,
+            quote_currency_id bigint not null,
+            makerCoefficient varchar(255),
+            makerFeeRate varchar(255),
+            symbol varchar(255) not null,
+            symbolName varchar(255),
+            takerCoefficient varchar(255),
+            takerFeeRate varchar(255),
+            primary key (id)
+        )
+    Hibernate: 
+        alter table if exists account_history 
+           add constraint FKl7ey00g2lssau6dw0yekhodtw 
+           foreign key (account_id) 
+           references accounts
+    Hibernate: 
+        alter table if exists accounts 
+           add constraint FKs08d0ccyak63pou9tfk093dbk 
+           foreign key (currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists external_loans 
+           add constraint FKo4ybvxv4agbqkcfi5jgq83cky 
+           foreign key (loan_id) 
+           references loans
+    Hibernate: 
+        alter table if exists levels 
+           add constraint FKjppmynowjseamooiuf6cow06d 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKk3yafo135tt01cuminmbmpson 
+           foreign key (currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKpb18om8kfyjxo13fafb2jqcv7 
+           foreign key (level_id) 
+           references levels
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKib7td3vhfeb1xuoan13ni0294 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists operation_history 
+           add constraint FK1akgsehvl0aq3j1v564lx2l5g 
+           foreign key (level_id) 
+           references levels
+    Hibernate: 
+        alter table if exists operation_history 
+           add constraint FKb2wkp5vdyp95puirhg6qhwqxf 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists poplavoks 
+           add constraint FKqs1uktxa66fve0ypbxpt8g685 
+           foreign key (ticker_id) 
+           references tickers
+    Hibernate: 
+        alter table if exists rates 
+           add constraint FKjs57p1xa2mke1uwe0p00opmwe 
+           foreign key (ticker_id) 
+           references tickers
+    Hibernate: 
+        alter table if exists repayments 
+           add constraint FKhmj0ie2g9apcos3iihqek6qwj 
+           foreign key (loan_id) 
+           references loans
+    Hibernate: 
+        alter table if exists tickers 
+           add constraint FK1uq2ov2kjem92truxnqbvvdd0 
+           foreign key (base_currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists tickers 
+           add constraint FKelqeb4lq7tux9wcky5mkit6pl 
+           foreign key (quote_currency_id) 
+           references currencies
+    Hibernate: 
+        insert 
+        into
+            currencies
+            (currency, fullName, name, id) 
+        values
+            (?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            accounts
+            (available, borrowed, currency_id, id) 
+        values
+            (?, ?, ?, default)
+    Hibernate: 
+        select
+            a1_0.id,
+            a1_0.available,
+            a1_0.borrowed,
+            a1_0.currency_id 
+        from
+            accounts a1_0
+    Hibernate: 
+        select
+            c1_0.id,
+            c1_0.currency,
+            c1_0.fullName,
+            c1_0.name 
+        from
+            currencies c1_0 
+        where
+            c1_0.id=?
+
+DataModelTest > testPoplavokWithLevels() STANDARD_OUT
+    Hibernate: 
+        drop table if exists account_history cascade 
+    Hibernate: 
+        drop table if exists accounts cascade 
+    Hibernate: 
+        drop table if exists currencies cascade 
+    Hibernate: 
+        drop table if exists external_loans cascade 
+    Hibernate: 
+        drop table if exists levels cascade 
+    Hibernate: 
+        drop table if exists loans cascade 
+    Hibernate: 
+        drop table if exists operation_history cascade 
+    Hibernate: 
+        drop table if exists poplavoks cascade 
+    Hibernate: 
+        drop table if exists rates cascade 
+    Hibernate: 
+        drop table if exists repayments cascade 
+    Hibernate: 
+        drop table if exists tickers cascade 
+    Hibernate: 
+        create table account_history (
+            availableAfter numeric(20,8) not null,
+            availableBefore numeric(20,8) not null,
+            borrowedAfter numeric(20,8) not null,
+            borrowedBefore numeric(20,8) not null,
+            account_id bigint not null,
+            id bigint generated by default as identity,
+            timestamp timestamp(6) not null,
+            description varchar(100),
+            primary key (id)
+        )
+    Hibernate: 
+        create table accounts (
+            available numeric(20,8) not null,
+            borrowed numeric(20,8) not null,
+            currency_id bigint not null,
+            id bigint generated by default as identity,
+            primary key (id)
+        )
+    Hibernate: 
+        create table currencies (
+            id bigint generated by default as identity,
+            currency varchar(20) not null unique,
+            fullName varchar(255),
+            name varchar(255),
+            primary key (id)
+        )
+    Hibernate: 
+        create table external_loans (
+            accrued_interest numeric(20,8),
+            daily_interest_rate numeric(10,8),
+            id bigint generated by default as identity,
+            last_interest_update timestamp(6),
+            loan_id bigint not null,
+            external_id varchar(100),
+            primary key (id)
+        )
+    Hibernate: 
+        create table levels (
+            amount_base numeric(20,8) not null,
+            amount_quote numeric(20,8) not null,
+            is_active boolean not null,
+            level_num integer not null,
+            level_price numeric(20,8) not null,
+            close_date timestamp(6),
+            creation_date timestamp(6) not null,
+            id bigint generated by default as identity,
+            poplavok_id bigint not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table loans (
+            amount numeric(20,8) not null,
+            interest_rate numeric(10,6),
+            is_active boolean not null,
+            currency_id bigint not null,
+            id bigint generated by default as identity,
+            level_id bigint,
+            loan_date timestamp(6) not null,
+            poplavok_id bigint,
+            loan_type enum ('EXTERNAL','POPLAVOK_FUNDED','SELF_FUNDED') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table operation_history (
+            amount numeric(20,8) not null,
+            price numeric(20,8) not null,
+            id bigint generated by default as identity,
+            level_id bigint not null,
+            poplavok_id bigint not null,
+            timestamp timestamp(6) not null,
+            details varchar(500),
+            operation_type enum ('BORROW','BUY','CLOSE','CREATION','INTEREST_ADDED','REPAY','SELL','TAKE_LOSS','TAKE_PROFIT') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table poplavoks (
+            entry_price numeric(20,8),
+            is_active boolean not null,
+            close_date timestamp(6),
+            creation_date timestamp(6) not null,
+            id bigint generated by default as identity,
+            ticker_id bigint not null,
+            strategy_parameters varchar(500),
+            level_strategy enum ('CUSTOM','EXPONENTIAL','FIBONACCI','LINEAR') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table rates (
+            price numeric(20,8) not null,
+            ticker_price numeric(20,8),
+            id bigint generated by default as identity,
+            ticker_id bigint not null,
+            timestamp timestamp(6) not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table repayments (
+            amount numeric(20,8) not null,
+            id bigint generated by default as identity,
+            loan_id bigint not null,
+            repayment_date timestamp(6) not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table tickers (
+            base_currency_id bigint not null,
+            id bigint generated by default as identity,
+            quote_currency_id bigint not null,
+            makerCoefficient varchar(255),
+            makerFeeRate varchar(255),
+            symbol varchar(255) not null,
+            symbolName varchar(255),
+            takerCoefficient varchar(255),
+            takerFeeRate varchar(255),
+            primary key (id)
+        )
+    Hibernate: 
+        alter table if exists account_history 
+           add constraint FKl7ey00g2lssau6dw0yekhodtw 
+           foreign key (account_id) 
+           references accounts
+    Hibernate: 
+        alter table if exists accounts 
+           add constraint FKs08d0ccyak63pou9tfk093dbk 
+           foreign key (currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists external_loans 
+           add constraint FKo4ybvxv4agbqkcfi5jgq83cky 
+           foreign key (loan_id) 
+           references loans
+    Hibernate: 
+        alter table if exists levels 
+           add constraint FKjppmynowjseamooiuf6cow06d 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKk3yafo135tt01cuminmbmpson 
+           foreign key (currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKpb18om8kfyjxo13fafb2jqcv7 
+           foreign key (level_id) 
+           references levels
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKib7td3vhfeb1xuoan13ni0294 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists operation_history 
+           add constraint FK1akgsehvl0aq3j1v564lx2l5g 
+           foreign key (level_id) 
+           references levels
+    Hibernate: 
+        alter table if exists operation_history 
+           add constraint FKb2wkp5vdyp95puirhg6qhwqxf 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists poplavoks 
+           add constraint FKqs1uktxa66fve0ypbxpt8g685 
+           foreign key (ticker_id) 
+           references tickers
+    Hibernate: 
+        alter table if exists rates 
+           add constraint FKjs57p1xa2mke1uwe0p00opmwe 
+           foreign key (ticker_id) 
+           references tickers
+    Hibernate: 
+        alter table if exists repayments 
+           add constraint FKhmj0ie2g9apcos3iihqek6qwj 
+           foreign key (loan_id) 
+           references loans
+    Hibernate: 
+        alter table if exists tickers 
+           add constraint FK1uq2ov2kjem92truxnqbvvdd0 
+           foreign key (base_currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists tickers 
+           add constraint FKelqeb4lq7tux9wcky5mkit6pl 
+           foreign key (quote_currency_id) 
+           references currencies
+    Hibernate: 
+        insert 
+        into
+            currencies
+            (currency, fullName, name, id) 
+        values
+            (?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            currencies
+            (currency, fullName, name, id) 
+        values
+            (?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            tickers
+            (base_currency_id, makerCoefficient, makerFeeRate, quote_currency_id, symbol, symbolName, takerCoefficient, takerFeeRate, id) 
+        values
+            (?, ?, ?, ?, ?, ?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            poplavoks
+            (close_date, creation_date, entry_price, is_active, level_strategy, ticker_id, strategy_parameters, id) 
+        values
+            (?, ?, ?, ?, ?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            levels
+            (amount_base, amount_quote, close_date, creation_date, is_active, level_num, level_price, poplavok_id, id) 
+        values
+            (?, ?, ?, ?, ?, ?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            levels
+            (amount_base, amount_quote, close_date, creation_date, is_active, level_num, level_price, poplavok_id, id) 
+        values
+            (?, ?, ?, ?, ?, ?, ?, ?, default)
+    Hibernate: 
+        select
+            p1_0.id,
+            p1_0.close_date,
+            p1_0.creation_date,
+            p1_0.entry_price,
+            p1_0.is_active,
+            p1_0.level_strategy,
+            p1_0.ticker_id,
+            p1_0.strategy_parameters 
+        from
+            poplavoks p1_0
+    Hibernate: 
+        select
+            l1_0.poplavok_id,
+            l1_0.id,
+            l1_0.amount_base,
+            l1_0.amount_quote,
+            l1_0.close_date,
+            l1_0.creation_date,
+            l1_0.is_active,
+            l1_0.level_num,
+            l1_0.level_price 
+        from
+            levels l1_0 
+        where
+            l1_0.poplavok_id=?
+
+DataModelTest > testOperationHistory() STANDARD_OUT
+    Hibernate: 
+        drop table if exists account_history cascade 
+    Hibernate: 
+        drop table if exists accounts cascade 
+    Hibernate: 
+        drop table if exists currencies cascade 
+    Hibernate: 
+        drop table if exists external_loans cascade 
+    Hibernate: 
+        drop table if exists levels cascade 
+    Hibernate: 
+        drop table if exists loans cascade 
+    Hibernate: 
+        drop table if exists operation_history cascade 
+    Hibernate: 
+        drop table if exists poplavoks cascade 
+    Hibernate: 
+        drop table if exists rates cascade 
+    Hibernate: 
+        drop table if exists repayments cascade 
+    Hibernate: 
+        drop table if exists tickers cascade 
+    Hibernate: 
+        create table account_history (
+            availableAfter numeric(20,8) not null,
+            availableBefore numeric(20,8) not null,
+            borrowedAfter numeric(20,8) not null,
+            borrowedBefore numeric(20,8) not null,
+            account_id bigint not null,
+            id bigint generated by default as identity,
+            timestamp timestamp(6) not null,
+            description varchar(100),
+            primary key (id)
+        )
+    Hibernate: 
+        create table accounts (
+            available numeric(20,8) not null,
+            borrowed numeric(20,8) not null,
+            currency_id bigint not null,
+            id bigint generated by default as identity,
+            primary key (id)
+        )
+    Hibernate: 
+        create table currencies (
+            id bigint generated by default as identity,
+            currency varchar(20) not null unique,
+            fullName varchar(255),
+            name varchar(255),
+            primary key (id)
+        )
+    Hibernate: 
+        create table external_loans (
+            accrued_interest numeric(20,8),
+            daily_interest_rate numeric(10,8),
+            id bigint generated by default as identity,
+            last_interest_update timestamp(6),
+            loan_id bigint not null,
+            external_id varchar(100),
+            primary key (id)
+        )
+    Hibernate: 
+        create table levels (
+            amount_base numeric(20,8) not null,
+            amount_quote numeric(20,8) not null,
+            is_active boolean not null,
+            level_num integer not null,
+            level_price numeric(20,8) not null,
+            close_date timestamp(6),
+            creation_date timestamp(6) not null,
+            id bigint generated by default as identity,
+            poplavok_id bigint not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table loans (
+            amount numeric(20,8) not null,
+            interest_rate numeric(10,6),
+            is_active boolean not null,
+            currency_id bigint not null,
+            id bigint generated by default as identity,
+            level_id bigint,
+            loan_date timestamp(6) not null,
+            poplavok_id bigint,
+            loan_type enum ('EXTERNAL','POPLAVOK_FUNDED','SELF_FUNDED') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table operation_history (
+            amount numeric(20,8) not null,
+            price numeric(20,8) not null,
+            id bigint generated by default as identity,
+            level_id bigint not null,
+            poplavok_id bigint not null,
+            timestamp timestamp(6) not null,
+            details varchar(500),
+            operation_type enum ('BORROW','BUY','CLOSE','CREATION','INTEREST_ADDED','REPAY','SELL','TAKE_LOSS','TAKE_PROFIT') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table poplavoks (
+            entry_price numeric(20,8),
+            is_active boolean not null,
+            close_date timestamp(6),
+            creation_date timestamp(6) not null,
+            id bigint generated by default as identity,
+            ticker_id bigint not null,
+            strategy_parameters varchar(500),
+            level_strategy enum ('CUSTOM','EXPONENTIAL','FIBONACCI','LINEAR') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table rates (
+            price numeric(20,8) not null,
+            ticker_price numeric(20,8),
+            id bigint generated by default as identity,
+            ticker_id bigint not null,
+            timestamp timestamp(6) not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table repayments (
+            amount numeric(20,8) not null,
+            id bigint generated by default as identity,
+            loan_id bigint not null,
+            repayment_date timestamp(6) not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table tickers (
+            base_currency_id bigint not null,
+            id bigint generated by default as identity,
+            quote_currency_id bigint not null,
+            makerCoefficient varchar(255),
+            makerFeeRate varchar(255),
+            symbol varchar(255) not null,
+            symbolName varchar(255),
+            takerCoefficient varchar(255),
+            takerFeeRate varchar(255),
+            primary key (id)
+        )
+    Hibernate: 
+        alter table if exists account_history 
+           add constraint FKl7ey00g2lssau6dw0yekhodtw 
+           foreign key (account_id) 
+           references accounts
+    Hibernate: 
+        alter table if exists accounts 
+           add constraint FKs08d0ccyak63pou9tfk093dbk 
+           foreign key (currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists external_loans 
+           add constraint FKo4ybvxv4agbqkcfi5jgq83cky 
+           foreign key (loan_id) 
+           references loans
+    Hibernate: 
+        alter table if exists levels 
+           add constraint FKjppmynowjseamooiuf6cow06d 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKk3yafo135tt01cuminmbmpson 
+           foreign key (currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKpb18om8kfyjxo13fafb2jqcv7 
+           foreign key (level_id) 
+           references levels
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKib7td3vhfeb1xuoan13ni0294 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists operation_history 
+           add constraint FK1akgsehvl0aq3j1v564lx2l5g 
+           foreign key (level_id) 
+           references levels
+    Hibernate: 
+        alter table if exists operation_history 
+           add constraint FKb2wkp5vdyp95puirhg6qhwqxf 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists poplavoks 
+           add constraint FKqs1uktxa66fve0ypbxpt8g685 
+           foreign key (ticker_id) 
+           references tickers
+    Hibernate: 
+        alter table if exists rates 
+           add constraint FKjs57p1xa2mke1uwe0p00opmwe 
+           foreign key (ticker_id) 
+           references tickers
+    Hibernate: 
+        alter table if exists repayments 
+           add constraint FKhmj0ie2g9apcos3iihqek6qwj 
+           foreign key (loan_id) 
+           references loans
+    Hibernate: 
+        alter table if exists tickers 
+           add constraint FK1uq2ov2kjem92truxnqbvvdd0 
+           foreign key (base_currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists tickers 
+           add constraint FKelqeb4lq7tux9wcky5mkit6pl 
+           foreign key (quote_currency_id) 
+           references currencies
+    Hibernate: 
+        insert 
+        into
+            currencies
+            (currency, fullName, name, id) 
+        values
+            (?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            currencies
+            (currency, fullName, name, id) 
+        values
+            (?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            tickers
+            (base_currency_id, makerCoefficient, makerFeeRate, quote_currency_id, symbol, symbolName, takerCoefficient, takerFeeRate, id) 
+        values
+            (?, ?, ?, ?, ?, ?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            poplavoks
+            (close_date, creation_date, entry_price, is_active, level_strategy, ticker_id, strategy_parameters, id) 
+        values
+            (?, ?, ?, ?, ?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            levels
+            (amount_base, amount_quote, close_date, creation_date, is_active, level_num, level_price, poplavok_id, id) 
+        values
+            (?, ?, ?, ?, ?, ?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            operation_history
+            (amount, details, level_id, operation_type, poplavok_id, price, timestamp, id) 
+        values
+            (?, ?, ?, ?, ?, ?, ?, default)
+    Hibernate: 
+        select
+            oh1_0.id,
+            oh1_0.amount,
+            oh1_0.details,
+            oh1_0.level_id,
+            oh1_0.operation_type,
+            oh1_0.poplavok_id,
+            oh1_0.price,
+            oh1_0.timestamp 
+        from
+            operation_history oh1_0
+
+DataModelTest > testCurrencyAndTicker() STANDARD_OUT
+    Hibernate: 
+        drop table if exists account_history cascade 
+    Hibernate: 
+        drop table if exists accounts cascade 
+    Hibernate: 
+        drop table if exists currencies cascade 
+    Hibernate: 
+        drop table if exists external_loans cascade 
+    Hibernate: 
+        drop table if exists levels cascade 
+    Hibernate: 
+        drop table if exists loans cascade 
+    Hibernate: 
+        drop table if exists operation_history cascade 
+    Hibernate: 
+        drop table if exists poplavoks cascade 
+    Hibernate: 
+        drop table if exists rates cascade 
+    Hibernate: 
+        drop table if exists repayments cascade 
+    Hibernate: 
+        drop table if exists tickers cascade 
+    Hibernate: 
+        create table account_history (
+            availableAfter numeric(20,8) not null,
+            availableBefore numeric(20,8) not null,
+            borrowedAfter numeric(20,8) not null,
+            borrowedBefore numeric(20,8) not null,
+            account_id bigint not null,
+            id bigint generated by default as identity,
+            timestamp timestamp(6) not null,
+            description varchar(100),
+            primary key (id)
+        )
+    Hibernate: 
+        create table accounts (
+            available numeric(20,8) not null,
+            borrowed numeric(20,8) not null,
+            currency_id bigint not null,
+            id bigint generated by default as identity,
+            primary key (id)
+        )
+    Hibernate: 
+        create table currencies (
+            id bigint generated by default as identity,
+            currency varchar(20) not null unique,
+            fullName varchar(255),
+            name varchar(255),
+            primary key (id)
+        )
+    Hibernate: 
+        create table external_loans (
+            accrued_interest numeric(20,8),
+            daily_interest_rate numeric(10,8),
+            id bigint generated by default as identity,
+            last_interest_update timestamp(6),
+            loan_id bigint not null,
+            external_id varchar(100),
+            primary key (id)
+        )
+    Hibernate: 
+        create table levels (
+            amount_base numeric(20,8) not null,
+            amount_quote numeric(20,8) not null,
+            is_active boolean not null,
+            level_num integer not null,
+            level_price numeric(20,8) not null,
+            close_date timestamp(6),
+            creation_date timestamp(6) not null,
+            id bigint generated by default as identity,
+            poplavok_id bigint not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table loans (
+            amount numeric(20,8) not null,
+            interest_rate numeric(10,6),
+            is_active boolean not null,
+            currency_id bigint not null,
+            id bigint generated by default as identity,
+            level_id bigint,
+            loan_date timestamp(6) not null,
+            poplavok_id bigint,
+            loan_type enum ('EXTERNAL','POPLAVOK_FUNDED','SELF_FUNDED') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table operation_history (
+            amount numeric(20,8) not null,
+            price numeric(20,8) not null,
+            id bigint generated by default as identity,
+            level_id bigint not null,
+            poplavok_id bigint not null,
+            timestamp timestamp(6) not null,
+            details varchar(500),
+            operation_type enum ('BORROW','BUY','CLOSE','CREATION','INTEREST_ADDED','REPAY','SELL','TAKE_LOSS','TAKE_PROFIT') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table poplavoks (
+            entry_price numeric(20,8),
+            is_active boolean not null,
+            close_date timestamp(6),
+            creation_date timestamp(6) not null,
+            id bigint generated by default as identity,
+            ticker_id bigint not null,
+            strategy_parameters varchar(500),
+            level_strategy enum ('CUSTOM','EXPONENTIAL','FIBONACCI','LINEAR') not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table rates (
+            price numeric(20,8) not null,
+            ticker_price numeric(20,8),
+            id bigint generated by default as identity,
+            ticker_id bigint not null,
+            timestamp timestamp(6) not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table repayments (
+            amount numeric(20,8) not null,
+            id bigint generated by default as identity,
+            loan_id bigint not null,
+            repayment_date timestamp(6) not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table tickers (
+            base_currency_id bigint not null,
+            id bigint generated by default as identity,
+            quote_currency_id bigint not null,
+            makerCoefficient varchar(255),
+            makerFeeRate varchar(255),
+            symbol varchar(255) not null,
+            symbolName varchar(255),
+            takerCoefficient varchar(255),
+            takerFeeRate varchar(255),
+            primary key (id)
+        )
+    Hibernate: 
+        alter table if exists account_history 
+           add constraint FKl7ey00g2lssau6dw0yekhodtw 
+           foreign key (account_id) 
+           references accounts
+    Hibernate: 
+        alter table if exists accounts 
+           add constraint FKs08d0ccyak63pou9tfk093dbk 
+           foreign key (currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists external_loans 
+           add constraint FKo4ybvxv4agbqkcfi5jgq83cky 
+           foreign key (loan_id) 
+           references loans
+    Hibernate: 
+        alter table if exists levels 
+           add constraint FKjppmynowjseamooiuf6cow06d 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKk3yafo135tt01cuminmbmpson 
+           foreign key (currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKpb18om8kfyjxo13fafb2jqcv7 
+           foreign key (level_id) 
+           references levels
+    Hibernate: 
+        alter table if exists loans 
+           add constraint FKib7td3vhfeb1xuoan13ni0294 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists operation_history 
+           add constraint FK1akgsehvl0aq3j1v564lx2l5g 
+           foreign key (level_id) 
+           references levels
+    Hibernate: 
+        alter table if exists operation_history 
+           add constraint FKb2wkp5vdyp95puirhg6qhwqxf 
+           foreign key (poplavok_id) 
+           references poplavoks
+    Hibernate: 
+        alter table if exists poplavoks 
+           add constraint FKqs1uktxa66fve0ypbxpt8g685 
+           foreign key (ticker_id) 
+           references tickers
+    Hibernate: 
+        alter table if exists rates 
+           add constraint FKjs57p1xa2mke1uwe0p00opmwe 
+           foreign key (ticker_id) 
+           references tickers
+    Hibernate: 
+        alter table if exists repayments 
+           add constraint FKhmj0ie2g9apcos3iihqek6qwj 
+           foreign key (loan_id) 
+           references loans
+    Hibernate: 
+        alter table if exists tickers 
+           add constraint FK1uq2ov2kjem92truxnqbvvdd0 
+           foreign key (base_currency_id) 
+           references currencies
+    Hibernate: 
+        alter table if exists tickers 
+           add constraint FKelqeb4lq7tux9wcky5mkit6pl 
+           foreign key (quote_currency_id) 
+           references currencies
+    Hibernate: 
+        insert 
+        into
+            currencies
+            (currency, fullName, name, id) 
+        values
+            (?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            currencies
+            (currency, fullName, name, id) 
+        values
+            (?, ?, ?, default)
+    Hibernate: 
+        insert 
+        into
+            tickers
+            (base_currency_id, makerCoefficient, makerFeeRate, quote_currency_id, symbol, symbolName, takerCoefficient, takerFeeRate, id) 
+        values
+            (?, ?, ?, ?, ?, ?, ?, ?, default)
+
+Gradle Test Executor 8 finished executing tests.
+
+> Task :PoplavokData:test FAILED
+
+DataModelTest > testCurrencyAndTicker() FAILED
+    java.lang.IllegalArgumentException: org.hibernate.query.sqm.UnknownEntityException: Could not resolve root entity 'Ticker'
+        at org.hibernate.internal.ExceptionConverterImpl.convert(ExceptionConverterImpl.java:129)
+        at org.hibernate.internal.ExceptionConverterImpl.convert(ExceptionConverterImpl.java:168)
+        at org.hibernate.internal.ExceptionConverterImpl.convert(ExceptionConverterImpl.java:174)
+        at org.hibernate.internal.AbstractSharedSessionContract.createQuery(AbstractSharedSessionContract.java:1010)
+        at org.hibernate.internal.SessionImpl.createQuery(SessionImpl.java:155)
+        at org.hibernate.internal.AbstractSharedSessionContract.createQuery(AbstractSharedSessionContract.java:142)
+        at com.poplavok.DataModelTest.testCurrencyAndTicker(DataModelTest.java:61)
+
+        Caused by:
+        org.hibernate.query.sqm.UnknownEntityException: Could not resolve root entity 'Ticker'
+            at app//org.hibernate.query.hql.internal.SemanticQueryBuilder.resolveRootEntity(SemanticQueryBuilder.java:2073)
+            at app//org.hibernate.query.hql.internal.SemanticQueryBuilder.visitRootEntity(SemanticQueryBuilder.java:2003)
+            at app//org.hibernate.query.hql.internal.SemanticQueryBuilder.visitRootEntity(SemanticQueryBuilder.java:247)
+            at app//org.hibernate.grammars.hql.HqlParser$RootEntityContext.accept(HqlParser.java:2820)
+            at app//org.hibernate.query.hql.internal.SemanticQueryBuilder.visitEntityWithJoins(SemanticQueryBuilder.java:1973)
+            at app//org.hibernate.query.hql.internal.SemanticQueryBuilder.visitFromClause(SemanticQueryBuilder.java:1960)
+            at app//org.hibernate.query.hql.internal.SemanticQueryBuilder.visitQuery(SemanticQueryBuilder.java:1152)
+            at app//org.hibernate.query.hql.internal.SemanticQueryBuilder.visitQuerySpecExpression(SemanticQueryBuilder.java:956)
+            at app//org.hibernate.query.hql.internal.SemanticQueryBuilder.visitQuerySpecExpression(SemanticQueryBuilder.java:247)
+            at app//org.hibernate.grammars.hql.HqlParser$QuerySpecExpressionContext.accept(HqlParser.java:2113)
+            at app//org.hibernate.query.hql.internal.SemanticQueryBuilder.visitQueryExpression(SemanticQueryBuilder.java:985)
+            at app//org.hibernate.query.hql.internal.SemanticQueryBuilder.visitQueryExpression(SemanticQueryBuilder.java:247)
+            at app//org.hibernate.grammars.hql.HqlParser$QueryExpressionContext.accept(HqlParser.java:2003)
+            at app//org.hibernate.query.hql.internal.SemanticQueryBuilder.visitSelectStatement(SemanticQueryBuilder.java:472)
+            at app//org.hibernate.query.hql.internal.SemanticQueryBuilder.visitStatement(SemanticQueryBuilder.java:431)
+            at app//org.hibernate.query.hql.internal.SemanticQueryBuilder.buildSemanticModel(SemanticQueryBuilder.java:292)
+            at app//org.hibernate.query.hql.internal.StandardHqlTranslator.translate(StandardHqlTranslator.java:64)
+            at app//org.hibernate.query.internal.QueryInterpretationCacheStandardImpl.createHqlInterpretation(QueryInterpretationCacheStandardImpl.java:165)
+            at app//org.hibernate.query.internal.QueryInterpretationCacheStandardImpl.resolveHqlInterpretation(QueryInterpretationCacheStandardImpl.java:147)
+            at app//org.hibernate.query.spi.QueryEngine.interpretHql(QueryEngine.java:61)
+            at app//org.hibernate.internal.AbstractSharedSessionContract.interpretHql(AbstractSharedSessionContract.java:951)
+            at app//org.hibernate.internal.AbstractSharedSessionContract.createQuery(AbstractSharedSessionContract.java:1002)
+            ... 3 more
+
+5 tests completed, 1 failed
+Finished generating test XML results (0.001 secs) into: /home/vh4kseqatgvr/project/Poplavok/PoplavokData/build/test-results/test
+Generating HTML test report...
+Finished generating test html results (0.003 secs) into: /home/vh4kseqatgvr/project/Poplavok/PoplavokData/build/reports/tests/test
+
+[Incubating] Problems report is available at: file:///home/vh4kseqatgvr/project/Poplavok/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':PoplavokData:test'.
+> There were failing tests. See the report at: file:///home/vh4kseqatgvr/project/Poplavok/PoplavokData/build/reports/tests/test/index.html
+
+* Try:
+> Run with --scan to get full insights.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.4/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 5s
+5 actionable tasks: 1 executed, 4 up-to-date

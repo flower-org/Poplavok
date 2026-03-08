@@ -23,8 +23,17 @@ public class Currency {
     private Long id;
 
     @Column(nullable = false, unique = true, length = 20)
+    private String currency;
+
+    @Column
     @Nullable
     private String name;
+
+    @Column
+    @Nullable
+    private String fullName;
+
+
 
     @OneToMany(mappedBy = "currency")
     private List<Account> accounts = new ArrayList<>();
@@ -33,22 +42,41 @@ public class Currency {
     private List<Loan> loans = new ArrayList<>();
 
     public Currency() {
+        this.currency = "";
     }
 
-    public Currency(String name) {
-        this.name = name;
+    public Currency(String currency) {
+        this.currency = currency;
     }
 
     public Long getId() {
         return checkNotNull(id);
     }
 
-    public String getName() {
-        return checkNotNull(name);
+    public String getCurrency() {
+        return checkNotNull(currency);
     }
 
-    public void setName(String name) {
+    public void setCurrency(String currency) {
+        this.currency = currency;
+    }
+
+    @Nullable
+    public String getName() {
+        return name;
+    }
+
+    public void setName(@Nullable String name) {
         this.name = name;
+    }
+
+    @Nullable
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(@Nullable String fullName) {
+        this.fullName = fullName;
     }
 
     public List<Account> getAccounts() {
@@ -59,4 +87,3 @@ public class Currency {
         return loans;
     }
 }
-

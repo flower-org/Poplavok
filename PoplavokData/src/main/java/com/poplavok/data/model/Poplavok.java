@@ -33,7 +33,7 @@ public class Poplavok {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ticker_id", nullable = false)
     @Nullable
-    private Ticker ticker;
+    private MarketTicker marketTicker;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "level_strategy", nullable = false, length = 30)
@@ -72,9 +72,9 @@ public class Poplavok {
     protected Poplavok() {
     }
 
-    public Poplavok(Ticker ticker, LevelStrategy levelStrategy, String strategyParameters,
+    public Poplavok(MarketTicker marketTicker, LevelStrategy levelStrategy, String strategyParameters,
                     BigDecimal entryPrice, LocalDateTime creationDate) {
-        this.ticker = ticker;
+        this.marketTicker = marketTicker;
         this.levelStrategy = levelStrategy;
         this.strategyParameters = strategyParameters;
         this.entryPrice = entryPrice;
@@ -86,12 +86,12 @@ public class Poplavok {
         return checkNotNull(id);
     }
 
-    public Ticker getTicker() {
-        return checkNotNull(ticker);
+    public MarketTicker getTicker() {
+        return checkNotNull(marketTicker);
     }
 
-    public void setTicker(Ticker ticker) {
-        this.ticker = ticker;
+    public void setTicker(MarketTicker marketTicker) {
+        this.marketTicker = marketTicker;
     }
 
     public LevelStrategy getLevelStrategy() {

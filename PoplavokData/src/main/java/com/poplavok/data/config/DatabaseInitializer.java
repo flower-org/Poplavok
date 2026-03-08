@@ -1,5 +1,6 @@
 package com.poplavok.data.config;
 
+import com.poplavok.data.utils.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
