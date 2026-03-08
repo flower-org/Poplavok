@@ -33,22 +33,22 @@ class CurrencyDAOTest {
     @AfterEach
     void tearDown() {
         if (sessionFactory != null) {
-            // We don't close sessionFactory here because it is a static singleton in HibernateUtil
-            // and might be reused or closed by the test framework if needed.
-            // But DataModelTest closes it in tearDown?
-            // Let's check DataModelTest again.
-        }
-        try (Session session = sessionFactory.openSession()) {
-            Transaction tx = session.beginTransaction();
-            session.createMutationQuery("delete from Currency").executeUpdate();
-            tx.commit();
+            try (Session session = sessionFactory.openSession()) {
+                Transaction tx = session.beginTransaction();
+                session.createMutationQuery("delete from Currency").executeUpdate();
+                tx.commit();
+            }
         }
     }
 
     @Test
     void testSave() {
         Currency currency = new Currency("BTC");
-        CurrencyDAO.save(sessionFactory, currency);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            CurrencyDAO.save(session, currency);
+            tx.commit();
+        }
 
         assertNotNull(currency.getId());
 
@@ -62,10 +62,18 @@ class CurrencyDAOTest {
     @Test
     void testUpdate() {
         Currency currency = new Currency("ETH");
-        CurrencyDAO.save(sessionFactory, currency);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            CurrencyDAO.save(session, currency);
+            tx.commit();
+        }
 
         currency.setCurrency("ETH-UPDATED");
-        CurrencyDAO.update(sessionFactory, currency);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            CurrencyDAO.update(session, currency);
+            tx.commit();
+        }
 
         try (Session session = sessionFactory.openSession()) {
              Currency found = session.find(Currency.class, currency.getId());
@@ -76,10 +84,19 @@ class CurrencyDAOTest {
     @Test
     void testDelete() {
         Currency currency = new Currency("XRP");
-        CurrencyDAO.save(sessionFactory, currency);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            CurrencyDAO.save(session, currency);
+            tx.commit();
+        }
         Long id = currency.getId();
 
-        CurrencyDAO.delete(sessionFactory, currency);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            Currency managedCurrency = session.find(Currency.class, id);
+            CurrencyDAO.delete(session, managedCurrency);
+            tx.commit();
+        }
 
         try (Session session = sessionFactory.openSession()) {
              Currency found = session.find(Currency.class, id);
@@ -90,43 +107,96 @@ class CurrencyDAOTest {
     @Test
     void testFindById() {
         Currency currency = new Currency("LTC");
-        CurrencyDAO.save(sessionFactory, currency);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            CurrencyDAO.save(session, currency);
+            tx.commit();
+        }
 
-        Optional<Currency> found = CurrencyDAO.findById(sessionFactory, currency.getId());
-        assertTrue(found.isPresent());
-        assertEquals("LTC", found.get().getCurrency());
+        try (Session session = sessionFactory.openSession()) {
+            Optional<Currency> found = CurrencyDAO.findById(session, currency.getId());
+            assertTrue(found.isPresent());
+            assertEquals("LTC", found.get().getCurrency());
+        }
 
-        Optional<Currency> notFound = CurrencyDAO.findById(sessionFactory, 999L);
-        assertFalse(notFound.isPresent());
+        try (Session session = sessionFactory.openSession()) {
+            Optional<Currency> notFound = CurrencyDAO.findById(session, 999L);
+            assertFalse(notFound.isPresent());
+        }
     }
 
     @Test
     void testFindByName() {
         Currency currency = new Currency("DOGE");
         currency.setName("Dogecoin");
-        CurrencyDAO.save(sessionFactory, currency);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            CurrencyDAO.save(session, currency);
+            tx.commit();
+        }
 
-        Optional<Currency> found = CurrencyDAO.findByName(sessionFactory, "Dogecoin");
-        assertTrue(found.isPresent());
-        assertEquals(currency.getId(), found.get().getId());
+        try (Session session = sessionFactory.openSession()) {
+            Optional<Currency> found = CurrencyDAO.findByName(session, "Dogecoin");
+            assertTrue(found.isPresent());
+            assertEquals(currency.getId(), found.get().getId());
+        }
 
-        Optional<Currency> notFound = CurrencyDAO.findByName(sessionFactory, "NON_EXISTENT");
-        assertFalse(notFound.isPresent());
+        try (Session session = sessionFactory.openSession()) {
+            Optional<Currency> notFound = CurrencyDAO.findByName(session, "NON_EXISTENT");
+            assertFalse(notFound.isPresent());
+        }
     }
 
     @Test
     void testFindAll() {
-        CurrencyDAO.save(sessionFactory, new Currency("C1"));
-        CurrencyDAO.save(sessionFactory, new Currency("C2"));
+        Currency c1 = new Currency("C1");
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            CurrencyDAO.save(session, c1);
+            tx.commit();
+        }
+        Currency c2 = new Currency("C2");
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            CurrencyDAO.save(session, c2);
+            tx.commit();
+        }
 
-        List<Currency> all = CurrencyDAO.findAll(sessionFactory);
-        assertEquals(2, all.size());
+        try (Session session = sessionFactory.openSession()) {
+            List<Currency> all = CurrencyDAO.findAll(session);
+            assertEquals(2, all.size());
+        }
+    }
+
+    @Test
+    void testNewFieldsPersistence() {
+        Currency currency = new Currency("BTC_TEST");
+        currency.setFullName("Bitcoin Test");
+        currency.setPrecision(8);
+        currency.setWithdrawalMinSize("0.001");
+        currency.setWithdrawalMinFee("0.0005");
+        currency.setIsWithdrawEnabled(true);
+        currency.setIsDepositEnabled(true);
+        currency.setIsMarginEnabled(false);
+        currency.setIsDebitEnabled(false);
+
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            CurrencyDAO.save(session, currency);
+            tx.commit();
+        }
+
+        try (Session session = sessionFactory.openSession()) {
+            Currency found = session.find(Currency.class, currency.getId());
+            assertNotNull(found);
+            assertEquals("Bitcoin Test", found.getFullName());
+            assertEquals(8, found.getPrecision());
+            assertEquals("0.001", found.getWithdrawalMinSize());
+            assertEquals("0.0005", found.getWithdrawalMinFee());
+            assertEquals(Boolean.TRUE, found.getIsWithdrawEnabled());
+            assertEquals(Boolean.TRUE, found.getIsDepositEnabled());
+            assertEquals(Boolean.FALSE, found.getIsMarginEnabled());
+            assertEquals(Boolean.FALSE, found.getIsDebitEnabled());
+        }
     }
 }
-
-
-
-
-
-
-

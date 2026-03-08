@@ -28,7 +28,7 @@ public class KucoinTool {
 
     final static PublicAPIPack PUBLIC_API_PACK = KyKu4_XTTn.getPublicAPIPack();
 
-    /*public static void retrieveCurrencyFromExchange(ProgressCallback progressCallback) {
+    public static void retrieveCurrencyFromExchange(ProgressCallback progressCallback) {
         double maxProgress = 1.0;
         try {
             retrieveCurrencyFromExchange(progressCallback, maxProgress);
@@ -36,7 +36,7 @@ public class KucoinTool {
             LOGGER.error("Retrieval Error", e);
             progressCallback.updateProgress(String.format("Retrieval Error: %s", e), maxProgress, true);
         }
-    }*/
+    }
 
     private static void retrieveCurrencyFromExchange(ProgressCallback progressCallback, double maxProgress) throws ExecutionException, InterruptedException, IOException {
         double progress = 0.01*maxProgress;
@@ -61,10 +61,10 @@ public class KucoinTool {
             Currency curr = currenciesMap.get(currencyResponse.currency());
             if (curr == null) {
                 //Insert
-                DBUtil.connectCommitAndClose(conn -> CurrencyDAO.save(conn, Currency.fromResponse(currencyResponse)));
+                DBUtil.connectCommitAndClose(conn -> CurrencyDAO.save(conn, EntityConverter.fromResponse(currencyResponse)));
             } else {
                 //Update
-                Currency retrievedCurrency = Currency.fromResponse(curr.currencyId(), currencyResponse);
+                Currency retrievedCurrency = EntityConverter.fromResponse(curr.getId(), currencyResponse);
                 if (!retrievedCurrency.equals(curr)) {
                     DBUtil.connectCommitAndClose(conn -> CurrencyDAO.update(conn, retrievedCurrency));
                 }
@@ -123,10 +123,10 @@ public class KucoinTool {
                 MarketTicker ticker = marketTickersBySymbol.get(marketTickerResponse.symbol());
                 if (ticker == null) {
                     //insert
-                    DBUtil.connectCommitAndClose(conn -> MarketTickerDAO.save(conn, MarketTicker.fromResponse(baseCurrency.currencyId(), quoteCurrency.currencyId(), marketTickerResponse)));
+                    DBUtil.connectCommitAndClose(conn -> MarketTickerDAO.save(conn, EntityConverter.fromResponse(baseCurrency.getId(), quoteCurrency.getId(), marketTickerResponse)));
                 } else {
                     //update
-                    DBUtil.connectCommitAndClose(conn -> MarketTickerDAO.update(conn, MarketTicker.fromResponse(ticker.marketTickerId(), baseCurrency.currencyId(), quoteCurrency.currencyId(), marketTickerResponse)));
+                    DBUtil.connectCommitAndClose(conn -> MarketTickerDAO.update(conn, EntityConverter.fromResponse(ticker.getId(), baseCurrency.getId(), quoteCurrency.getId(), marketTickerResponse)));
                 }
             } else {
                 LOGGER.warn("Retrieving MarketTickers from Exchange: Can't process MarketTicker: symbol {}, BaseCurrency {} - {}, QuoteCurrency {} - {}", marketTickerResponse.symbol(), symbolParts[0], baseCurrency != null ? "Found" : "Not found", symbolParts[1], quoteCurrency != null ? "Found" : "Not found");
@@ -335,7 +335,7 @@ public class KucoinTool {
         }
 
         progressCallback.updateProgress("Isolated Margin Accounts retrieval Done", maxProgress, true);
-    }
+    }*/
 
     // ------------------------------------------------------------
 
@@ -358,7 +358,7 @@ public class KucoinTool {
         //Reload currencies
         progress += 0.1;
         progressCallback.updateProgress("Re-Loading currencies from Exchange", progress, false);
-        List<Currency> currenciesList = DBTool.connectGetResultAndClose(CurrencyDAO::getAll);
+        List<Currency> currenciesList = DBUtil.connectGetResultAndClose(CurrencyDAO::findAll);
 
         //currencyId  chainId
         //   ^          ^
@@ -373,13 +373,14 @@ public class KucoinTool {
 
             progress += progressPerCurrencyStep;
             progressCallback.updateProgress(
-                    String.format("(%d/%d) Updating %s", i + 1, currenciesList.size(), currency.currency()), progress, false);
-            retrieveCurrencyDetailsForCurrency(currency);
+                    String.format("(%d/%d) Updating %s", i + 1, currenciesList.size(), currency.getCurrency()), progress, false);
+
+            // retrieveCurrencyDetailsForCurrency(currency);
         }
 
         progressCallback.updateProgress("Currency details retrieval Done", maxProgress, true);
     }
-
+    /*
     private static void retrieveCurrencyDetailsForCurrency(Currency currency) throws ExecutionException, InterruptedException, IOException {
         retrieveCurrencyDetailsForCurrencyInternal(null, currency);
     }

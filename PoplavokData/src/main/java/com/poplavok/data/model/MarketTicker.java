@@ -78,6 +78,10 @@ public class MarketTicker {
         return checkNotNull(id);
     }
 
+    public void setId(@Nullable Long id) {
+        this.id = id;
+    }
+
     public Currency getBase() {
         return checkNotNull(base);
     }

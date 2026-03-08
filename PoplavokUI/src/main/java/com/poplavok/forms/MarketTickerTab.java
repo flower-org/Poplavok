@@ -8,6 +8,7 @@ import com.poplavok.data.model.MarketTicker;
 import com.poplavok.data.utils.DBUtil;
 import com.poplavok.data.dao.MarketTickerDAO;
 
+import com.poplavok.kucoin.KucoinTool;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;

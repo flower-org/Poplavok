@@ -23,7 +23,7 @@ import java.util.Map;
  */
 public interface CurrencyAPIRetrofit {
 
-    @GET(value = "users/sign_in")
+    @GET(value = "/api/ua/v1/asset/currencies")
     Call<KucoinResponse<List<CurrencyResponse>>> getCurrencies();
 
     @GET(value = "api/v1/currencies/{currency}")

@@ -7,8 +7,8 @@ import com.flower.fxutils.Refreshable;
 import com.poplavok.data.model.Currency;
 import com.poplavok.data.utils.DBUtil;
 import com.poplavok.data.dao.CurrencyDAO;
-import com.poplavok.data.utils.HibernateUtil;
 
+import com.poplavok.kucoin.KucoinTool;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -64,7 +64,7 @@ public class CurrencyTab extends AnchorPane implements Refreshable {
     @Override
     public void refreshContent() {
         try {
-            ObservableList<Currency> masterCurrencies = FXCollections.observableList(DBUtil.connectGetResultAndClose(sf -> CurrencyDAO.findAll(sf)));
+            ObservableList<Currency> masterCurrencies = FXCollections.observableList(DBUtil.connectGetResultAndClose(CurrencyDAO::findAll));
             currencies = new FilteredList<>(masterCurrencies);
             SortedList<Currency> sortableCurrencies = new SortedList<>(currencies);
 

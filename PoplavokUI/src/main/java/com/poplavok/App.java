@@ -1,5 +1,7 @@
 package com.poplavok;
 
+import com.poplavok.data.utils.DBUtil;
+import com.poplavok.data.utils.HibernateUtil;
 import com.poplavok.forms.MainForm;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -32,6 +34,8 @@ public class App extends Application {
 
             //Close all threads when we close JavaFX windows.
             mainStage.setOnHidden(event -> {
+                HibernateUtil.shutdown();
+                DBUtil.shutdown();
                 Platform.exit();
             });
 

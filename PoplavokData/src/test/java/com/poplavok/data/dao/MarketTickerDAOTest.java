@@ -55,7 +55,11 @@ class MarketTickerDAOTest {
     @Test
     void testSave() {
         MarketTicker ticker = new MarketTicker(baseCurrency, quoteCurrency, "BTCUSD");
-        MarketTickerDAO.save(sessionFactory, ticker);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            MarketTickerDAO.save(session, ticker);
+            tx.commit();
+        }
 
         assertNotNull(ticker.getId());
 
@@ -71,10 +75,18 @@ class MarketTickerDAOTest {
     @Test
     void testUpdate() {
         MarketTicker ticker = new MarketTicker(baseCurrency, quoteCurrency, "ETHUSD");
-        MarketTickerDAO.save(sessionFactory, ticker);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            MarketTickerDAO.save(session, ticker);
+            tx.commit();
+        }
 
         ticker.setSymbol("ETH-USD-UPDATED");
-        MarketTickerDAO.update(sessionFactory, ticker);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            MarketTickerDAO.update(session, ticker);
+            tx.commit();
+        }
 
         try (Session session = sessionFactory.openSession()) {
              MarketTicker found = session.find(MarketTicker.class, ticker.getId());
@@ -85,10 +97,19 @@ class MarketTickerDAOTest {
     @Test
     void testDelete() {
         MarketTicker ticker = new MarketTicker(baseCurrency, quoteCurrency, "XRPUSD");
-        MarketTickerDAO.save(sessionFactory, ticker);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            MarketTickerDAO.save(session, ticker);
+            tx.commit();
+        }
         Long id = ticker.getId();
 
-        MarketTickerDAO.delete(sessionFactory, ticker);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            MarketTicker managedTicker = session.find(MarketTicker.class, id);
+            MarketTickerDAO.delete(session, managedTicker);
+            tx.commit();
+        }
 
         try (Session session = sessionFactory.openSession()) {
              MarketTicker found = session.find(MarketTicker.class, id);
@@ -99,21 +120,33 @@ class MarketTickerDAOTest {
     @Test
     void testFindById() {
         MarketTicker ticker = new MarketTicker(baseCurrency, quoteCurrency, "LTCUSD");
-        MarketTickerDAO.save(sessionFactory, ticker);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            MarketTickerDAO.save(session, ticker);
+            tx.commit();
+        }
 
-        Optional<MarketTicker> found = MarketTickerDAO.findById(sessionFactory, ticker.getId());
-        assertTrue(found.isPresent());
-        assertEquals("LTCUSD", found.get().getSymbol());
+        try (Session session = sessionFactory.openSession()) {
+            Optional<MarketTicker> found = MarketTickerDAO.findById(session, ticker.getId());
+            assertTrue(found.isPresent());
+            assertEquals("LTCUSD", found.get().getSymbol());
+        }
     }
 
     @Test
     void testFindBySymbol() {
         MarketTicker ticker = new MarketTicker(baseCurrency, quoteCurrency, "DOGEUSD");
-        MarketTickerDAO.save(sessionFactory, ticker);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            MarketTickerDAO.save(session, ticker);
+            tx.commit();
+        }
 
-        Optional<MarketTicker> found = MarketTickerDAO.findBySymbol(sessionFactory, "DOGEUSD");
-        assertTrue(found.isPresent());
-        assertEquals(ticker.getId(), found.get().getId());
+        try (Session session = sessionFactory.openSession()) {
+            Optional<MarketTicker> found = MarketTickerDAO.findBySymbol(session, "DOGEUSD");
+            assertTrue(found.isPresent());
+            assertEquals(ticker.getId(), found.get().getId());
+        }
     }
 
     @Test
@@ -125,7 +158,11 @@ class MarketTickerDAOTest {
         ticker.setTakerCoefficient("1.1");
         ticker.setMakerCoefficient("1.2");
 
-        MarketTickerDAO.save(sessionFactory, ticker);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            MarketTickerDAO.save(session, ticker);
+            tx.commit();
+        }
 
         try (Session session = sessionFactory.openSession()) {
             MarketTicker found = session.find(MarketTicker.class, ticker.getId());
@@ -140,13 +177,23 @@ class MarketTickerDAOTest {
     @Test
     void testFindAll() {
         MarketTicker ticker1 = new MarketTicker(baseCurrency, quoteCurrency, "T1");
-        MarketTickerDAO.save(sessionFactory, ticker1);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            MarketTickerDAO.save(session, ticker1);
+            tx.commit();
+        }
 
         MarketTicker ticker2 = new MarketTicker(baseCurrency, quoteCurrency, "T2");
-        MarketTickerDAO.save(sessionFactory, ticker2);
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            MarketTickerDAO.save(session, ticker2);
+            tx.commit();
+        }
 
-        List<MarketTicker> all = MarketTickerDAO.findAll(sessionFactory);
-        assertEquals(2, all.size());
+        try (Session session = sessionFactory.openSession()) {
+            List<MarketTicker> all = MarketTickerDAO.findAll(session);
+            assertEquals(2, all.size());
+        }
     }
 }
 

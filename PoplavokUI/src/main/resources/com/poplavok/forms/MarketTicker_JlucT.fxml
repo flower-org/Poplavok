@@ -25,7 +25,7 @@
                 <columns>
                     <TableColumn text="MarketTickerId">
                         <cellValueFactory>
-                            <PropertyValueFactory property="marketTickerId" />
+                            <PropertyValueFactory property="id" />
                         </cellValueFactory>
                     </TableColumn>
                     <TableColumn text="Symbol">
@@ -56,16 +56,6 @@
                     <TableColumn text="MakerCoefficient">
                         <cellValueFactory>
                             <PropertyValueFactory property="makerCoefficient" />
-                        </cellValueFactory>
-                    </TableColumn>
-                    <TableColumn text="BaseCurrencyId">
-                        <cellValueFactory>
-                            <PropertyValueFactory property="baseCurrencyId" />
-                        </cellValueFactory>
-                    </TableColumn>
-                    <TableColumn text="QuoteCurrencyId">
-                        <cellValueFactory>
-                            <PropertyValueFactory property="quoteCurrencyId" />
                         </cellValueFactory>
                     </TableColumn>
                 </columns>

@@ -1,5 +1,6 @@
 package com.KyKu4.MogeJlb.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
@@ -11,6 +12,7 @@ import java.math.BigDecimal;
  * Created by chenshiwei on 2019/2/22.
  */
 @Value.Immutable
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonSerialize(as = ImmutableMarketTickerResponse.class)
 @JsonDeserialize(as = ImmutableMarketTickerResponse.class)
 public interface MarketTickerResponse {
@@ -62,5 +64,11 @@ public interface MarketTickerResponse {
 
     @Nullable
     BigDecimal makerCoefficient();
+
+    @Nullable
+    BigDecimal bestBidSize();
+
+    @Nullable
+    BigDecimal bestAskSize();
 
 }

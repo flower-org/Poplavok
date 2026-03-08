@@ -33,7 +33,33 @@ public class Currency {
     @Nullable
     private String fullName;
 
+    @Column(name = "`precision`")
+    @Nullable
+    private Integer precision;
 
+    @Column
+    @Nullable
+    private String withdrawalMinSize;
+
+    @Column
+    @Nullable
+    private String withdrawalMinFee;
+
+    @Column
+    @Nullable
+    private Boolean isWithdrawEnabled;
+
+    @Column
+    @Nullable
+    private Boolean isDepositEnabled;
+
+    @Column
+    @Nullable
+    private Boolean isMarginEnabled;
+
+    @Column
+    @Nullable
+    private Boolean isDebitEnabled;
 
     @OneToMany(mappedBy = "currency")
     private List<Account> accounts = new ArrayList<>();
@@ -51,6 +77,11 @@ public class Currency {
 
     public Long getId() {
         return checkNotNull(id);
+    }
+
+    @Nullable
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getCurrency() {
@@ -77,6 +108,69 @@ public class Currency {
 
     public void setFullName(@Nullable String fullName) {
         this.fullName = fullName;
+    }
+
+    @Nullable
+    public Integer getPrecision() {
+        return precision;
+    }
+
+    public void setPrecision(@Nullable Integer precision) {
+        this.precision = precision;
+    }
+
+    @Nullable
+    public String getWithdrawalMinSize() {
+        return withdrawalMinSize;
+    }
+
+    public void setWithdrawalMinSize(@Nullable String withdrawalMinSize) {
+        this.withdrawalMinSize = withdrawalMinSize;
+    }
+
+    @Nullable
+    public String getWithdrawalMinFee() {
+        return withdrawalMinFee;
+    }
+
+    public void setWithdrawalMinFee(@Nullable String withdrawalMinFee) {
+        this.withdrawalMinFee = withdrawalMinFee;
+    }
+
+    @Nullable
+    public Boolean getIsWithdrawEnabled() {
+        return isWithdrawEnabled;
+    }
+
+    public void setIsWithdrawEnabled(@Nullable Boolean isWithdrawEnabled) {
+        this.isWithdrawEnabled = isWithdrawEnabled;
+    }
+
+    @Nullable
+    public Boolean getIsDepositEnabled() {
+        return isDepositEnabled;
+    }
+
+    public void setIsDepositEnabled(@Nullable Boolean isDepositEnabled) {
+        this.isDepositEnabled = isDepositEnabled;
+    }
+
+    @Nullable
+    public Boolean getIsMarginEnabled() {
+        return isMarginEnabled;
+    }
+
+    public void setIsMarginEnabled(@Nullable Boolean isMarginEnabled) {
+        this.isMarginEnabled = isMarginEnabled;
+    }
+
+    @Nullable
+    public Boolean getIsDebitEnabled() {
+        return isDebitEnabled;
+    }
+
+    public void setIsDebitEnabled(@Nullable Boolean isDebitEnabled) {
+        this.isDebitEnabled = isDebitEnabled;
     }
 
     public List<Account> getAccounts() {
