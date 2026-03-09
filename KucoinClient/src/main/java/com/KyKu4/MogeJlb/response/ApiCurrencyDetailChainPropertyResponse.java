@@ -18,15 +18,21 @@ public interface ApiCurrencyDetailChainPropertyResponse {
     String chainName();
 
     @Nullable
-    String chain();
+    String chainId();
 
     /** Minimum withdrawal amount */
     @Nullable
-    BigDecimal withdrawalMinSize();
+    BigDecimal minWithdrawSize();
+
+    @Nullable
+    BigDecimal minDepositSize();
 
     /** Minimum fees charged for withdrawal */
     @Nullable
-    BigDecimal withdrawalMinFee();
+    BigDecimal minWithdrawFee();
+
+    @Nullable
+    BigDecimal withdrawFeeRate();
 
     /** Support withdrawal or not */
     @Nullable
@@ -41,4 +47,20 @@ public interface ApiCurrencyDetailChainPropertyResponse {
 
     @Nullable
     String contractAddress();
+
+    @Nullable
+    Integer preConfirms();
+
+
+    @Nullable
+    Integer withdrawPrecision();
+
+    @Nullable
+    BigDecimal maxWithdrawSize();
+
+    @Nullable
+    BigDecimal maxDepositSize();
+
+    @Nullable
+    Boolean needTag();
 }

@@ -16,6 +16,8 @@
 
         <mapping class="com.poplavok.data.model.Currency"/>
         <mapping class="com.poplavok.data.model.CurrencyExtendedInfo"/>
+        <mapping class="com.poplavok.data.model.CurrencyChain"/>
+        <mapping class="com.poplavok.data.model.Chain"/>
         <mapping class="com.poplavok.data.model.MarketTicker"/>
         <mapping class="com.poplavok.data.model.Rate"/>
         <mapping class="com.poplavok.data.model.Account"/>

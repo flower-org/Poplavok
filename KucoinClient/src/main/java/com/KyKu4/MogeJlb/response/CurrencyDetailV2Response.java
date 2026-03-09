@@ -13,17 +13,9 @@ import java.util.List;
 @JsonSerialize(as = ImmutableCurrencyDetailV2Response.class)
 @JsonDeserialize(as = ImmutableCurrencyDetailV2Response.class)
 public interface CurrencyDetailV2Response {
-    /** Support margin or not */
-    @Nullable
-    Boolean isMarginEnabled();
-
-    /** Support debit or not */
-    @Nullable
-    Boolean isDebitEnabled();
-
     /** chain of currency */
     @Nullable
-    List<ApiCurrencyDetailChainPropertyResponse> chains();
+    List<ApiCurrencyDetailChainPropertyResponse> list();
 
     /** A unique currency code that will never change */
     @Nullable

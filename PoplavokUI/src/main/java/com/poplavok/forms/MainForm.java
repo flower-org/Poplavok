@@ -1,6 +1,6 @@
 package com.poplavok.forms;
 
-import com.poplavok.forms.TestForm;
+import com.poplavok.data.model.Currency;
 import com.google.common.base.Preconditions;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -56,8 +56,16 @@ public class MainForm {
     }
 
     public void openCurrenciesTab() {
-        CurrencyTab currencyTab = new CurrencyTab(/*this*/);
+        CurrencyTab currencyTab = new CurrencyTab(this);
         final Tab tab = new Tab("Currencies", currencyTab);
+        tab.setClosable(true);
+
+        addTab(tab);
+    }
+
+    public void createCurrencyDetailTab(Currency currency) {
+        Currency_geTaJlu currency_geTaJlu = new Currency_geTaJlu(currency.getId());
+        final Tab tab = new Tab(currency.getCurrency(), currency_geTaJlu);
         tab.setClosable(true);
 
         addTab(tab);

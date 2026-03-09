@@ -112,7 +112,7 @@ public class KyKu4_3anpocHuK {
     /** Currency Detail
      * @return*/
     public static CurrencyExtendedInfoResponse getCurrencyExtendedInfo(KucoinAPIRetrofit kucoinApi, String currency) throws IOException {
-        return executeSync(kucoinApi.getExtendedInfo(currency));
+        return executeSync(kucoinApi.getExtendedInfo(currency, currency));
     }
 
     /** Subaccount balances */

@@ -16,10 +16,7 @@ import okhttp3.Request;
 import okhttp3.ResponseBody;
 import okhttp3.WebSocket;
 import okhttp3.logging.HttpLoggingInterceptor;
-import retrofit2.Call;
-import retrofit2.Converter;
-import retrofit2.Response;
-import retrofit2.Retrofit;
+import retrofit2.*;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import javax.annotation.Nullable;
@@ -42,7 +39,7 @@ public class KyKu4_XTTn {
     }
 
     public static final Integer API_KEY_VERSION = 2;
-    public static final String BASE_URL = "https://openapi-v2.kucoin.com/";
+    public static final String BASE_URL = "https://api.kucoin.com/";
     public static final String BASE_KUCOIN_URL = "https://www.kucoin.com/";
     public static final Converter.Factory JACKSON_CONVERTER_FACTORY = JacksonConverterFactory.create(OBJECT_MAPPER);
 
@@ -116,7 +113,7 @@ public class KyKu4_XTTn {
     }
 
     public static KucoinResponse<?> getErrorResponse(Response<?> response) throws IOException {
-        return (KucoinResponse) ERROR_BODY_CONVERTER.convert(response.errorBody());
+        throw new KucoinApiException(Integer.toString(response.code()), response.message());
     }
 
     public static WebsocketTokenResponse getPublicToken() throws IOException {

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
+import java.math.BigDecimal;
 import java.util.List;
 
 @Value.Immutable
@@ -16,29 +17,93 @@ public interface CurrencyExtendedInfoResponse {
         @Nullable
         String code();
         @Nullable
-        String symbol();
+        String coinName();
         @Nullable
-        String name();
+        String logo();
         @Nullable
-        String market_cap();
+        Integer rank();
         @Nullable
-        String circulating_supply();
+        BigDecimal ath();
         @Nullable
-        String total_supply();
+        BigDecimal atl();
         @Nullable
-        String max_supply();
+        BigDecimal marketCap();
         @Nullable
-        String website();
+        BigDecimal totalMarketCap();
         @Nullable
-        String whitepaper();
+        BigDecimal marketCapChange();
         @Nullable
-        String issue_date();
+        BigDecimal maxSupply();
         @Nullable
-        String issue_price();
+        BigDecimal fullyDilutedValuation();
         @Nullable
-        Object explorer();
+        BigDecimal marketShare();
         @Nullable
-        String roi();
+        BigDecimal volumeDivideMarketCap();
         @Nullable
-        String introduce_text();
+        BigDecimal circulatingSupply();
+        @Nullable
+        String dateAdded();
+        @Nullable
+        BigDecimal addOptionalRatio();
+        @Nullable
+        BigDecimal circulateRatio();
+        @Nullable
+        BigDecimal currentPrice();
+        @Nullable
+        BigDecimal volume24h();
+        @Nullable
+        String rating();
+        @Nullable
+        Object tags();
+        @Nullable
+        List<String> website();
+        @Nullable
+        List<String> doc();
+        @Nullable
+        List<String> explorer();
+        @Nullable
+        Object contract();
+        @Nullable
+        Object auditAgency();
+        @Nullable
+        List<String> codeAndCommunity();
+        @Nullable
+        Object investor();
+        @Nullable
+        List<InfoRecord> currencyIntroduction();
+        @Nullable
+        Object priceLiveData();
+        @Nullable
+        List<QuestionAnswer> faqs();
+        @Nullable
+        Object oneWordIntroduction();
+        @Nullable
+        Object currencyTagList();
+        @Nullable
+        Object currencyReferenceRecommend();
+
+        @Nullable
+        String dataSource();
+        @Nullable
+        Object activities();
+        @Nullable
+        Object topics();
+        @Nullable
+        Object arriveCountdown();
+        @Nullable
+        Object riskWarning();
+        @Nullable
+        String jumpSuffix();
+        @Nullable
+        String siteType();
+        @Nullable
+        Object articleRecommendList();
+
+        @Nullable
+        List<InfoRecord> whitePaperList();
+        @Nullable
+        List<InfoRecord> sustainabilityReportList();
+        @Nullable
+        Object klineType();
 }

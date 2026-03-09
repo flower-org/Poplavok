@@ -46,8 +46,10 @@ public class CurrencyTab extends AnchorPane implements Refreshable {
     @Nullable
     TextField filterTextField;
 
-    public CurrencyTab(/*MainApp mainApp*/) {
-        //this.mainApp = mainApp;
+    MainForm mainForm;
+
+    public CurrencyTab(MainForm mainForm) {
+        this.mainForm = mainForm;
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("CurrencyTab.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
@@ -109,7 +111,7 @@ public class CurrencyTab extends AnchorPane implements Refreshable {
     public void showCurrencyDetails() {
         try {
             Currency currency = Preconditions.checkNotNull(currenciesTable).getSelectionModel().getSelectedItem();
-            //mainApp.createCurrencyDetailTab(currency);
+            mainForm.createCurrencyDetailTab(currency);
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error: " + e, ButtonType.OK);
             LOGGER.error("Error:", e);

@@ -1,17 +1,13 @@
 package com.poplavok.kucoin;
 
+import com.KyKu4.MogeJlb.exception.KucoinApiException;
 import com.KyKu4.MogeJlb.response.*;
-import com.KyKu4.MogeJlb.retrofit.OrderAPIRetrofit;
 import com.KyKu4.npo4ee.KyKu4_3anpocHuK;
 import com.KyKu4.npo4ee.KyKu4_XTTn;
-import com.KyKu4.npo4ee.PrivateAPIPack;
 import com.KyKu4.npo4ee.PublicAPIPack;
 import com.flower.fxutils.ProgressCallback;
-import com.google.common.base.Preconditions;
-import com.poplavok.data.dao.CurrencyDAO;
-import com.poplavok.data.dao.MarketTickerDAO;
-import com.poplavok.data.model.Currency;
-import com.poplavok.data.model.MarketTicker;
+import com.poplavok.data.dao.*;
+import com.poplavok.data.model.*;
 import com.poplavok.data.utils.DBUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +16,11 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class KucoinTool {
     final static Logger LOGGER = LoggerFactory.getLogger(KucoinTool.class);
@@ -107,7 +106,7 @@ public class KucoinTool {
         progressCallback.updateProgress("Retrieving market tickers from exchange", progress, false);
         AllTickersResponse tickers = KyKu4_3anpocHuK.getAllTickers(PUBLIC_API_PACK.symbolAPI());
 
-        int tickerSize = Preconditions.checkNotNull(tickers.ticker()).size();
+        int tickerSize = checkNotNull(tickers.ticker()).size();
         double progressPerCurrencyStep = (maxProgress - progress) / (tickerSize + 1);
         for (int i = 0; i < tickerSize; i++) {
             MarketTickerResponse marketTickerResponse = tickers.ticker().get(i);
@@ -375,12 +374,12 @@ public class KucoinTool {
             progressCallback.updateProgress(
                     String.format("(%d/%d) Updating %s", i + 1, currenciesList.size(), currency.getCurrency()), progress, false);
 
-            // retrieveCurrencyDetailsForCurrency(currency);
+            retrieveCurrencyDetailsForCurrency(currency);
         }
 
         progressCallback.updateProgress("Currency details retrieval Done", maxProgress, true);
     }
-    /*
+
     private static void retrieveCurrencyDetailsForCurrency(Currency currency) throws ExecutionException, InterruptedException, IOException {
         retrieveCurrencyDetailsForCurrencyInternal(null, currency);
     }
@@ -388,7 +387,7 @@ public class KucoinTool {
     public static void retrieveCurrencyDetailsForCurrency(ProgressCallback progressCallback, long currencyId) {
         try {
             progressCallback.updateProgress("Re-Loading currency from DB", 0.25, false);
-            Currency currency = DBTool.connectGetResultAndClose(conn -> CurrencyDAO.getById(conn, currencyId));
+            Currency currency = DBUtil.connectGetResultAndClose(conn -> CurrencyDAO.findById(conn, currencyId)).get();
 
             retrieveCurrencyDetailsForCurrencyInternal(progressCallback, currency);
         } catch(Exception e) {
@@ -397,48 +396,74 @@ public class KucoinTool {
         }
     }
 
-    private static void retrieveCurrencyDetailsForCurrencyInternal(@Nullable ProgressCallback progressCallback, Currency currency) throws ExecutionException, InterruptedException, IOException {
+    private static void retrieveCurrencyDetailsForCurrencyInternal(@Nullable ProgressCallback progressCallback, Currency currency) throws IOException {
         if (progressCallback != null) {
-            progressCallback.updateProgress("Retrieving Extended info for " + currency.currency() + " from exchange", 0.5, false);
+            progressCallback.updateProgress("Retrieving Extended info for " + currency.getCurrency() + " from exchange", 0.5, false);
         }
 
         //1. ExtendedInfo
-        CurrencyExtendedInfo currencyExtendedInfo = DBTool.connectGetResultAndClose(conn -> CurrencyExtendedInfoDAO.getById(conn, currency.currencyId()));
-        CurrencyExtendedInfoResponse currencyExtendedInfoResponse = KyKu4_3anpocHuK.getCurrencyExtendedInfo(PUBLIC_API_PACK.kucoinAPI(), currency.currency());
+        Optional<CurrencyExtendedInfo> currencyExtendedInfoOpt = DBUtil.connectGetResultAndClose(conn -> CurrencyExtendedInfoDAO.findById(conn, currency.getId()));
 
-        if (currencyExtendedInfo == null) {
+        int waitMs = 1000;
+
+        CurrencyExtendedInfoResponse currencyExtendedInfoResponseVar = null;
+        while (true) {
+            try {
+                currencyExtendedInfoResponseVar = KyKu4_3anpocHuK.getCurrencyExtendedInfo(PUBLIC_API_PACK.kucoinAPI(), currency.getCurrency());
+                break;
+            } catch (KucoinApiException e) {
+                // Too many requests, wait and retry
+                if (Integer.parseInt(e.getCode()) == 429) {
+                    try {
+                        LOGGER.info("Got 429 for currency {}, waiting for {} ms before retrying", currency.getCurrency(), waitMs);
+                        Thread.sleep(waitMs);
+                        if (waitMs < 60000) {
+                            waitMs = waitMs*2;
+                            if (waitMs > 60000) {
+                                waitMs = 60000;
+                            }
+                        }
+                    } catch (InterruptedException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                } else { throw new RuntimeException(e); }
+            }
+        }
+
+        CurrencyExtendedInfoResponse currencyExtendedInfoResponse = checkNotNull(currencyExtendedInfoResponseVar);
+        if (currencyExtendedInfoOpt.isEmpty()) {
             //insert
-            DBTool.connectCommitAndClose(conn -> CurrencyExtendedInfoDAO.insert(conn, CurrencyExtendedInfo.fromResponse(currency.currencyId(), currency.currency(), currencyExtendedInfoResponse)));
+            DBUtil.connectCommitAndClose(conn -> CurrencyExtendedInfoDAO.save(conn, EntityConverter.fromResponse(currency.getId(), currency.getCurrency(), currencyExtendedInfoResponse)));
         } else {
             //update
-            DBTool.connectCommitAndClose(conn -> CurrencyExtendedInfoDAO.update(conn, CurrencyExtendedInfo.fromResponse(currency.currencyId(), currency.currency(), currencyExtendedInfoResponse)));
+            DBUtil.connectCommitAndClose(conn -> CurrencyExtendedInfoDAO.update(conn, EntityConverter.fromResponse(currency.getId(), currency.getCurrency(), currencyExtendedInfoResponse)));
         }
 
         if (progressCallback != null) {
-            progressCallback.updateProgress("Retrieving Chains info for " + currency.currency() + " from exchange", 0.75, false);
+            progressCallback.updateProgress("Retrieving Chains info for " + currency.getCurrency() + " from exchange", 0.75, false);
         }
 
         //2. CurrencyChains
-        Map<Long, CurrencyChain> currencyChainMap = DBTool.connectGetResultAndClose(conn -> CurrencyChainDAO.getForCurrency(conn, currency.currencyId()))
+        Map<Long, CurrencyChain> currencyChainMap = DBUtil.connectGetResultAndClose(conn -> CurrencyChainDAO.getForCurrency(conn, currency.getId()))
                 .stream().collect(Collectors.toMap(CurrencyChain::chainId, c -> c));
-        CurrencyDetailV2Response currencyDetailV2Response = KyKu4_3anpocHuK.getCurrencyDetailV2(PUBLIC_API_PACK.currencyAPI(), currency.currency());
+        CurrencyDetailV2Response currencyDetailV2Response = KyKu4_3anpocHuK.getCurrencyDetailV2(PUBLIC_API_PACK.currencyAPI(), currency.getCurrency());
 
-        if (currencyDetailV2Response.chains() != null) {
-            for (ApiCurrencyDetailChainPropertyResponse chainResponse : currencyDetailV2Response.chains()) {
-                Chain chain = DBTool.connectGetResultAndClose(conn -> ChainDAO.getByChain(conn, chainResponse.chain()));
+        if (currencyDetailV2Response.list() != null) {
+            for (ApiCurrencyDetailChainPropertyResponse chainResponse : currencyDetailV2Response.list()) {
+                Chain chain = DBUtil.connectGetResultAndClose(conn -> ChainDAO.getByChain(conn, chainResponse.chainId()));
                 if (chain == null) {
-                    DBTool.connectCommitAndClose(conn -> ChainDAO.insert(conn, Chain.ofNew(chainResponse.chainName(), chainResponse.chain())));
-                    chain = DBTool.connectGetResultAndClose(conn -> ChainDAO.getByChain(conn, chainResponse.chain()));
+                    DBUtil.connectCommitAndClose(conn -> ChainDAO.save(conn, Chain.ofNew(chainResponse.chainName(), chainResponse.chainId())));
+                    chain = DBUtil.connectGetResultAndClose(conn -> ChainDAO.getByChain(conn, chainResponse.chainId()));
                 }
 
-                long chainId = chain.chainId();
-                CurrencyChain currencyChain = currencyChainMap.get(chain.chainId());
+                long chainId = checkNotNull(chain.chainId());
+                CurrencyChain currencyChain = currencyChainMap.get(chainId);
                 if (currencyChain == null) {
                     //insert
-                    DBTool.connectCommitAndClose(conn -> CurrencyChainDAO.insert(conn, CurrencyChain.fromResponse(currency.currencyId(), chainId, chainResponse)));
+                    DBUtil.connectCommitAndClose(conn -> CurrencyChainDAO.save(conn, EntityConverter.fromResponse(currency.getId(), chainId, chainResponse)));
                 } else {
                     //update
-                    DBTool.connectCommitAndClose(conn -> CurrencyChainDAO.update(conn, CurrencyChain.fromResponse(currencyChain.currencyChainId(), currency.currencyId(), chainId, chainResponse)));
+                    DBUtil.connectCommitAndClose(conn -> CurrencyChainDAO.update(conn, EntityConverter.fromResponse(currencyChain.currencyChainId(), currency.getId(), chainId, chainResponse)));
                 }
             }
         } else {
@@ -448,5 +473,5 @@ public class KucoinTool {
         if (progressCallback != null) {
             progressCallback.updateProgress("Currency details retrieval Done", 1.0, true);
         }
-    }*/
+    }
 }

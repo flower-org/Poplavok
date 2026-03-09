@@ -23,15 +23,15 @@ import java.util.Map;
  */
 public interface CurrencyAPIRetrofit {
 
-    @GET(value = "/api/ua/v1/asset/currencies")
+    @GET(value = "api/ua/v1/asset/currencies")
     Call<KucoinResponse<List<CurrencyResponse>>> getCurrencies();
 
     @GET(value = "api/v1/currencies/{currency}")
     Call<KucoinResponse<CurrencyDetailResponse>> getCurrencyDetail(@Path("currency") String currency,
                                                                    @Nullable @Query("chain") String chain);
 
-    @GET(value = "api/v2/currencies/{currency}")
-    Call<KucoinResponse<CurrencyDetailV2Response>> getCurrencyDetailV2(@Path("currency") String currency,
+    @GET(value = "api/ua/v1/market/currency")
+    Call<KucoinResponse<CurrencyDetailV2Response>> getCurrencyDetailV2(@Query("currency") String currency,
                                                                        @Nullable @Query("chain") String chain);
 
     @GET(value = "api/v1/prices")
