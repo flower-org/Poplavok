@@ -1,6 +1,10 @@
 package com.poplavok.kucoin;
 
-import com.KyKu4.MogeJlb.response.*;
+import com.KyKu4.MogeJlb.response.ApiCurrencyDetailChainPropertyResponse;
+import com.KyKu4.MogeJlb.response.CurrencyExtendedInfoResponse;
+import com.KyKu4.MogeJlb.response.CurrencyResponse;
+import com.KyKu4.MogeJlb.response.ImmutableCurrencyExtendedInfoResponse;
+import com.KyKu4.MogeJlb.response.MarketTickerResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;

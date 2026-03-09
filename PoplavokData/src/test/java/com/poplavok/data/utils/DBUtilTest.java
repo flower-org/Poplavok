@@ -2,14 +2,12 @@ package com.poplavok.data.utils;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DBUtilTest {
 
@@ -27,7 +25,7 @@ public class DBUtilTest {
     @Test
     public void testSupplyAsync() throws Exception {
         CompletableFuture<String> future = DBUtil.supplyAsync(() -> "Hello");
-        Assertions.assertEquals("Hello", future.get(5, TimeUnit.SECONDS));
+        assertEquals("Hello", future.get(5, TimeUnit.SECONDS));
     }
 
     @Test

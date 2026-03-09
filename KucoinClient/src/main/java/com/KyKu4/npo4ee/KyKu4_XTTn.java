@@ -16,7 +16,10 @@ import okhttp3.Request;
 import okhttp3.ResponseBody;
 import okhttp3.WebSocket;
 import okhttp3.logging.HttpLoggingInterceptor;
-import retrofit2.*;
+import retrofit2.Call;
+import retrofit2.Converter;
+import retrofit2.Retrofit;
+import retrofit2.Response;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import javax.annotation.Nullable;
