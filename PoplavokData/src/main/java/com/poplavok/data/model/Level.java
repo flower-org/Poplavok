@@ -64,6 +64,9 @@ public class Level {
     @OneToMany(mappedBy = "level", cascade = CascadeType.ALL)
     private List<Loan> loans = new ArrayList<>();
 
+    @OneToMany(mappedBy = "level", cascade = CascadeType.ALL)
+    private List<LevelTrade> levelTrades = new ArrayList<>();
+
     public Level() {
     }
 
@@ -150,9 +153,17 @@ public class Level {
         return loans;
     }
 
+    public List<LevelTrade> getLevelTrades() {
+        return levelTrades;
+    }
+
+    public void addLevelTrade(LevelTrade levelTrade) {
+        levelTrades.add(levelTrade);
+        levelTrade.setLevel(this);
+    }
+
     public void addLoan(Loan loan) {
         loans.add(loan);
-        loan.setLevel(this);
+        loan.setDestinationLevel(this);
     }
 }
-

@@ -44,6 +44,14 @@ public class Poplavok {
     @Nullable
     private String strategyParameters;
 
+    @Column
+    @Nullable
+    private String name;
+
+    @Column(length = 2000)
+    @Nullable
+    private String details;
+
     @Column(name = "is_active", nullable = false)
     @Nullable
     private boolean isActive;
@@ -110,6 +118,29 @@ public class Poplavok {
         this.strategyParameters = strategyParameters;
     }
 
+    @Nullable
+    public String getName() {
+        return name;
+    }
+
+    public void setName(@Nullable String name) {
+        this.name = name;
+    }
+
+    @Nullable
+    public String getDetails() {
+        return details;
+    }
+
+    public void setDetails(@Nullable String details) {
+        this.details = details;
+    }
+
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(length = 10)
+    @Nullable
+    private Direction direction;
+
     public boolean isActive() {
         return isActive;
     }
@@ -149,6 +180,15 @@ public class Poplavok {
     public void addLevel(Level level) {
         levels.add(level);
         level.setPoplavok(this);
+    }
+
+    @Nullable
+    public Direction getDirection() {
+        return direction;
+    }
+
+    public void setDirection(Direction direction) {
+        this.direction = direction;
     }
 
     public void removeLevel(Level level) {

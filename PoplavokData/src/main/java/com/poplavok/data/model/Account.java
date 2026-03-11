@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -42,6 +43,13 @@ public class Account {
 
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AccountHistory> history = new ArrayList<>();
+
+    @Column(nullable = false, precision = 20, scale = 8)
+    @Nullable
+    public BigDecimal lentAmount;
+
+    @Nullable
+    public Date creationDate;
 
     public Account() {
     }
@@ -78,6 +86,22 @@ public class Account {
 
     public void setBorrowed(BigDecimal borrowed) {
         this.borrowed = borrowed;
+    }
+
+    public @Nullable BigDecimal getLentAmount() {
+        return lentAmount != null ? lentAmount : BigDecimal.ZERO;
+    }
+
+    public void setLentAmount(@Nullable BigDecimal lentAmount) {
+        this.lentAmount = lentAmount;
+    }
+
+    public @Nullable Date getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(Date creationDate) {
+        this.creationDate = creationDate;
     }
 
     public List<AccountHistory> getHistory() {

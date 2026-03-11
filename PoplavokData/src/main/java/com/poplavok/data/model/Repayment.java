@@ -3,11 +3,9 @@ package com.poplavok.data.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
 
 import javax.annotation.Nullable;
@@ -18,36 +16,26 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 @Entity
 @Table(name = "repayments")
-public class Repayment {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Nullable
-    private Long id;
+@PrimaryKeyJoinColumn(name = "transaction_id")
+public class Repayment extends Transaction {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "loan_id", nullable = false)
     @Nullable
     private Loan loan;
 
-    @Column(nullable = false, precision = 20, scale = 8)
+    @Column(length = 500)
     @Nullable
-    private BigDecimal amount;
-
-    @Column(name = "repayment_date", nullable = false)
-    @Nullable
-    private LocalDateTime date;
+    private String notes;
 
     protected Repayment() {
     }
 
     public Repayment(Loan loan, BigDecimal amount, LocalDateTime date) {
+        // Diagram links Repayment to Level.
+        // Assuming Repayment is related to a specific level (maybe repayment happens at a level?).
+        super(null, null, null, null, amount, date);
         this.loan = loan;
-        this.amount = amount;
-        this.date = date;
-    }
-
-    public Long getId() {
-        return checkNotNull(id);
     }
 
     public Loan getLoan() {
@@ -58,20 +46,12 @@ public class Repayment {
         this.loan = loan;
     }
 
-    public BigDecimal getAmount() {
-        return checkNotNull(amount);
+    public @Nullable String getNotes() {
+        return notes;
     }
 
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
-    }
-
-    public LocalDateTime getDate() {
-        return checkNotNull(date);
-    }
-
-    public void setDate(LocalDateTime date) {
-        this.date = date;
+    public void setNotes(String notes) {
+        this.notes = notes;
     }
 }
 
