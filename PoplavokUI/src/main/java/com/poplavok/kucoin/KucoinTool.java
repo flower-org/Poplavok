@@ -1,15 +1,21 @@
 package com.poplavok.kucoin;
 
-import com.KyKu4.MogeJlb.exception.KucoinApiException;
-import com.KyKu4.MogeJlb.response.AllTickersResponse;
-import com.KyKu4.MogeJlb.response.ApiCurrencyDetailChainPropertyResponse;
-import com.KyKu4.MogeJlb.response.CurrencyDetailV2Response;
-import com.KyKu4.MogeJlb.response.CurrencyExtendedInfoResponse;
-import com.KyKu4.MogeJlb.response.CurrencyResponse;
-import com.KyKu4.MogeJlb.response.MarketTickerResponse;
-import com.KyKu4.npo4ee.KyKu4_3anpocHuK;
-import com.KyKu4.npo4ee.KyKu4_XTTn;
-import com.KyKu4.npo4ee.PublicAPIPack;
+import com.poplavok.api.kucoin.exception.KucoinApiException;
+import com.poplavok.api.kucoin.model.response.AllTickersResponse;
+import com.poplavok.api.kucoin.model.response.ApiCurrencyDetailChainPropertyResponse;
+import com.poplavok.api.kucoin.model.response.CurrencyDetailV2Response;
+import com.poplavok.api.kucoin.model.response.CurrencyExtendedInfoResponse;
+import com.poplavok.api.kucoin.model.response.CurrencyResponse;
+import com.poplavok.api.kucoin.model.response.MarketTickerResponse;
+import com.poplavok.api.kucoin.model.response.Pagination;
+import com.poplavok.api.kucoin.model.response.AccountBalancesResponse;
+import com.poplavok.api.kucoin.model.response.MarginAccountResponse;
+import com.poplavok.api.kucoin.model.response.IsolatedMarginAccountInfo;
+import com.poplavok.api.kucoin.model.response.OrderResponse;
+import com.poplavok.api.kucoin.KucoinApiClient;
+
+
+
 import com.flower.fxutils.ProgressCallback;
 import com.poplavok.data.dao.ChainDAO;
 import com.poplavok.data.dao.CurrencyChainDAO;
@@ -38,7 +44,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class KucoinTool {
     final static Logger LOGGER = LoggerFactory.getLogger(KucoinTool.class);
 
-    final static PublicAPIPack PUBLIC_API_PACK = KyKu4_XTTn.getPublicAPIPack();
+    
 
     public static void retrieveCurrencyFromExchange(ProgressCallback progressCallback) {
         double maxProgress = 1.0;
@@ -60,7 +66,7 @@ public class KucoinTool {
         progress = 0.02*maxProgress;
         progressCallback.updateProgress("Retrieving currencies from exchange", progress, false);
 
-        List<CurrencyResponse> currenciesResponse = KyKu4_3anpocHuK.getCurrencies(PUBLIC_API_PACK.currencyAPI());
+        List<CurrencyResponse> currenciesResponse = new KucoinApiClient().getCurrencies();
 
         double progressPerCurrencyStep = (maxProgress - progress) / (currenciesResponse.size() + 1);
         for (int i = 0; i < currenciesResponse.size(); i++) {
@@ -117,7 +123,7 @@ public class KucoinTool {
 
         progress += 0.1;
         progressCallback.updateProgress("Retrieving market tickers from exchange", progress, false);
-        AllTickersResponse tickers = KyKu4_3anpocHuK.getAllTickers(PUBLIC_API_PACK.symbolAPI());
+        AllTickersResponse tickers = new KucoinApiClient().getAllTickers();
 
         int tickerSize = checkNotNull(tickers.ticker()).size();
         double progressPerCurrencyStep = (maxProgress - progress) / (tickerSize + 1);
@@ -127,7 +133,7 @@ public class KucoinTool {
             progressCallback.updateProgress(
                     String.format("(%d/%d) Updating %s", i + 1, tickerSize, marketTickerResponse.symbol()), progress, false);
 
-            String[] symbolParts = marketTickerResponse.symbol().split("-");
+            String[] symbolParts = marketTickerResponse.symbol() != null ? marketTickerResponse.symbol().split("-") : new String[0];
 
             Currency baseCurrency = currenciesMap.get(symbolParts[0]);
             Currency quoteCurrency = currenciesMap.get(symbolParts[1]);
@@ -150,7 +156,7 @@ public class KucoinTool {
 
     // ------------------------------------------------------------
 
-    /*public static void retrieveAccountDetailsFromExchange(ProgressCallback progressCallback, PrivateAPIPack privateAPIPack, Long accountId) {
+    /*public static void retrieveAccountDetailsFromExchange(ProgressCallback progressCallback, KucoinApiClient apiClient, Long accountId) {
         try {
             progressCallback.updateProgress("Re-Loading internal accounts from Exchange", 0, false);
 
@@ -165,7 +171,7 @@ public class KucoinTool {
         }
     }
 
-    public static void retrieveOrdersFromExchange(ProgressCallback progressCallback, PrivateAPIPack privateAPIPack, Long accountId) {
+    public static void retrieveOrdersFromExchange(ProgressCallback progressCallback, KucoinApiClient apiClient, Long accountId) {
         try {
             progressCallback.updateProgress("Re-Loading orders from Exchange", 0, false);
 
@@ -178,7 +184,7 @@ public class KucoinTool {
         }
     }
 
-    static void retrieveInternalAccounts(ProgressCallback progressCallback, PrivateAPIPack privateAPIPack, double startProgress, double maxProgress, Long accountId) throws ExecutionException, InterruptedException, IOException {
+    static void retrieveInternalAccounts(ProgressCallback progressCallback, KucoinApiClient apiClient, double startProgress, double maxProgress, Long accountId) throws ExecutionException, InterruptedException, IOException {
         double progress = startProgress + 0.01 * maxProgress;
         progressCallback.updateProgress("Loading Internal Accounts from DB", progress, false);
 
@@ -188,7 +194,7 @@ public class KucoinTool {
         progress = startProgress + 0.02 * maxProgress;
         progressCallback.updateProgress("Retrieving Internal Accounts from exchange", progress, false);
 
-        List<AccountBalancesResponse> accountBalancesResponses = KyKu4_3anpocHuK.getAccountList(privateAPIPack.accountAPI(), null, null);
+        List<AccountBalancesResponse> accountBalancesResponses = apiClient.getAccountList(null, null);
 
         double progressPerCurrencyStep = (maxProgress - progress) / (accountBalancesResponses.size() + 1);
         for (int i = 0; i < accountBalancesResponses.size(); i++) {
@@ -216,14 +222,14 @@ public class KucoinTool {
         progressCallback.updateProgress("InternalAccounts retrieval Done", maxProgress, true);
     }
 
-    static void retrieveOrders(ProgressCallback progressCallback, PrivateAPIPack privateAPIPack, double startProgress, double maxProgress, Long accountId) throws ExecutionException, InterruptedException, IOException {
-        Pagination<OrderResponse> firstPage = KyKu4_3anpocHuK.getOrderList(privateAPIPack.orderAPI(), OrderAPIRetrofit.TradeType.MARGIN_ISOLATED_TRADE, "active",null, null);
+    static void retrieveOrders(ProgressCallback progressCallback, KucoinApiClient apiClient, double startProgress, double maxProgress, Long accountId) throws ExecutionException, InterruptedException, IOException {
+        Pagination<OrderResponse> firstPage = apiClient.getOrderList("MARGIN_ISOLATED_TRADE", "active", null, null);
 
         int pageSize = firstPage.pageSize();
         int currentPageNum = firstPage.currentPage();
         int totalPages = firstPage.totalPage();
 
-        Pagination<OrderResponse> nextPage =  KyKu4_3anpocHuK.getOrderList(privateAPIPack.orderAPI(), OrderAPIRetrofit.TradeType.MARGIN_ISOLATED_TRADE, "active", pageSize, ++currentPageNum);
+        Pagination<OrderResponse> nextPage =  apiClient.getOrderList("MARGIN_ISOLATED_TRADE", "active", pageSize, ++currentPageNum);
 
         int totalPages2 = firstPage.totalPage();
 
@@ -245,7 +251,7 @@ public class KucoinTool {
 //        progress = startProgress + 0.02 * maxProgress;
 //        progressCallback.updateProgress("Retrieving Internal Accounts from exchange", progress, false);
 //
-//        List<AccountBalancesResponse> accountBalancesResponses = KyKu4_3anpocHuK.getAccountList(privateAPIPack.accountAPI(), null, null);
+//        List<AccountBalancesResponse> accountBalancesResponses = apiClient.getAccountList(null, null);
 //
 //        double progressPerCurrencyStep = (maxProgress - progress) / (accountBalancesResponses.size() + 1);
 //        for (int i = 0; i < accountBalancesResponses.size(); i++) {
@@ -271,7 +277,7 @@ public class KucoinTool {
 //        }
     }*/
 /*
-    static void retrieveCrossMarginAccounts(ProgressCallback progressCallback, PrivateAPIPack privateAPIPack, double startProgress, double maxProgress, Long accountId) throws ExecutionException, InterruptedException, IOException {
+    static void retrieveCrossMarginAccounts(ProgressCallback progressCallback, KucoinApiClient apiClient, double startProgress, double maxProgress, Long accountId) throws ExecutionException, InterruptedException, IOException {
         double progress = startProgress + 0.01 * maxProgress;
         progressCallback.updateProgress("Loading Cross-Margin Accounts from DB", progress, false);
 
@@ -281,7 +287,7 @@ public class KucoinTool {
         progress = startProgress + 0.02 * maxProgress;
         progressCallback.updateProgress("Retrieving Cross-Margin Accounts from exchange", progress, false);
 
-        MarginAccountResponse marginAccountResponses = KyKu4_3anpocHuK.getMarginAccount(privateAPIPack.marginAPI());
+        MarginAccountResponse marginAccountResponses = apiClient.getMarginAccount();
         List<MarginAccount> marginAccounts = marginAccountResponses.accounts();
 
         double progressPerCurrencyStep = (maxProgress - progress) / (marginAccounts.size() + 1);
@@ -310,7 +316,7 @@ public class KucoinTool {
         progressCallback.updateProgress("Cross-Margin Accounts retrieval Done", maxProgress, true);
     }
 
-    static void retrieveIsolatedMarginAccounts(ProgressCallback progressCallback, PrivateAPIPack privateAPIPack, double startProgress, double maxProgress, Long accountId) throws ExecutionException, InterruptedException, IOException {
+    static void retrieveIsolatedMarginAccounts(ProgressCallback progressCallback, KucoinApiClient apiClient, double startProgress, double maxProgress, Long accountId) throws ExecutionException, InterruptedException, IOException {
         double progress = startProgress + 0.01 * maxProgress;
         progressCallback.updateProgress("Loading Isolated Margin Accounts from DB", progress, false);
 
@@ -320,7 +326,7 @@ public class KucoinTool {
         progress = startProgress + 0.02 * maxProgress;
         progressCallback.updateProgress("Retrieving Isolated Margin Accounts from exchange", progress, false);
 
-        IsolatedMarginAccountInfo isolatedMarginAccountInfo = KyKu4_3anpocHuK.getIsolatedMarginAccountInfo(privateAPIPack.marginAPI(), null);
+        IsolatedMarginAccountInfo isolatedMarginAccountInfo = apiClient.getIsolatedMarginAccountInfo(null);
         List<IsolatedMarginAccountInfo.Asset> assets = isolatedMarginAccountInfo.assets();
 
         double progressPerCurrencyStep = (maxProgress - progress) / (assets.size() + 1);
@@ -422,7 +428,7 @@ public class KucoinTool {
         CurrencyExtendedInfoResponse currencyExtendedInfoResponseVar = null;
         while (true) {
             try {
-                currencyExtendedInfoResponseVar = KyKu4_3anpocHuK.getCurrencyExtendedInfo(PUBLIC_API_PACK.kucoinAPI(), currency.getCurrency());
+                currencyExtendedInfoResponseVar = new KucoinApiClient().getCurrencyExtendedInfo(currency.getCurrency());
                 break;
             } catch (KucoinApiException e) {
                 // Too many requests, wait and retry
@@ -459,14 +465,14 @@ public class KucoinTool {
         //2. CurrencyChains
         Map<String, CurrencyChain> currencyChainMap = DBUtil.connectGetResultAndClose(conn -> CurrencyChainDAO.getForCurrency(conn, currency.getCurrency()))
                 .stream().collect(Collectors.toMap(cc -> checkNotNull(cc.getChain()).chain(), c -> c));
-        CurrencyDetailV2Response currencyDetailV2Response = KyKu4_3anpocHuK.getCurrencyDetailV2(PUBLIC_API_PACK.currencyAPI(), currency.getCurrency());
+        CurrencyDetailV2Response currencyDetailV2Response = new KucoinApiClient().getCurrencyDetailV2(currency.getCurrency());
 
         if (currencyDetailV2Response.list() != null) {
             for (ApiCurrencyDetailChainPropertyResponse chainResponse : currencyDetailV2Response.list()) {
-                Chain chain = DBUtil.connectGetResultAndClose(conn -> ChainDAO.getByChain(conn, chainResponse.chainId()));
+                Chain chain = DBUtil.connectGetResultAndClose(conn -> ChainDAO.getByChain(conn, chainResponse.chainId() != null ? chainResponse.chainId() : ""));
                 if (chain == null) {
                     DBUtil.connectCommitAndClose(conn -> ChainDAO.save(conn, Chain.ofNew(chainResponse.chainName(), chainResponse.chainId())));
-                    chain = DBUtil.connectGetResultAndClose(conn -> ChainDAO.getByChain(conn, chainResponse.chainId()));
+                    chain = DBUtil.connectGetResultAndClose(conn -> ChainDAO.getByChain(conn, chainResponse.chainId() != null ? chainResponse.chainId() : ""));
                 }
 
                 String chain_ = checkNotNull(chain.chain());

@@ -1,9 +1,9 @@
 package com.poplavok.kucoin;
 
-import com.KyKu4.MogeJlb.websocket.event.KucoinEvent;
-import com.KyKu4.MogeJlb.websocket.event.TickerChangeEvent;
-import com.KyKu4.npo4ee.TickerCallback;
-import com.KyKu4.npo4ee.TickerDataStreamer;
+import com.poplavok.api.kucoin.websocket.event.KucoinEvent;
+import com.poplavok.api.kucoin.websocket.event.TickerChangeEvent;
+import com.poplavok.api.kucoin.websocket.TickerCallback;
+import com.poplavok.api.kucoin.websocket.TickerDataStreamer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
