@@ -67,6 +67,7 @@ javafx {
 dependencies {
     implementation project(':PoplavokData')
     implementation project(':JavaFxUtils')
+    implementation project(':KeyManagerFx')
     implementation project(':PoplavokApiClient')
 
     annotationProcessor "org.immutables:value:2.10.1"

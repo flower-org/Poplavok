@@ -1,7 +1,8 @@
 package com.poplavok.forms;
 
+import com.flower.fxutils.ModalWindow;
 import com.poplavok.data.model.Currency;
-import com.google.common.base.Preconditions;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -17,17 +18,22 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MainForm {
     @Nullable Stage mainStage;
+
+    @Nullable ApiSettingsDialog apiSettingsDialog;
+    @Nullable Stage appSettingsStage;
+
     @FXML @Nullable Label serverInfoLabel;
     @FXML @Nullable TabPane tabs;
-    int testFormCount = 0;
 
     public MainForm() {
         //This form is created automatically.
         //No need to load fxml explicitly
     }
 
-    public void setMainStage(@Nullable Stage mainStage) {
+    public void init(Stage mainStage) {
         this.mainStage = mainStage;
+        this.apiSettingsDialog = new ApiSettingsDialog(mainStage);
+        Platform.runLater(this::showApiSettingsDialog);
     }
 
     public void setStatusText(String text) {
@@ -108,5 +114,15 @@ public class MainForm {
         tab.setClosable(true);
 
         addTab(tab);
+    }
+
+    public void showApiSettingsDialog() {
+        if (appSettingsStage == null) {
+            appSettingsStage = ModalWindow.showModal(checkNotNull(mainStage),
+                    stage -> apiSettingsDialog,
+                    "API Settings");
+        } else {
+            appSettingsStage.show();
+        }
     }
 }
