@@ -21,6 +21,5 @@ public interface TickerCallback {
      * Push frequency: once every 2s
      * Subscribe to this topic to get the push of all market symbols BBO change.
      */
-    default void tickerCallback(KucoinEvent<TickerChangeEvent> event) {
-    }
+    void tickerCallback(KucoinEvent<TickerChangeEvent> event);
 }

@@ -1,6 +1,5 @@
 package com.poplavok.api.kucoin.websocket;
 
-import com.poplavok.api.kucoin.model.response.ImmutableMarketTickerResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -8,7 +7,7 @@ import com.poplavok.api.kucoin.KucoinApiClient;
 import com.poplavok.api.kucoin.model.InstanceServer;
 import com.poplavok.api.kucoin.model.response.WebsocketTokenResponse;
 import com.poplavok.api.kucoin.websocket.event.KucoinEvent;
-import com.poplavok.api.kucoin.websocket.event.TickerChangeEvent;
+import com.poplavok.api.kucoin.websocket.event.Level2DepthEvent;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -25,29 +24,33 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class TickerDataStreamer extends WebSocketListener {
-    public final static String ALL_TICKERS = "all";
-
-    final static Logger LOGGER = LoggerFactory.getLogger(TickerDataStreamer.class);
+public class Level2DepthStreamer extends WebSocketListener {
+    final static Logger LOGGER = LoggerFactory.getLogger(Level2DepthStreamer.class);
     final static Long FIVE_SECONDS_IN_MILLIS = 5 * 1000L;
     final static String PONG = "pong";
+
+    public enum Depth {
+        DEPTH_5, DEPTH_50
+    }
 
     final AtomicReference<WebSocket> webSocket = new AtomicReference<>(null);
     final Thread pingThread;
 
     final Set<String> topics = ConcurrentHashMap.newKeySet();
-    final TickerCallback tickerCallback;
+    final Depth depth;
+    final Level2DepthCallback callback;
     final KucoinApiClient apiClient;
     final OkHttpClient httpClient;
     final ObjectMapper mapper;
 
     final AtomicReference<Pair<WebSocket, Long>> lastPing = new AtomicReference<>(null);
 
-    public TickerDataStreamer(String topic, TickerCallback tickerCallback) {
+    public Level2DepthStreamer(String topic, Depth depth, Level2DepthCallback callback) {
         if (topic != null && !topic.isEmpty()) {
             this.topics.add(topic);
         }
-        this.tickerCallback = tickerCallback;
+        this.depth = depth;
+        this.callback = callback;
         this.apiClient = new KucoinApiClient();
         this.httpClient = new OkHttpClient();
         this.mapper = new ObjectMapper().registerModules(new GuavaModule());
@@ -127,13 +130,15 @@ public class TickerDataStreamer extends WebSocketListener {
 
     private void sendSubscribe(WebSocket socket, String topic) {
         String uuid = UUID.randomUUID().toString();
-        String msg = "{\"id\":\"" + uuid + "\",\"type\":\"subscribe\",\"topic\":\"/market/ticker:" + topic + "\",\"privateChannel\":false,\"response\":true}";
+        String prefix = depth == Depth.DEPTH_5 ? "/spotMarket/level2Depth5:" : "/spotMarket/level2Depth50:";
+        String msg = "{\"id\":\"" + uuid + "\",\"type\":\"subscribe\",\"topic\":\"" + prefix + topic + "\",\"privateChannel\":false,\"response\":true}";
         socket.send(msg);
     }
 
     private void sendUnsubscribe(WebSocket socket, String topic) {
         String uuid = UUID.randomUUID().toString();
-        String msg = "{\"id\":\"" + uuid + "\",\"type\":\"unsubscribe\",\"topic\":\"/market/ticker:" + topic + "\",\"privateChannel\":false,\"response\":true}";
+        String prefix = depth == Depth.DEPTH_5 ? "/spotMarket/level2Depth5:" : "/spotMarket/level2Depth50:";
+        String msg = "{\"id\":\"" + uuid + "\",\"type\":\"unsubscribe\",\"topic\":\"" + prefix + topic + "\",\"privateChannel\":false,\"response\":true}";
         socket.send(msg);
     }
 
@@ -183,9 +188,8 @@ public class TickerDataStreamer extends WebSocketListener {
             if (PONG.equals(event.type())) {
                 lastPing.set(null);
             } else if ("message".equals(event.type())) {
-                // we assume it's TickerChangeEvent
-                KucoinEvent<TickerChangeEvent> tickerEvent = mapper.readValue(text, mapper.getTypeFactory().constructParametricType(KucoinEvent.class, TickerChangeEvent.class));
-                tickerCallback.tickerCallback(tickerEvent);
+                KucoinEvent<Level2DepthEvent> depthEvent = mapper.readValue(text, mapper.getTypeFactory().constructParametricType(KucoinEvent.class, Level2DepthEvent.class));
+                callback.onCallback(depthEvent);
             } else {
                 LOGGER.info("Other message received: type {}", event);
             }
