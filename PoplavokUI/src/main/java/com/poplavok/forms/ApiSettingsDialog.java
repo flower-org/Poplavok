@@ -6,6 +6,8 @@ import com.flower.crypt.keys.forms.RsaPkcs11KeyProvider;
 import com.flower.crypt.keys.forms.RsaRawKeyProvider;
 import com.flower.crypt.keys.forms.TabKeyProvider;
 import com.flower.fxutils.JavaFxUtils;
+import com.poplavok.api.kucoin.auth.KucoinCredentialsProvider;
+import com.poplavok.kucoin.EncryptedCredentialsProvider;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -14,6 +16,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +34,7 @@ public class ApiSettingsDialog extends VBox {
     final static Logger LOGGER = LoggerFactory.getLogger(ApiSettingsDialog.class);
 
     final static String SETTINGS_FILE = "Poplavok_ApiSettingsFile";
+    @Nullable protected KucoinCredentialsProvider credentialsProvider;
 
     protected static void updateSettingsFileUserPreferences(String settingsFile) {
         Preferences userPreferences = Preferences.userRoot();
@@ -85,7 +89,7 @@ public class ApiSettingsDialog extends VBox {
 
     public void openApiSettingsFile() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("API Settings (*.yaml.crypt)", "*.yaml.crypt"));
+        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("API Settings (*.yaml.crp)", "*.yaml.crp"));
         fileChooser.setTitle("Load API Settings");
 
         File settingsFile = fileChooser.showOpenDialog(checkNotNull(stage));
@@ -99,13 +103,41 @@ public class ApiSettingsDialog extends VBox {
     }
 
     public void testSettingsLoad() {
-        // TODO: implement
-        JavaFxUtils.showMessage("TODO: implement");
+        try {
+            KucoinCredentialsProvider credentialsProvider = loadProvider();
+            if (credentialsProvider == null) { return; }
+
+            if (StringUtils.isBlank(credentialsProvider.getApiKey())) {
+                JavaFxUtils.showMessage("Credentials Provider Test failed.");
+            } else {
+                JavaFxUtils.showMessage("Credentials Provider Test succeeded.");
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error testing credentials provider", e);
+            JavaFxUtils.showErrorMessage("Error testing credentials provider: " + e.getMessage());
+        }
     }
 
     public void done() {
-        if (getScene() != null && getScene().getWindow() != null) {
-            getScene().getWindow().hide();
+        try {
+            this.credentialsProvider = loadProvider();
+            if (credentialsProvider == null) { return; }
+
+            if (getScene() != null && getScene().getWindow() != null) {
+                getScene().getWindow().hide();
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error creating credentials provider", e);
+            JavaFxUtils.showErrorMessage("Error creating credentials provider: " + e.getMessage());
         }
+    }
+
+    protected @Nullable KucoinCredentialsProvider loadProvider() throws IOException {
+        File settingsFile = new File(checkNotNull(settingsFileTextField).getText());
+        if (!settingsFile.exists()) {
+            JavaFxUtils.showErrorMessage("Settings file does not exist: " + settingsFile.getAbsolutePath());
+            return null;
+        }
+        return new EncryptedCredentialsProvider(checkNotNull(keyProvider), settingsFile);
     }
 }

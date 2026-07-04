@@ -67,6 +67,7 @@ javafx {
 dependencies {
     implementation project(':PoplavokData')
     implementation project(':JavaFxUtils')
+    implementation project(':CryptCore')
     implementation project(':KeyManagerFx')
     implementation project(':PoplavokApiClient')
 

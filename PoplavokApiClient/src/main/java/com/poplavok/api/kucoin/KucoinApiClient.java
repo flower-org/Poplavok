@@ -4,9 +4,16 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.poplavok.api.kucoin.auth.AuthenticationInterceptor;
+import com.poplavok.api.kucoin.auth.KucoinCredentialsProvider;
 import com.poplavok.api.kucoin.exception.KucoinApiException;
+import com.poplavok.api.kucoin.model.request.OrderCreateRequest;
 import com.poplavok.api.kucoin.model.response.*;
-import okhttp3.*;
+import okhttp3.HttpUrl;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -19,19 +26,19 @@ public class KucoinApiClient {
     private final OkHttpClient httpClient;
     private final ObjectMapper mapper;
 
-    public KucoinApiClient(@Nullable String apiKey, @Nullable String secret, @Nullable String passPhrase, @Nullable Integer authApiKeyVersion) {
+    public KucoinApiClient(@Nullable KucoinCredentialsProvider credentialsProvider) {
         this.mapper = new ObjectMapper();
         this.mapper.registerModules(new GuavaModule());
         
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        if (apiKey != null && secret != null && passPhrase != null) {
-            builder.addInterceptor(new AuthenticationInterceptor(apiKey, secret, passPhrase, authApiKeyVersion != null ? authApiKeyVersion : 2));
+        if (credentialsProvider != null) {
+            builder.addInterceptor(new AuthenticationInterceptor(credentialsProvider));
         }
         this.httpClient = builder.build();
     }
 
     public KucoinApiClient() {
-        this(null, null, null, null);
+        this(null);
     }
 
     private <T> T execute(Request request, TypeReference<KucoinResponse<T>> typeRef) throws IOException {
@@ -86,6 +93,23 @@ public class KucoinApiClient {
         if (currentPage != null) urlBuilder.addQueryParameter("currentPage", String.valueOf(currentPage));
         Request request = new Request.Builder().url(urlBuilder.build()).get().build();
         return execute(request, new TypeReference<KucoinResponse<Pagination<OrderResponse>>>() {});
+    }
+
+    public OrderCreateResponse createOrder(OrderCreateRequest orderCreateRequest) throws IOException {
+        String json = mapper.writeValueAsString(orderCreateRequest);
+        RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
+        Request request = new Request.Builder().url(BASE_URL + "api/v1/orders").post(body).build();
+        return execute(request, new TypeReference<KucoinResponse<OrderCreateResponse>>() {});
+    }
+
+    public OrderResponse getOrder(String orderId) throws IOException {
+        Request request = new Request.Builder().url(BASE_URL + "api/v1/orders/" + orderId).get().build();
+        return execute(request, new TypeReference<KucoinResponse<OrderResponse>>() {});
+    }
+
+    public CancelOrderResponse cancelOrder(String orderId) throws IOException {
+        Request request = new Request.Builder().url(BASE_URL + "api/v1/orders/" + orderId).delete().build();
+        return execute(request, new TypeReference<KucoinResponse<CancelOrderResponse>>() {});
     }
 
     public MarginAccountResponse getMarginAccount() throws IOException {
