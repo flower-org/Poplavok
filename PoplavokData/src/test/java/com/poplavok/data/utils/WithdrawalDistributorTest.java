@@ -155,6 +155,9 @@ class WithdrawalDistributorTest {
 
         List<BigDecimal> result = distributor.distribute(amounts, toDistribute, 2, false);
         BigDecimal sumOfDistributed = result.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertEquals(2, result.size());
+        assertEquals(0, new BigDecimal("5.5").compareTo(result.get(0)));
+        assertEquals(0, new BigDecimal("5.5").compareTo(result.get(1)));
 
         // SloppyDistributor ratio is 11 / 2000 = 0.005. Rounded down to scale 2 is 0.00.
         // Result is 0.00 + 0.00 = 0.00. Lost all $11!
