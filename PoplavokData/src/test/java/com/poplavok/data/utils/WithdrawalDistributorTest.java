@@ -215,4 +215,23 @@ class WithdrawalDistributorTest {
         assertEquals(0, BigDecimal.ZERO.compareTo(result.get(2)));
         assertEquals(0, new BigDecimal("20.00").compareTo(result.get(3)));
     }
+
+    @ParameterizedTest
+    @MethodSource("distributors")
+    void testOvershootWhenRemainderIsSmallerThanStep(Distributor distributor) {
+        List<BigDecimal> amounts = Arrays.asList(
+                new BigDecimal("10.00")
+        );
+        // Distributing 10.005 but scale is 2, so the step is 0.01
+        BigDecimal toDistribute = new BigDecimal("10.005");
+
+        List<BigDecimal> result = distributor.distribute(amounts, toDistribute, 2, true);
+        BigDecimal sumOfDistributed = result.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // With scale 2, the distributor should distribute 10.00 and drop the 0.005.
+        // If it evaluates remainingToDistribute (0.005) > 0 and blindly adds a full step (0.01),
+        // it will distribute 10.01, overshooting the requested 10.005!
+        assertEquals(true, sumOfDistributed.compareTo(toDistribute) <= 0,
+                "Distributor overshot requested amount due to fractional digit remainder triggering a full step distribution");
+    }
 }
