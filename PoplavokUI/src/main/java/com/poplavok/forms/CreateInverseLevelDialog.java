@@ -178,8 +178,8 @@ public class CreateInverseLevelDialog extends VBox {
             if (isUpdatingAmount) return;
             isUpdatingAmount = true;
             try {
-                int percent = newValue.intValue();
-                checkNotNull(amountPercentTextField).setText(String.valueOf(percent));
+                BigDecimal percent = BigDecimal.valueOf(newValue.doubleValue()).setScale(2, java.math.RoundingMode.HALF_UP);
+                checkNotNull(amountPercentTextField).setText(formatAmount(percent));
                 updateAmountFromPercent(percent);
             } finally {
                 isUpdatingAmount = false;
@@ -191,13 +191,13 @@ public class CreateInverseLevelDialog extends VBox {
             isUpdatingAmount = true;
             try {
                 if (!StringUtils.isBlank(newValue)) {
-                    int percent = Integer.parseInt(newValue);
-                    if (percent >= 0 && percent <= 100) {
-                        checkNotNull(amountPercentSlider).setValue(percent);
+                    BigDecimal percent = fromString(newValue);
+                    if (percent != null && percent.compareTo(BigDecimal.ZERO) >= 0 && percent.compareTo(BigDecimal.valueOf(100)) <= 0) {
+                        checkNotNull(amountPercentSlider).setValue(percent.doubleValue());
                         updateAmountFromPercent(percent);
                     }
                 }
-            } catch (NumberFormatException e) {
+            } catch (Exception e) {
                 // ignore
             } finally {
                 isUpdatingAmount = false;
@@ -210,10 +210,12 @@ public class CreateInverseLevelDialog extends VBox {
             try {
                 String pctStr = checkNotNull(amountPercentTextField).getText();
                 if (!StringUtils.isBlank(pctStr)) {
-                    int percent = Integer.parseInt(pctStr);
-                    updateAmountFromPercent(percent);
+                    BigDecimal percent = fromString(pctStr);
+                    if (percent != null) {
+                        updateAmountFromPercent(percent);
+                    }
                 }
-            } catch (NumberFormatException e) {
+            } catch (Exception e) {
                 // ignore
             } finally {
                 isUpdatingAmount = false;
@@ -487,7 +489,7 @@ public class CreateInverseLevelDialog extends VBox {
         }
     }
 
-    private void updateAmountFromPercent(int percent) {
+    private void updateAmountFromPercent(BigDecimal percent) {
         BigDecimal baseValue;
         if ("% Total".equals(checkNotNull(amountPercentTypeComboBox).getValue())) {
             baseValue = totalAmount;
@@ -495,7 +497,7 @@ public class CreateInverseLevelDialog extends VBox {
             baseValue = availableAmount;
         }
         
-        BigDecimal amount = baseValue.multiply(BigDecimal.valueOf(percent)).divide(BigDecimal.valueOf(100), 8, java.math.RoundingMode.HALF_UP);
+        BigDecimal amount = baseValue.multiply(percent).divide(BigDecimal.valueOf(100), 8, java.math.RoundingMode.HALF_UP);
         checkNotNull(amountTextField).setText(formatAmount(amount));
         priceFeeUpdate();
     }
@@ -514,12 +516,11 @@ public class CreateInverseLevelDialog extends VBox {
             return;
         }
         
-        BigDecimal percentBd = amount.multiply(BigDecimal.valueOf(100)).divide(baseValue, 0, java.math.RoundingMode.HALF_UP);
-        int percent = percentBd.intValue();
-        if (percent > 100) percent = 100;
-        if (percent < 0) percent = 0;
+        BigDecimal percentBd = amount.multiply(BigDecimal.valueOf(100)).divide(baseValue, 2, java.math.RoundingMode.HALF_UP);
+        if (percentBd.compareTo(BigDecimal.valueOf(100)) > 0) percentBd = BigDecimal.valueOf(100);
+        if (percentBd.compareTo(BigDecimal.ZERO) < 0) percentBd = BigDecimal.ZERO;
         
-        checkNotNull(amountPercentTextField).setText(String.valueOf(percent));
-        checkNotNull(amountPercentSlider).setValue(percent);
+        checkNotNull(amountPercentTextField).setText(formatAmount(percentBd));
+        checkNotNull(amountPercentSlider).setValue(percentBd.doubleValue());
     }
 }
