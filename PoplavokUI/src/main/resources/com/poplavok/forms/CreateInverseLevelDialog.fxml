@@ -130,7 +130,7 @@
                <items>
                   <Slider fx:id="amountPercentSlider" />
                   <TextField fx:id="amountPercentTextField" maxWidth="60.0" minWidth="60.0" prefWidth="60.0" text="0" />
-                  <ChoiceBox fx:id="amountPercentTypeComboBox" prefHeight="26.0" prefWidth="80.0" value="\% Avail">
+                  <ChoiceBox fx:id="amountPercentTypeChoiceBox" prefHeight="26.0" prefWidth="80.0" value="\% Avail">
                       <items>
                           <FXCollections fx:factory="observableArrayList">
                               <String fx:value="% Avail" />

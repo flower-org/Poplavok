@@ -78,7 +78,7 @@ public class CreateInverseLevelDialog extends VBox {
 
     @FXML @Nullable TextField amountPercentTextField;
     @FXML @Nullable Slider amountPercentSlider;
-    @FXML @Nullable ChoiceBox<String> amountPercentTypeComboBox;
+    @FXML @Nullable ChoiceBox<String> amountPercentTypeChoiceBox;
     @FXML @Nullable Label amountPercentLabel;
 
     @FXML @Nullable TextField totalTextField;
@@ -221,7 +221,7 @@ public class CreateInverseLevelDialog extends VBox {
             }
         });
 
-        checkNotNull(amountPercentTypeComboBox).valueProperty().addListener((observable, oldValue, newValue) -> {
+        checkNotNull(amountPercentTypeChoiceBox).valueProperty().addListener((observable, oldValue, newValue) -> {
             if (isUpdatingAmount) return;
             isUpdatingAmount = true;
             try {
@@ -509,7 +509,7 @@ public class CreateInverseLevelDialog extends VBox {
     private void updateAmountFromPercent(BigDecimal percent) {
         updateAmountPercentLabel(percent.doubleValue());
         BigDecimal baseValue;
-        if ("% Total".equals(checkNotNull(amountPercentTypeComboBox).getValue())) {
+        if ("% Total".equals(checkNotNull(amountPercentTypeChoiceBox).getValue())) {
             baseValue = totalAmount;
         } else {
             baseValue = availableAmount;
@@ -522,7 +522,7 @@ public class CreateInverseLevelDialog extends VBox {
 
     private void updatePercentFromAmount(BigDecimal amount) {
         BigDecimal baseValue;
-        if ("% Total".equals(checkNotNull(amountPercentTypeComboBox).getValue())) {
+        if ("% Total".equals(checkNotNull(amountPercentTypeChoiceBox).getValue())) {
             baseValue = totalAmount;
         } else {
             baseValue = availableAmount;
