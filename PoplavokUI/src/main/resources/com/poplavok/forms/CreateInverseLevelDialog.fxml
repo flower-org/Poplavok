@@ -140,7 +140,7 @@
                   </ChoiceBox>
                </items>
             </ToolBar>
-            <Label text="\%:" GridPane.rowIndex="7" />
+            <Label fx:id="amountPercentLabel" text="\%:" GridPane.rowIndex="7" />
             <Label text="Total:" GridPane.rowIndex="5" />
             <ToolBar prefHeight="40.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="5">
                <items>

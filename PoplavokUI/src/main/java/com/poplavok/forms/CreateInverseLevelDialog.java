@@ -79,6 +79,7 @@ public class CreateInverseLevelDialog extends VBox {
     @FXML @Nullable TextField amountPercentTextField;
     @FXML @Nullable Slider amountPercentSlider;
     @FXML @Nullable ChoiceBox<String> amountPercentTypeComboBox;
+    @FXML @Nullable Label amountPercentLabel;
 
     @FXML @Nullable TextField totalTextField;
     @FXML @Nullable Label totalCurrencyLabel;
@@ -506,6 +507,7 @@ public class CreateInverseLevelDialog extends VBox {
     }
 
     private void updateAmountFromPercent(BigDecimal percent) {
+        updateAmountPercentLabel(percent.doubleValue());
         BigDecimal baseValue;
         if ("% Total".equals(checkNotNull(amountPercentTypeComboBox).getValue())) {
             baseValue = totalAmount;
@@ -538,5 +540,27 @@ public class CreateInverseLevelDialog extends VBox {
         
         checkNotNull(amountPercentTextField).setText(formatAmount(percentBd));
         checkNotNull(amountPercentSlider).setValue(percentBd.doubleValue());
+        updateAmountPercentLabel(percentBd.doubleValue());
+    }
+
+    private void updateAmountPercentLabel(double percent) {
+        if (amountPercentLabel == null) return;
+        
+        String moniker = "";
+        if (Math.abs(percent - 16.6) < 0.01) moniker = "1/6";
+        else if (Math.abs(percent - 20.0) < 0.01) moniker = "1/5";
+        else if (Math.abs(percent - 25.0) < 0.01) moniker = "1/4";
+        else if (Math.abs(percent - 33.3) < 0.01) moniker = "1/3";
+        else if (Math.abs(percent - 50.0) < 0.01) moniker = "1/2";
+        else if (Math.abs(percent - 66.6) < 0.01) moniker = "2/3";
+        else if (Math.abs(percent - 75.0) < 0.01) moniker = "3/4";
+        else if (Math.abs(percent - 80.0) < 0.01) moniker = "4/5";
+        else if (Math.abs(percent - 83.3) < 0.01) moniker = "5/6";
+
+        if (moniker.isEmpty()) {
+            amountPercentLabel.setText("%:");
+        } else {
+            amountPercentLabel.setText("% (" + moniker + "):");
+        }
     }
 }
