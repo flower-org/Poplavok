@@ -22,9 +22,11 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
@@ -74,12 +76,21 @@ public class CreateInverseLevelDialog extends VBox {
     @FXML @Nullable Button availableCurrencyButton;
     @FXML @Nullable TextField availableTextField;
 
+    @FXML @Nullable TextField amountPercentTextField;
+    @FXML @Nullable Slider amountPercentSlider;
+    @FXML @Nullable ChoiceBox<String> amountPercentTypeComboBox;
+
+    @FXML @Nullable TextField totalTextField;
+    @FXML @Nullable Label totalCurrencyLabel;
+
     @Nullable Stage stage;
 
     final Poplavok sourcePoplavok;
     final List<Level> sourceLevels;
     final Direction direction;
     final BigDecimal availableAmount;
+    final BigDecimal totalAmount;
+    private boolean isUpdatingAmount = false;
 
     @Nullable FilteredList<PoplavokWrapper> destinationPoplavoks;
 
@@ -128,10 +139,12 @@ public class CreateInverseLevelDialog extends VBox {
         if (direction == Direction.SHORT) {
             checkNotNull(proceedsCurrencyLabel).textProperty().setValue(quote);
             checkNotNull(amountCurrencyLabel).textProperty().setValue(base);
+            checkNotNull(totalCurrencyLabel).textProperty().setValue(base);
             checkNotNull(availableCurrencyButton).textProperty().setValue(base);
         } else { //if (direction == Direction.LONG) {
             checkNotNull(proceedsCurrencyLabel).textProperty().setValue(base);
             checkNotNull(amountCurrencyLabel).textProperty().setValue(quote);
+            checkNotNull(totalCurrencyLabel).textProperty().setValue(quote);
             checkNotNull(availableCurrencyButton).textProperty().setValue(quote);
         }
 
@@ -143,16 +156,85 @@ public class CreateInverseLevelDialog extends VBox {
         checkNotNull(priceTextField).textProperty().setValue(formatAmount(nullToZero(price)));
 
         BigDecimal available = BigDecimal.ZERO;
+        BigDecimal total = BigDecimal.ZERO;
         for (Level lvl : sourceLevels) {
             if (direction == Direction.SHORT) {
                 available = available.add(nullToZero(lvl.getAvailableAmountBase()));
+                total = total.add(nullToZero(lvl.getAvailableAmountBase())).add(nullToZero(lvl.getLentAmountBase()));
             } else { //if (direction == Direction.LONG) {
                 available = available.add(nullToZero(lvl.getAvailableAmountQuote()));
+                total = total.add(nullToZero(lvl.getAvailableAmountQuote())).add(nullToZero(lvl.getLentAmountQuote()));
             }
         }
         this.availableAmount = available;
+        this.totalAmount = total;
 
         checkNotNull(availableTextField).textProperty().setValue(formatAmount(available));
+        checkNotNull(totalTextField).textProperty().setValue(formatAmount(total));
+
+        checkNotNull(amountPercentSlider).setMin(0);
+        checkNotNull(amountPercentSlider).setMax(100);
+        checkNotNull(amountPercentSlider).valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (isUpdatingAmount) return;
+            isUpdatingAmount = true;
+            try {
+                int percent = newValue.intValue();
+                checkNotNull(amountPercentTextField).setText(String.valueOf(percent));
+                updateAmountFromPercent(percent);
+            } finally {
+                isUpdatingAmount = false;
+            }
+        });
+
+        checkNotNull(amountPercentTextField).textProperty().addListener((observable, oldValue, newValue) -> {
+            if (isUpdatingAmount) return;
+            isUpdatingAmount = true;
+            try {
+                if (!StringUtils.isBlank(newValue)) {
+                    int percent = Integer.parseInt(newValue);
+                    if (percent >= 0 && percent <= 100) {
+                        checkNotNull(amountPercentSlider).setValue(percent);
+                        updateAmountFromPercent(percent);
+                    }
+                }
+            } catch (NumberFormatException e) {
+                // ignore
+            } finally {
+                isUpdatingAmount = false;
+            }
+        });
+
+        checkNotNull(amountPercentTypeComboBox).valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (isUpdatingAmount) return;
+            isUpdatingAmount = true;
+            try {
+                String pctStr = checkNotNull(amountPercentTextField).getText();
+                if (!StringUtils.isBlank(pctStr)) {
+                    int percent = Integer.parseInt(pctStr);
+                    updateAmountFromPercent(percent);
+                }
+            } catch (NumberFormatException e) {
+                // ignore
+            } finally {
+                isUpdatingAmount = false;
+            }
+        });
+
+        checkNotNull(amountTextField).textProperty().addListener((observable, oldValue, newValue) -> {
+            if (isUpdatingAmount) return;
+            isUpdatingAmount = true;
+            try {
+                if (!StringUtils.isBlank(newValue)) {
+                    BigDecimal amount = fromString(newValue);
+                    amount = amount == null ? BigDecimal.ZERO : amount;
+                    updatePercentFromAmount(amount);
+                }
+            } catch (Exception e) {
+                // ignore
+            } finally {
+                isUpdatingAmount = false;
+            }
+        });
 
         updateControlsState();
     }
@@ -403,5 +485,41 @@ public class CreateInverseLevelDialog extends VBox {
             LOGGER.error("Error on reverse Recalc:", e);
             JavaFxUtils.showErrorMessage("Error on reverse Recalc: " + e);
         }
+    }
+
+    private void updateAmountFromPercent(int percent) {
+        BigDecimal baseValue;
+        if ("% Total".equals(checkNotNull(amountPercentTypeComboBox).getValue())) {
+            baseValue = totalAmount;
+        } else {
+            baseValue = availableAmount;
+        }
+        
+        BigDecimal amount = baseValue.multiply(BigDecimal.valueOf(percent)).divide(BigDecimal.valueOf(100), 8, java.math.RoundingMode.HALF_UP);
+        checkNotNull(amountTextField).setText(formatAmount(amount));
+        priceFeeUpdate();
+    }
+
+    private void updatePercentFromAmount(BigDecimal amount) {
+        BigDecimal baseValue;
+        if ("% Total".equals(checkNotNull(amountPercentTypeComboBox).getValue())) {
+            baseValue = totalAmount;
+        } else {
+            baseValue = availableAmount;
+        }
+        
+        if (baseValue.compareTo(BigDecimal.ZERO) == 0) {
+            checkNotNull(amountPercentTextField).setText("0");
+            checkNotNull(amountPercentSlider).setValue(0);
+            return;
+        }
+        
+        BigDecimal percentBd = amount.multiply(BigDecimal.valueOf(100)).divide(baseValue, 0, java.math.RoundingMode.HALF_UP);
+        int percent = percentBd.intValue();
+        if (percent > 100) percent = 100;
+        if (percent < 0) percent = 0;
+        
+        checkNotNull(amountPercentTextField).setText(String.valueOf(percent));
+        checkNotNull(amountPercentSlider).setValue(percent);
     }
 }
