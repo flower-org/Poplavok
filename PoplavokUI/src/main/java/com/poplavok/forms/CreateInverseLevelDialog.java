@@ -178,7 +178,23 @@ public class CreateInverseLevelDialog extends VBox {
             if (isUpdatingAmount) return;
             isUpdatingAmount = true;
             try {
-                BigDecimal percent = BigDecimal.valueOf(newValue.doubleValue()).setScale(2, java.math.RoundingMode.HALF_UP);
+                double val = newValue.doubleValue();
+                
+                // Snap to closest special value
+                double[] snapValues = {0.0, 16.6, 20.0, 25.0, 33.3, 50.0, 66.6, 75.0, 80.0, 83.3, 100.0};
+                double closest = snapValues[0];
+                double minDiff = Math.abs(val - closest);
+                for (double snap : snapValues) {
+                    double diff = Math.abs(val - snap);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = snap;
+                    }
+                }
+                val = closest;
+                checkNotNull(amountPercentSlider).setValue(val);
+
+                BigDecimal percent = BigDecimal.valueOf(val).setScale(2, java.math.RoundingMode.HALF_UP);
                 checkNotNull(amountPercentTextField).setText(formatAmount(percent));
                 updateAmountFromPercent(percent);
             } finally {
