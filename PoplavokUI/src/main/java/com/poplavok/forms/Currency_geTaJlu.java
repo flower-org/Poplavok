@@ -1,7 +1,7 @@
 package com.poplavok.forms;
 
-import com.KyKu4.MogeJlb.response.CurrencyExtendedInfoResponse;
-import com.KyKu4.MogeJlb.response.InfoRecord;
+import com.poplavok.api.kucoin.model.response.CurrencyExtendedInfoResponse;
+import com.poplavok.api.kucoin.model.response.InfoRecord;
 import com.flower.fxutils.ModalWindow;
 import com.flower.fxutils.ProgressForm;
 import com.flower.fxutils.Refreshable;
@@ -163,14 +163,14 @@ public class Currency_geTaJlu extends AnchorPane implements Refreshable {
             Preconditions.checkNotNull(circulatingSupply).setText(getString(info.circulatingSupply()));
             Preconditions.checkNotNull(totalSupply).setText("N/A");
             Preconditions.checkNotNull(maxSupply).setText(getString(info.maxSupply()));
-            Preconditions.checkNotNull(website).setText(getFirstItemString(info.website()));
-            Preconditions.checkNotNull(whitepaper).setText(getFirstItemString(info.whitePaperList(), InfoRecord::text));
+            if(info.website() != null) Preconditions.checkNotNull(website).setText(getFirstItemString(info.website()));
+            if(info.whitePaperList() != null) Preconditions.checkNotNull(whitepaper).setText(getFirstItemString(info.whitePaperList(), (infoRecord) -> infoRecord.text() != null ? infoRecord.text() : ""));
             Preconditions.checkNotNull(issueDate).setText(info.dateAdded());
             Preconditions.checkNotNull(issuePrice).setText(getString(info.currentPrice()));
             Preconditions.checkNotNull(roi).setText("N/A");
 
-            Preconditions.checkNotNull(explorer).setText(getAllItemStrings(info.explorer(), Object::toString, "---------------------------------------------------------"));
-            Preconditions.checkNotNull(introduceText).setText(getAllItemStrings(info.currencyIntroduction(), InfoRecord::subText, "---------------------------------------------------------"));
+            if(info.explorer() != null) Preconditions.checkNotNull(explorer).setText(getAllItemStrings(info.explorer(), Object::toString, "---------------------------------------------------------"));
+            if(info.currencyIntroduction() != null) Preconditions.checkNotNull(introduceText).setText(getAllItemStrings(info.currencyIntroduction(), (infoRecord) -> infoRecord.subText() != null ? infoRecord.subText() : "", "---------------------------------------------------------"));
         }
     }
 

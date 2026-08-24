@@ -30,6 +30,11 @@
           <MenuItem mnemonicParsing="false" onAction="#openMarketTickersTab" text="Market Tickers" />
         </items>
       </Menu>
+      <Menu mnemonicParsing="false" text="API">
+        <items>
+          <MenuItem mnemonicParsing="false" onAction="#showApiSettingsDialog" text="API settings" />
+        </items>
+      </Menu>
         <Menu mnemonicParsing="false" text="Help">
             <MenuItem mnemonicParsing="false" onAction="#showAboutDialog" text="About" />
         </Menu>

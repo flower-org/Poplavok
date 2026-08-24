@@ -1,11 +1,13 @@
 package com.poplavok.kucoin;
 
-import com.KyKu4.MogeJlb.response.ApiCurrencyDetailChainPropertyResponse;
-import com.KyKu4.MogeJlb.response.CurrencyExtendedInfoResponse;
-import com.KyKu4.MogeJlb.response.CurrencyResponse;
-import com.KyKu4.MogeJlb.response.ImmutableCurrencyExtendedInfoResponse;
-import com.KyKu4.MogeJlb.response.MarketTickerResponse;
+import com.poplavok.api.kucoin.model.response.ApiCurrencyDetailChainPropertyResponse;
+import com.poplavok.api.kucoin.model.response.CurrencyExtendedInfoResponse;
+import com.poplavok.api.kucoin.model.response.CurrencyResponse;
+import com.poplavok.api.kucoin.model.response.ImmutableCurrencyExtendedInfoResponse;
+import com.poplavok.api.kucoin.model.response.MarketTickerResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Strings;
+import java.util.Objects;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.poplavok.data.model.Currency;
@@ -23,10 +25,10 @@ public class EntityConverter {
     }
 
     public static Currency fromResponse(CurrencyResponse currencyResponse) {
-        return of(currencyResponse.currency(), currencyResponse.fullName(), currencyResponse.name(),
-                currencyResponse.precision(), currencyResponse.withdrawalMinSize(), currencyResponse.withdrawalMinFee(),
-                currencyResponse.isWithdrawEnabled(), currencyResponse.isDepositEnabled(), currencyResponse.isMarginEnabled(),
-                currencyResponse.isDebitEnabled());
+        return of(currencyResponse.currency(), Strings.nullToEmpty(currencyResponse.fullName()), Strings.nullToEmpty(currencyResponse.name()),
+                currencyResponse.precision(), currencyResponse.withdrawalMinSize() != null ? currencyResponse.withdrawalMinSize() : java.math.BigDecimal.ZERO, currencyResponse.withdrawalMinFee() != null ? currencyResponse.withdrawalMinFee() : java.math.BigDecimal.ZERO,
+                Boolean.TRUE.equals(currencyResponse.isWithdrawEnabled()), Boolean.TRUE.equals(currencyResponse.isDepositEnabled()), Boolean.TRUE.equals(currencyResponse.isMarginEnabled()),
+                Boolean.TRUE.equals(currencyResponse.isDebitEnabled()));
     }
 
     private static Currency of(String currency, String fullName, String name, Integer precision,
@@ -58,9 +60,9 @@ public class EntityConverter {
     }
 
     public static MarketTicker fromResponse(@Nullable Long marketTickerId, String baseCurrency, String quoteCurrency, MarketTickerResponse marketTickerResponse) {
-        return of(marketTickerId, baseCurrency, quoteCurrency, marketTickerResponse.symbol(),
-                marketTickerResponse.symbolName(), marketTickerResponse.takerFeeRate(), marketTickerResponse.makerFeeRate(),
-                marketTickerResponse.takerCoefficient(), marketTickerResponse.makerCoefficient());
+        return of(marketTickerId, baseCurrency, quoteCurrency, Strings.nullToEmpty(marketTickerResponse.symbol()),
+                Strings.nullToEmpty(marketTickerResponse.symbolName()), marketTickerResponse.takerFeeRate() != null ? marketTickerResponse.takerFeeRate() : java.math.BigDecimal.ZERO, marketTickerResponse.makerFeeRate() != null ? marketTickerResponse.makerFeeRate() : java.math.BigDecimal.ZERO,
+                marketTickerResponse.takerCoefficient() != null ? marketTickerResponse.takerCoefficient() : java.math.BigDecimal.ZERO, marketTickerResponse.makerCoefficient() != null ? marketTickerResponse.makerCoefficient() : java.math.BigDecimal.ZERO);
     }
 
     private static MarketTicker of(@Nullable Long marketTickerId, String baseCurrency, String quoteCurrency, String symbol,

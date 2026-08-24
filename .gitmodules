@@ -1,3 +1,9 @@
 [submodule "JavaFxUtils"]
 	path = JavaFxUtils
 	url = https://github.com/flower-org/JavaFxUtils
+[submodule "KeyManagerFx"]
+	path = KeyManagerFx
+	url = https://github.com/flower-org/KeyManagerFx.git
+[submodule "CryptCore"]
+	path = CryptCore
+	url = https://github.com/flower-org/CryptCore.git

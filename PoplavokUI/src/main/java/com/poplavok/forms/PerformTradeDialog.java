@@ -1,6 +1,14 @@
 package com.poplavok.forms;
 
+import com.poplavok.api.kucoin.KucoinApiClient;
+import com.poplavok.api.kucoin.auth.KucoinCredentialsProvider;
+import com.poplavok.api.kucoin.model.request.ImmutableOrderCreateRequest;
+import com.poplavok.api.kucoin.model.request.OrderCreateRequest;
+import com.poplavok.api.kucoin.model.response.OrderCreateResponse;
 import com.flower.fxutils.JavaFxUtils;
+
+import java.net.Proxy;
+import java.util.UUID;
 import com.poplavok.data.model.Direction;
 import com.poplavok.data.model.Trade;
 import com.poplavok.data.model.MarketTicker;
@@ -80,15 +88,19 @@ public class PerformTradeDialog extends VBox {
     @FXML @Nullable TextField debtTextField;
     @FXML @Nullable Label debtCurrencyLabel;
 
+    @FXML @Nullable CheckBox autoBorrowBuyCheckBox;
+    @FXML @Nullable CheckBox autoBorrowSellCheckBox;
+
     @Nullable Stage stage;
     @Nullable Trade returnTrade;
 
+    protected final MainForm mainApp;
     final Direction direction;
     final MarketTicker ticker;
     final boolean isAveragingTrade;
 
     /** Regular Trade */
-    public PerformTradeDialog(@Nullable BigDecimal availableAmountBase, @Nullable BigDecimal availableAmountQuote,
+    public PerformTradeDialog(MainForm mainApp, @Nullable BigDecimal availableAmountBase, @Nullable BigDecimal availableAmountQuote,
                               MarketTicker ticker, Direction direction, @Nullable BigDecimal price) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("PerformTradeDialog.fxml"));
         fxmlLoader.setRoot(this);
@@ -100,6 +112,7 @@ public class PerformTradeDialog extends VBox {
             throw new RuntimeException(exception);
         }
 
+        this.mainApp = mainApp;
         this.isAveragingTrade = false;
         this.ticker = ticker;
         this.direction = direction;
@@ -151,7 +164,7 @@ public class PerformTradeDialog extends VBox {
     }
 
     /** Averaging Trade */
-    public PerformTradeDialog(@Nullable BigDecimal availableAmountBase, @Nullable BigDecimal availableAmountQuote,
+    public PerformTradeDialog(MainForm mainApp, @Nullable BigDecimal availableAmountBase, @Nullable BigDecimal availableAmountQuote,
                               BigDecimal debt, MarketTicker ticker, Direction direction, @Nullable BigDecimal price) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("PerformTradeDialog.fxml"));
         fxmlLoader.setRoot(this);
@@ -163,6 +176,7 @@ public class PerformTradeDialog extends VBox {
             throw new RuntimeException(exception);
         }
 
+        this.mainApp = mainApp;
         this.isAveragingTrade = true;
         this.ticker = ticker;
         this.direction = direction;
@@ -445,4 +459,129 @@ public class PerformTradeDialog extends VBox {
         return returnTrade;
     }
 
+    public void apiSellOrder() {
+        try {
+            if (StringUtils.isBlank(checkNotNull(priceTextField).getText()) || 
+                StringUtils.isBlank(checkNotNull(giveBaseSellTextField).getText())) {
+                JavaFxUtils.showErrorMessage("Price and Base amount must be provided.");
+                return;
+            }
+
+            BigDecimal price = nullToZero(fromString(priceTextField.getText()));
+            BigDecimal size = nullToZero(fromString(giveBaseSellTextField.getText()));
+
+            if (price.compareTo(BigDecimal.ZERO) <= 0 || size.compareTo(BigDecimal.ZERO) <= 0) {
+                JavaFxUtils.showErrorMessage("Price and Size must be greater than zero.");
+                return;
+            }
+
+            KucoinCredentialsProvider provider = mainApp.getApiSettingsDialog().getCredentialsProvider();
+            Proxy proxy = mainApp.getApiSettingsDialog().getProxy();
+            if (provider == null) {
+                JavaFxUtils.showErrorMessage("API credentials not available. Please configure in Settings.");
+                return;
+            }
+
+            OrderCreateResponse response = createMarginSellOrder(provider, proxy, price, size);
+            JavaFxUtils.showMessage("Margin Sell Order created successfully! ID: " + response.orderId());
+        } catch (Exception e) {
+            LOGGER.error("Error creating sell order", e);
+            JavaFxUtils.showErrorMessage("Error creating margin sell order: " + e.getMessage());
+        }
+    }
+
+    public void apiBuyOrder() {
+        try {
+            if (StringUtils.isBlank(checkNotNull(priceTextField).getText()) || 
+                StringUtils.isBlank(checkNotNull(getBaseBuyTextField).getText())) {
+                JavaFxUtils.showErrorMessage("Price and Base amount must be provided.");
+                return;
+            }
+
+            BigDecimal price = nullToZero(fromString(priceTextField.getText()));
+            BigDecimal size = nullToZero(fromString(getBaseBuyTextField.getText()));
+
+            if (price.compareTo(BigDecimal.ZERO) <= 0 || size.compareTo(BigDecimal.ZERO) <= 0) {
+                JavaFxUtils.showErrorMessage("Price and Size must be greater than zero.");
+                return;
+            }
+
+            KucoinCredentialsProvider provider = mainApp.getApiSettingsDialog().getCredentialsProvider();
+            Proxy proxy = mainApp.getApiSettingsDialog().getProxy();
+            if (provider == null) {
+                JavaFxUtils.showErrorMessage("API credentials not available. Please configure in Settings.");
+                return;
+            }
+
+            OrderCreateResponse response = createMarginBuyOrder(provider, proxy, price, size);
+            JavaFxUtils.showMessage("Margin Buy Order created successfully! ID: " + response.orderId());
+        } catch (Exception e) {
+            LOGGER.error("Error creating buy order", e);
+            JavaFxUtils.showErrorMessage("Error creating margin buy order: " + e.getMessage());
+        }
+    }
+
+    protected OrderCreateResponse createSpotBuyOrder(KucoinCredentialsProvider provider, @Nullable Proxy proxy,
+                                                     BigDecimal price, BigDecimal size) throws IOException {
+        KucoinApiClient apiClient = new KucoinApiClient(provider, proxy);
+        OrderCreateRequest request = ImmutableOrderCreateRequest.builder()
+                .clientOid(UUID.randomUUID().toString())
+                .side("buy")
+                .symbol(ticker.getSymbol())
+                .type("limit")
+                .price(price)
+                .size(size)
+                .build();
+
+        return apiClient.createOrder(request);
+    }
+
+    protected OrderCreateResponse createSpotSellOrder(KucoinCredentialsProvider provider, @Nullable Proxy proxy,
+                                                     BigDecimal price, BigDecimal size) throws IOException {
+        KucoinApiClient apiClient = new KucoinApiClient(provider, proxy);
+        OrderCreateRequest request = ImmutableOrderCreateRequest.builder()
+                .clientOid(UUID.randomUUID().toString())
+                .side("sell")
+                .symbol(ticker.getSymbol())
+                .type("limit")
+                .price(price)
+                .size(size)
+                .build();
+
+        return apiClient.createOrder(request);
+    }
+
+    protected OrderCreateResponse createMarginBuyOrder(KucoinCredentialsProvider provider, @Nullable Proxy proxy,
+                                                     BigDecimal price, BigDecimal size) throws IOException {
+        KucoinApiClient apiClient = new KucoinApiClient(provider, proxy);
+        OrderCreateRequest request = ImmutableOrderCreateRequest.builder()
+                .clientOid(UUID.randomUUID().toString())
+                .side("buy")
+                .symbol(ticker.getSymbol())
+                .type("limit")
+                .price(price)
+                .size(size)
+                .isIsolated(true)
+                .autoBorrow(checkNotNull(autoBorrowBuyCheckBox).isSelected())
+                .build();
+
+        return apiClient.createMarginOrder(request);
+    }
+
+    protected OrderCreateResponse createMarginSellOrder(KucoinCredentialsProvider provider, @Nullable Proxy proxy,
+                                                      BigDecimal price, BigDecimal size) throws IOException {
+        KucoinApiClient apiClient = new KucoinApiClient(provider, proxy);
+        OrderCreateRequest request = ImmutableOrderCreateRequest.builder()
+                .clientOid(UUID.randomUUID().toString())
+                .side("sell")
+                .symbol(ticker.getSymbol())
+                .type("limit")
+                .price(price)
+                .size(size)
+                .isIsolated(true)
+                .autoBorrow(checkNotNull(autoBorrowSellCheckBox).isSelected())
+                .build();
+
+        return apiClient.createMarginOrder(request);
+    }
 }

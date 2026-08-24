@@ -1,6 +1,6 @@
 package com.poplavok;
 
-import com.KyKu4.npo4ee.KyKu4_XTTn;
+import com.poplavok.api.kucoin.KucoinApiClient;
 import com.poplavok.data.utils.DBUtil;
 import com.poplavok.data.utils.HibernateUtil;
 import com.poplavok.forms.MainForm;
@@ -29,7 +29,7 @@ public class App extends Application {
             Parent rootNode = fxmlLoader.load();
 
             MainForm mainForm = fxmlLoader.getController();
-            mainForm.setMainStage(mainStage);
+            mainForm.init(mainStage);
 
             Scene mainScene = new Scene(rootNode, 1200, 800);
 
@@ -38,7 +38,7 @@ public class App extends Application {
                 HibernateUtil.shutdown();
                 DBUtil.shutdown();
                 Platform.exit();
-                KyKu4_XTTn.closeHttpClient();
+                new KucoinApiClient(); // todo close client if needed
             });
 
             mainStage.setTitle("Poplavok");
