@@ -46,13 +46,23 @@ public class Level2DepthStreamer extends WebSocketListener {
     final AtomicReference<Pair<WebSocket, Long>> lastPing = new AtomicReference<>(null);
 
     public Level2DepthStreamer(String topic, Depth depth, Level2DepthCallback callback) {
+        this(topic, depth, callback, null);
+    }
+
+    public Level2DepthStreamer(String topic, Depth depth, Level2DepthCallback callback, @Nullable java.net.Proxy proxy) {
         if (topic != null && !topic.isEmpty()) {
             this.topics.add(topic);
         }
         this.depth = depth;
         this.callback = callback;
-        this.apiClient = new KucoinApiClient();
-        this.httpClient = new OkHttpClient();
+        this.apiClient = new KucoinApiClient(null, proxy);
+        
+        OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
+        if (proxy != null) {
+            clientBuilder.proxy(proxy);
+        }
+        this.httpClient = clientBuilder.build();
+        
         this.mapper = new ObjectMapper().registerModules(new GuavaModule());
 
         pingThread = new Thread(() -> {

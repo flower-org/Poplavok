@@ -30,11 +30,18 @@ public class MainForm {
         //No need to load fxml explicitly
     }
 
+    @Nullable protected static MainForm INSTANCE;
+
+    @Nullable public static MainForm getInstance() {
+        return checkNotNull(INSTANCE);
+    }
+
     public ApiSettingsDialog getApiSettingsDialog() {
         return checkNotNull(apiSettingsDialog);
     }
 
     public void init(Stage mainStage) {
+        INSTANCE = this;
         this.mainStage = mainStage;
         this.apiSettingsDialog = new ApiSettingsDialog(mainStage);
         Platform.runLater(this::showApiSettingsDialog);

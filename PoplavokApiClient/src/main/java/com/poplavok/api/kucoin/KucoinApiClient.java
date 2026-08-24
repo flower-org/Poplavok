@@ -7,7 +7,19 @@ import com.poplavok.api.kucoin.auth.AuthenticationInterceptor;
 import com.poplavok.api.kucoin.auth.KucoinCredentialsProvider;
 import com.poplavok.api.kucoin.exception.KucoinApiException;
 import com.poplavok.api.kucoin.model.request.OrderCreateRequest;
-import com.poplavok.api.kucoin.model.response.*;
+import com.poplavok.api.kucoin.model.response.AccountBalancesResponse;
+import com.poplavok.api.kucoin.model.response.AllTickersResponse;
+import com.poplavok.api.kucoin.model.response.CancelOrderResponse;
+import com.poplavok.api.kucoin.model.response.CurrencyDetailV2Response;
+import com.poplavok.api.kucoin.model.response.CurrencyExtendedInfoResponse;
+import com.poplavok.api.kucoin.model.response.CurrencyResponse;
+import com.poplavok.api.kucoin.model.response.IsolatedMarginAccountInfo;
+import com.poplavok.api.kucoin.model.response.KucoinResponse;
+import com.poplavok.api.kucoin.model.response.MarginAccountResponse;
+import com.poplavok.api.kucoin.model.response.OrderCreateResponse;
+import com.poplavok.api.kucoin.model.response.OrderResponse;
+import com.poplavok.api.kucoin.model.response.Pagination;
+import com.poplavok.api.kucoin.model.response.WebsocketTokenResponse;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -17,6 +29,7 @@ import okhttp3.Response;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.net.Proxy;
 import java.util.List;
 
 public class KucoinApiClient {
@@ -26,7 +39,7 @@ public class KucoinApiClient {
     private final OkHttpClient httpClient;
     private final ObjectMapper mapper;
 
-    public KucoinApiClient(@Nullable KucoinCredentialsProvider credentialsProvider) {
+    public KucoinApiClient(@Nullable KucoinCredentialsProvider credentialsProvider, @Nullable Proxy proxy) {
         this.mapper = new ObjectMapper();
         this.mapper.registerModules(new GuavaModule());
         
@@ -34,7 +47,14 @@ public class KucoinApiClient {
         if (credentialsProvider != null) {
             builder.addInterceptor(new AuthenticationInterceptor(credentialsProvider));
         }
+        if (proxy != null) {
+            builder.proxy(proxy);
+        }
         this.httpClient = builder.build();
+    }
+
+    public KucoinApiClient(@Nullable KucoinCredentialsProvider credentialsProvider) {
+        this(credentialsProvider, null);
     }
 
     public KucoinApiClient() {

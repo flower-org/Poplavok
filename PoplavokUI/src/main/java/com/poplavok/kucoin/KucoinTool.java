@@ -7,11 +7,6 @@ import com.poplavok.api.kucoin.model.response.CurrencyDetailV2Response;
 import com.poplavok.api.kucoin.model.response.CurrencyExtendedInfoResponse;
 import com.poplavok.api.kucoin.model.response.CurrencyResponse;
 import com.poplavok.api.kucoin.model.response.MarketTickerResponse;
-import com.poplavok.api.kucoin.model.response.Pagination;
-import com.poplavok.api.kucoin.model.response.AccountBalancesResponse;
-import com.poplavok.api.kucoin.model.response.MarginAccountResponse;
-import com.poplavok.api.kucoin.model.response.IsolatedMarginAccountInfo;
-import com.poplavok.api.kucoin.model.response.OrderResponse;
 import com.poplavok.api.kucoin.KucoinApiClient;
 
 
@@ -28,11 +23,13 @@ import com.poplavok.data.model.CurrencyChain;
 import com.poplavok.data.model.CurrencyExtendedInfo;
 import com.poplavok.data.model.MarketTicker;
 import com.poplavok.data.utils.DBUtil;
+import com.poplavok.forms.MainForm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.net.Proxy;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,7 +41,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class KucoinTool {
     final static Logger LOGGER = LoggerFactory.getLogger(KucoinTool.class);
 
-    
+    private static KucoinApiClient createApiClient() {
+        Proxy proxy = null;
+        MainForm mainForm = MainForm.getInstance();
+        if (mainForm != null) {
+            try {
+                proxy = mainForm.getApiSettingsDialog().getProxy();
+            } catch (Exception e) {
+                // ignore
+            }
+        }
+        return new KucoinApiClient(null, proxy);
+    }
 
     public static void retrieveCurrencyFromExchange(ProgressCallback progressCallback) {
         double maxProgress = 1.0;
@@ -66,7 +74,7 @@ public class KucoinTool {
         progress = 0.02*maxProgress;
         progressCallback.updateProgress("Retrieving currencies from exchange", progress, false);
 
-        List<CurrencyResponse> currenciesResponse = new KucoinApiClient().getCurrencies();
+        List<CurrencyResponse> currenciesResponse = createApiClient().getCurrencies();
 
         double progressPerCurrencyStep = (maxProgress - progress) / (currenciesResponse.size() + 1);
         for (int i = 0; i < currenciesResponse.size(); i++) {
@@ -123,7 +131,7 @@ public class KucoinTool {
 
         progress += 0.1;
         progressCallback.updateProgress("Retrieving market tickers from exchange", progress, false);
-        AllTickersResponse tickers = new KucoinApiClient().getAllTickers();
+        AllTickersResponse tickers = createApiClient().getAllTickers();
 
         int tickerSize = checkNotNull(tickers.ticker()).size();
         double progressPerCurrencyStep = (maxProgress - progress) / (tickerSize + 1);
@@ -428,7 +436,7 @@ public class KucoinTool {
         CurrencyExtendedInfoResponse currencyExtendedInfoResponseVar = null;
         while (true) {
             try {
-                currencyExtendedInfoResponseVar = new KucoinApiClient().getCurrencyExtendedInfo(currency.getCurrency());
+                currencyExtendedInfoResponseVar = createApiClient().getCurrencyExtendedInfo(currency.getCurrency());
                 break;
             } catch (KucoinApiException e) {
                 // Too many requests, wait and retry
@@ -465,7 +473,7 @@ public class KucoinTool {
         //2. CurrencyChains
         Map<String, CurrencyChain> currencyChainMap = DBUtil.connectGetResultAndClose(conn -> CurrencyChainDAO.getForCurrency(conn, currency.getCurrency()))
                 .stream().collect(Collectors.toMap(cc -> checkNotNull(cc.getChain()).chain(), c -> c));
-        CurrencyDetailV2Response currencyDetailV2Response = new KucoinApiClient().getCurrencyDetailV2(currency.getCurrency());
+        CurrencyDetailV2Response currencyDetailV2Response = createApiClient().getCurrencyDetailV2(currency.getCurrency());
 
         if (currencyDetailV2Response.list() != null) {
             for (ApiCurrencyDetailChainPropertyResponse chainResponse : currencyDetailV2Response.list()) {

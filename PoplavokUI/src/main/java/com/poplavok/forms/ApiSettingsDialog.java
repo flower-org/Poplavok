@@ -23,17 +23,22 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.util.List;
 import java.util.prefs.Preferences;
 
 import static com.flower.crypt.keys.UserPreferencesManager.getUserPreference;
 import static com.flower.crypt.keys.UserPreferencesManager.updateUserPreference;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.net.Proxy.Type.SOCKS;
 
 public class ApiSettingsDialog extends VBox {
     final static Logger LOGGER = LoggerFactory.getLogger(ApiSettingsDialog.class);
 
     final static String SETTINGS_FILE = "Poplavok_ApiSettingsFile";
+    final static String SOCKS5_PROXY_HOST = "Poplavok_Socks5ProxyHost";
+    final static String SOCKS5_PROXY_PORT = "Poplavok_Socks5ProxyPort";
     @Nullable protected KucoinCredentialsProvider credentialsProvider;
 
     protected static void updateSettingsFileUserPreferences(String settingsFile) {
@@ -43,10 +48,26 @@ public class ApiSettingsDialog extends VBox {
 
     protected static String settingsFile() { return getUserPreference(SETTINGS_FILE); }
 
+    protected static void updateProxyHostUserPreferences(String host) {
+        Preferences userPreferences = Preferences.userRoot();
+        updateUserPreference(userPreferences, SOCKS5_PROXY_HOST, host);
+    }
+
+    protected static String proxyHost() { return getUserPreference(SOCKS5_PROXY_HOST); }
+
+    protected static void updateProxyPortUserPreferences(String port) {
+        Preferences userPreferences = Preferences.userRoot();
+        updateUserPreference(userPreferences, SOCKS5_PROXY_PORT, port);
+    }
+
+    protected static String proxyPort() { return getUserPreference(SOCKS5_PROXY_PORT); }
+
     @Nullable Stage stage;
     @Nullable TabKeyProvider keyProvider;
     @FXML @Nullable AnchorPane topPane;
     @FXML @Nullable TextField settingsFileTextField;
+    @FXML @Nullable TextField socks5ProxyHostTextField;
+    @FXML @Nullable TextField socks5ProxyPortTextField;
 
     public ApiSettingsDialog(Stage stage) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("ApiSettingsDialog.fxml"));
@@ -63,6 +84,12 @@ public class ApiSettingsDialog extends VBox {
 
         checkNotNull(settingsFileTextField).textProperty().setValue(settingsFile());
         checkNotNull(settingsFileTextField).textProperty().addListener(this::settingsFileTextFieldTextChanged);
+
+        checkNotNull(socks5ProxyHostTextField).textProperty().setValue(proxyHost());
+        checkNotNull(socks5ProxyHostTextField).textProperty().addListener(this::socks5ProxyHostTextFieldTextChanged);
+
+        checkNotNull(socks5ProxyPortTextField).textProperty().setValue(proxyPort());
+        checkNotNull(socks5ProxyPortTextField).textProperty().addListener(this::socks5ProxyPortTextFieldTextChanged);
     }
 
     protected void init(Stage stage) {
@@ -102,6 +129,14 @@ public class ApiSettingsDialog extends VBox {
         updateSettingsFileUserPreferences(checkNotNull(settingsFileTextField).getText());
     }
 
+    public void socks5ProxyHostTextFieldTextChanged(ObservableValue<? extends String> observable, String _old, String _new) {
+        updateProxyHostUserPreferences(checkNotNull(socks5ProxyHostTextField).getText());
+    }
+
+    public void socks5ProxyPortTextFieldTextChanged(ObservableValue<? extends String> observable, String _old, String _new) {
+        updateProxyPortUserPreferences(checkNotNull(socks5ProxyPortTextField).getText());
+    }
+
     public void testSettingsLoad() {
         try {
             KucoinCredentialsProvider credentialsProvider = loadProvider();
@@ -135,6 +170,17 @@ public class ApiSettingsDialog extends VBox {
     public @Nullable KucoinCredentialsProvider getCredentialsProvider() {
         return credentialsProvider;
     }
+
+    public @Nullable Proxy getProxy() {
+        String host = checkNotNull(socks5ProxyHostTextField).textProperty().get();
+        String portStr = checkNotNull(socks5ProxyPortTextField).textProperty().get();
+        if (!StringUtils.isBlank(host) && !StringUtils.isBlank(portStr)) {
+            int port = Integer.parseInt(portStr);
+            return new Proxy(SOCKS, new InetSocketAddress(host, port));
+        }
+        return null;
+    }
+
 
     protected @Nullable KucoinCredentialsProvider loadProvider() throws IOException {
         File settingsFile = new File(checkNotNull(settingsFileTextField).getText());

@@ -6,6 +6,8 @@ import com.poplavok.api.kucoin.model.request.ImmutableOrderCreateRequest;
 import com.poplavok.api.kucoin.model.request.OrderCreateRequest;
 import com.poplavok.api.kucoin.model.response.OrderCreateResponse;
 import com.flower.fxutils.JavaFxUtils;
+
+import java.net.Proxy;
 import java.util.UUID;
 import com.poplavok.data.model.Direction;
 import com.poplavok.data.model.Trade;
@@ -474,12 +476,13 @@ public class PerformTradeDialog extends VBox {
             }
 
             KucoinCredentialsProvider provider = mainApp.getApiSettingsDialog().getCredentialsProvider();
+            Proxy proxy = mainApp.getApiSettingsDialog().getProxy();
             if (provider == null) {
                 JavaFxUtils.showErrorMessage("API credentials not available. Please configure in Settings.");
                 return;
             }
 
-            KucoinApiClient apiClient = new KucoinApiClient(provider);
+            KucoinApiClient apiClient = new KucoinApiClient(provider, proxy);
             OrderCreateRequest request = ImmutableOrderCreateRequest.builder()
                 .clientOid(UUID.randomUUID().toString())
                 .side("sell")
@@ -517,12 +520,13 @@ public class PerformTradeDialog extends VBox {
             }
 
             KucoinCredentialsProvider provider = mainApp.getApiSettingsDialog().getCredentialsProvider();
+            Proxy proxy = mainApp.getApiSettingsDialog().getProxy();
             if (provider == null) {
                 JavaFxUtils.showErrorMessage("API credentials not available. Please configure in Settings.");
                 return;
             }
 
-            KucoinApiClient apiClient = new KucoinApiClient(provider);
+            KucoinApiClient apiClient = new KucoinApiClient(provider, proxy);
             OrderCreateRequest request = ImmutableOrderCreateRequest.builder()
                 .clientOid(UUID.randomUUID().toString())
                 .side("buy")

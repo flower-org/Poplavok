@@ -44,12 +44,22 @@ public class TickerDataStreamer extends WebSocketListener {
     final AtomicReference<Pair<WebSocket, Long>> lastPing = new AtomicReference<>(null);
 
     public TickerDataStreamer(String topic, TickerCallback tickerCallback) {
+        this(topic, tickerCallback, null);
+    }
+
+    public TickerDataStreamer(String topic, TickerCallback tickerCallback, @Nullable java.net.Proxy proxy) {
         if (topic != null && !topic.isEmpty()) {
             this.topics.add(topic);
         }
         this.tickerCallback = tickerCallback;
-        this.apiClient = new KucoinApiClient();
-        this.httpClient = new OkHttpClient();
+        this.apiClient = new KucoinApiClient(null, proxy);
+        
+        OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
+        if (proxy != null) {
+            clientBuilder.proxy(proxy);
+        }
+        this.httpClient = clientBuilder.build();
+        
         this.mapper = new ObjectMapper().registerModules(new GuavaModule());
 
         pingThread = new Thread(() -> {
