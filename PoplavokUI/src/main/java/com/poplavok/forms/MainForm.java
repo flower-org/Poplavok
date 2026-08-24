@@ -30,6 +30,10 @@ public class MainForm {
         //No need to load fxml explicitly
     }
 
+    public ApiSettingsDialog getApiSettingsDialog() {
+        return checkNotNull(apiSettingsDialog);
+    }
+
     public void init(Stage mainStage) {
         this.mainStage = mainStage;
         this.apiSettingsDialog = new ApiSettingsDialog(mainStage);

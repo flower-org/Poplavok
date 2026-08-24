@@ -132,6 +132,10 @@ public class ApiSettingsDialog extends VBox {
         }
     }
 
+    public @Nullable KucoinCredentialsProvider getCredentialsProvider() {
+        return credentialsProvider;
+    }
+
     protected @Nullable KucoinCredentialsProvider loadProvider() throws IOException {
         File settingsFile = new File(checkNotNull(settingsFileTextField).getText());
         if (!settingsFile.exists()) {

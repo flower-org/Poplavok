@@ -681,7 +681,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
                 throw new RuntimeException("Unknown Direction " + direction);
             }
 
-            PerformTradeDialog performTradeDialog = new PerformTradeDialog(availableAmountBase, availableAmountQuote, debtToRepay,
+            PerformTradeDialog performTradeDialog = new PerformTradeDialog(mainApp, availableAmountBase, availableAmountQuote, debtToRepay,
                     checkNotNull(poplavok).getTicker(), direction, averagingPrice);
             Stage workspaceStage = ModalWindow.showModal(checkNotNull(mainApp.mainStage),
                     stage -> { performTradeDialog.setStage(stage); return performTradeDialog; },
@@ -991,7 +991,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
 
             BigDecimal price = BigDecimalUtil.fromString(checkNotNull(priceTextField).textProperty().get());
             price = price == null ? lvl.getProjectedPrice() : price;
-            PerformTradeDialog performTradeDialog = new PerformTradeDialog(lvl.getAvailableAmountBase(), lvl.getAvailableAmountQuote(),
+            PerformTradeDialog performTradeDialog = new PerformTradeDialog(mainApp, lvl.getAvailableAmountBase(), lvl.getAvailableAmountQuote(),
                     checkNotNull(poplavok).getTicker(),
                     checkNotNull(checkNotNull(poplavok).getDirection()), price);
             Stage workspaceStage = ModalWindow.showModal(checkNotNull(mainApp.mainStage),

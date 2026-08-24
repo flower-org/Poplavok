@@ -1,6 +1,12 @@
 package com.poplavok.forms;
 
+import com.poplavok.api.kucoin.KucoinApiClient;
+import com.poplavok.api.kucoin.auth.KucoinCredentialsProvider;
+import com.poplavok.api.kucoin.model.request.ImmutableOrderCreateRequest;
+import com.poplavok.api.kucoin.model.request.OrderCreateRequest;
+import com.poplavok.api.kucoin.model.response.OrderCreateResponse;
 import com.flower.fxutils.JavaFxUtils;
+import java.util.UUID;
 import com.poplavok.data.model.Direction;
 import com.poplavok.data.model.Trade;
 import com.poplavok.data.model.MarketTicker;
@@ -80,15 +86,19 @@ public class PerformTradeDialog extends VBox {
     @FXML @Nullable TextField debtTextField;
     @FXML @Nullable Label debtCurrencyLabel;
 
+    @FXML @Nullable CheckBox autoBorrowBuyCheckBox;
+    @FXML @Nullable CheckBox autoBorrowSellCheckBox;
+
     @Nullable Stage stage;
     @Nullable Trade returnTrade;
 
+    protected final MainForm mainApp;
     final Direction direction;
     final MarketTicker ticker;
     final boolean isAveragingTrade;
 
     /** Regular Trade */
-    public PerformTradeDialog(@Nullable BigDecimal availableAmountBase, @Nullable BigDecimal availableAmountQuote,
+    public PerformTradeDialog(MainForm mainApp, @Nullable BigDecimal availableAmountBase, @Nullable BigDecimal availableAmountQuote,
                               MarketTicker ticker, Direction direction, @Nullable BigDecimal price) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("PerformTradeDialog.fxml"));
         fxmlLoader.setRoot(this);
@@ -100,6 +110,7 @@ public class PerformTradeDialog extends VBox {
             throw new RuntimeException(exception);
         }
 
+        this.mainApp = mainApp;
         this.isAveragingTrade = false;
         this.ticker = ticker;
         this.direction = direction;
@@ -151,7 +162,7 @@ public class PerformTradeDialog extends VBox {
     }
 
     /** Averaging Trade */
-    public PerformTradeDialog(@Nullable BigDecimal availableAmountBase, @Nullable BigDecimal availableAmountQuote,
+    public PerformTradeDialog(MainForm mainApp, @Nullable BigDecimal availableAmountBase, @Nullable BigDecimal availableAmountQuote,
                               BigDecimal debt, MarketTicker ticker, Direction direction, @Nullable BigDecimal price) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("PerformTradeDialog.fxml"));
         fxmlLoader.setRoot(this);
@@ -163,6 +174,7 @@ public class PerformTradeDialog extends VBox {
             throw new RuntimeException(exception);
         }
 
+        this.mainApp = mainApp;
         this.isAveragingTrade = true;
         this.ticker = ticker;
         this.direction = direction;
@@ -445,4 +457,89 @@ public class PerformTradeDialog extends VBox {
         return returnTrade;
     }
 
+    public void apiSellOrder() {
+        try {
+            if (StringUtils.isBlank(checkNotNull(priceTextField).getText()) || 
+                StringUtils.isBlank(checkNotNull(giveBaseSellTextField).getText())) {
+                JavaFxUtils.showErrorMessage("Price and Base amount must be provided.");
+                return;
+            }
+
+            BigDecimal price = nullToZero(fromString(priceTextField.getText()));
+            BigDecimal size = nullToZero(fromString(giveBaseSellTextField.getText()));
+
+            if (price.compareTo(BigDecimal.ZERO) <= 0 || size.compareTo(BigDecimal.ZERO) <= 0) {
+                JavaFxUtils.showErrorMessage("Price and Size must be greater than zero.");
+                return;
+            }
+
+            KucoinCredentialsProvider provider = mainApp.getApiSettingsDialog().getCredentialsProvider();
+            if (provider == null) {
+                JavaFxUtils.showErrorMessage("API credentials not available. Please configure in Settings.");
+                return;
+            }
+
+            KucoinApiClient apiClient = new KucoinApiClient(provider);
+            OrderCreateRequest request = ImmutableOrderCreateRequest.builder()
+                .clientOid(UUID.randomUUID().toString())
+                .side("sell")
+                .symbol(ticker.getSymbol())
+                .type("limit")
+                .price(price)
+                .size(size)
+                .marginModel("isolated")
+                .tradeType("MARGIN_ISOLATED_TRADE") 
+                .autoBorrow(checkNotNull(autoBorrowSellCheckBox).isSelected())
+                .build();
+            
+            OrderCreateResponse response = apiClient.createMarginOrder(request);
+            JavaFxUtils.showMessage("Margin Sell Order created successfully! ID: " + response.orderId());
+        } catch (Exception e) {
+            LOGGER.error("Error creating sell order", e);
+            JavaFxUtils.showErrorMessage("Error creating margin sell order: " + e.getMessage());
+        }
+    }
+
+    public void apiBuyOrder() {
+        try {
+            if (StringUtils.isBlank(checkNotNull(priceTextField).getText()) || 
+                StringUtils.isBlank(checkNotNull(getBaseBuyTextField).getText())) {
+                JavaFxUtils.showErrorMessage("Price and Base amount must be provided.");
+                return;
+            }
+
+            BigDecimal price = nullToZero(fromString(priceTextField.getText()));
+            BigDecimal size = nullToZero(fromString(getBaseBuyTextField.getText()));
+
+            if (price.compareTo(BigDecimal.ZERO) <= 0 || size.compareTo(BigDecimal.ZERO) <= 0) {
+                JavaFxUtils.showErrorMessage("Price and Size must be greater than zero.");
+                return;
+            }
+
+            KucoinCredentialsProvider provider = mainApp.getApiSettingsDialog().getCredentialsProvider();
+            if (provider == null) {
+                JavaFxUtils.showErrorMessage("API credentials not available. Please configure in Settings.");
+                return;
+            }
+
+            KucoinApiClient apiClient = new KucoinApiClient(provider);
+            OrderCreateRequest request = ImmutableOrderCreateRequest.builder()
+                .clientOid(UUID.randomUUID().toString())
+                .side("buy")
+                .symbol(ticker.getSymbol())
+                .type("limit")
+                .price(price)
+                .size(size)
+                .marginModel("isolated")
+                .tradeType("MARGIN_ISOLATED_TRADE")
+                .autoBorrow(checkNotNull(autoBorrowBuyCheckBox).isSelected())
+                .build();
+            
+            OrderCreateResponse response = apiClient.createMarginOrder(request);
+            JavaFxUtils.showMessage("Margin Buy Order created successfully! ID: " + response.orderId());
+        } catch (Exception e) {
+            LOGGER.error("Error creating buy order", e);
+            JavaFxUtils.showErrorMessage("Error creating margin buy order: " + e.getMessage());
+        }
+    }
 }

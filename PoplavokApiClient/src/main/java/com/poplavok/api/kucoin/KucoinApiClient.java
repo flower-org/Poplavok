@@ -102,6 +102,13 @@ public class KucoinApiClient {
         return execute(request, new TypeReference<KucoinResponse<OrderCreateResponse>>() {});
     }
 
+    public OrderCreateResponse createMarginOrder(OrderCreateRequest orderCreateRequest) throws IOException {
+        String json = mapper.writeValueAsString(orderCreateRequest);
+        RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
+        Request request = new Request.Builder().url(BASE_URL + "api/v1/margin/order").post(body).build();
+        return execute(request, new TypeReference<KucoinResponse<OrderCreateResponse>>() {});
+    }
+
     public OrderResponse getOrder(String orderId) throws IOException {
         Request request = new Request.Builder().url(BASE_URL + "api/v1/orders/" + orderId).get().build();
         return execute(request, new TypeReference<KucoinResponse<OrderResponse>>() {});
