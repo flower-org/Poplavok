@@ -1,4 +1,17 @@
 ```
+Aug 24, 2026
+Poplavok-1.1.0-portable-linux.zip
+98071914
+SHA2-256(Poplavok-1.1.0-portable-linux.zip)= dae771779bc8236b3b61419bd7fa3b3a473098203dc0b0c7c0b2ecd6449df9c0
+Poplavok-1.1.0-portable-macos.zip
+93545164
+b8904267597810994fbb1a268b3d417914daf4ff0d048c5df345f6b96b23bef9
+Poplavok-1.1.0-portable-windows.zip
+94471185
+43EF559CBCE6E59624A3D7917B61397C56D891EDCCFE63D5CF765C7D8EDE53C3
+```
+
+```
 July 06, 2026
 Poplavok-1.0.9-portable-linux.zip
 88059317
