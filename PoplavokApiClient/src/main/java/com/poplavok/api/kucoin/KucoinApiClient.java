@@ -27,12 +27,19 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+/*
+import okhttp3.logging.HttpLoggingInterceptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+*/
+
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.Proxy;
 import java.util.List;
 
 public class KucoinApiClient {
+//    private static final Logger LOGGER = LoggerFactory.getLogger(KucoinApiClient.class);
     private static final String BASE_URL = "https://api.kucoin.com/";
     private static final String BASE_KUCOIN_URL = "https://www.kucoin.com/";
 
@@ -44,6 +51,11 @@ public class KucoinApiClient {
         this.mapper.registerModules(new GuavaModule());
         
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
+/*
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(LOGGER::info);
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        builder.addInterceptor(loggingInterceptor);
+*/
         if (credentialsProvider != null) {
             builder.addInterceptor(new AuthenticationInterceptor(credentialsProvider));
         }
@@ -63,13 +75,29 @@ public class KucoinApiClient {
 
     private <T> T execute(Request request, TypeReference<KucoinResponse<T>> typeRef) throws IOException {
         try (Response response = httpClient.newCall(request).execute()) {
+            String bodyString = response.body() != null ? response.body().string() : null;
             if (!response.isSuccessful()) {
-                throw new KucoinApiException(String.valueOf(response.code()), response.message());
+                String errorMsg = response.message();
+                if (bodyString != null && !bodyString.isEmpty()) {
+                    try {
+                        com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(bodyString);
+                        if (node.has("msg")) {
+                            errorMsg = node.get("msg").asText();
+                        } else if (node.has("message")) {
+                            errorMsg = node.get("message").asText();
+                        } else {
+                            errorMsg = bodyString;
+                        }
+                    } catch (Exception e) {
+                        errorMsg = bodyString;
+                    }
+                }
+                throw new KucoinApiException(String.valueOf(response.code()), errorMsg);
             }
-            if (response.body() == null) {
+            if (bodyString == null || bodyString.isEmpty()) {
                 throw new KucoinApiException(String.valueOf(response.code()), "Empty body");
             }
-            KucoinResponse<T> kucoinResponse = mapper.readValue(response.body().string(), typeRef);
+            KucoinResponse<T> kucoinResponse = mapper.readValue(bodyString, typeRef);
             if (!"200000".equals(kucoinResponse.code()) && !"200".equals(kucoinResponse.code())) {
                 throw new KucoinApiException(kucoinResponse.code() != null ? kucoinResponse.code() : "UNKNOWN", kucoinResponse.msg());
             }
