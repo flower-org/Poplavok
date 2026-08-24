@@ -24,7 +24,8 @@ public interface KucoinResponse<R> //implements Serializable
     @Nullable
     String code();
 
-    default String msg() { return ""; }
+    @Nullable
+    String msg();
 
     @Nullable
     R data();

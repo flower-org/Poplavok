@@ -99,7 +99,8 @@ public class KucoinApiClient {
             }
             KucoinResponse<T> kucoinResponse = mapper.readValue(bodyString, typeRef);
             if (!"200000".equals(kucoinResponse.code()) && !"200".equals(kucoinResponse.code())) {
-                throw new KucoinApiException(kucoinResponse.code() != null ? kucoinResponse.code() : "UNKNOWN", kucoinResponse.msg());
+                String errorMsg = kucoinResponse.msg() != null ? kucoinResponse.msg() : "No message provided";
+                throw new KucoinApiException(kucoinResponse.code() != null ? kucoinResponse.code() : "UNKNOWN", errorMsg);
             }
             if (kucoinResponse.data() == null) {
                 throw new KucoinApiException("Empty Data", "Data is null");
@@ -153,7 +154,7 @@ public class KucoinApiClient {
     public OrderCreateResponse createMarginOrder(OrderCreateRequest orderCreateRequest) throws IOException {
         String json = mapper.writeValueAsString(orderCreateRequest);
         RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
-        Request request = new Request.Builder().url(BASE_URL + "api/v1/margin/order").post(body).build();
+        Request request = new Request.Builder().url(BASE_URL + "api/v3/hf/margin/order").post(body).build();
         return execute(request, new TypeReference<KucoinResponse<OrderCreateResponse>>() {});
     }
 

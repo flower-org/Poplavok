@@ -84,4 +84,8 @@ public interface OrderCreateRequest {
     /** auto borrow flag for margin orders */
     @Nullable
     Boolean autoBorrow();
+
+    /** isIsolated flag for v3 margin orders */
+    @Nullable
+    Boolean isIsolated();
 }

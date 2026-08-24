@@ -59,12 +59,11 @@ public class OrderLifecycleDemo {
                     .type("limit")
                     .price(new BigDecimal("30000.00")) // $30k for BTC
                     .size(new BigDecimal("0.001"))
-                    .marginModel("isolated")
-                    .tradeType("MARGIN_ISOLATED_TRADE")
+                    .isIsolated(true)
                     .build();
 
             System.out.println("Sending Request: " + buyRequest);
-            OrderCreateResponse buyResponse = client.createOrder(buyRequest);
+            OrderCreateResponse buyResponse = client.createMarginOrder(buyRequest);
             String orderId = buyResponse.orderId();
             if (orderId == null) {
                 throw new IllegalStateException("Order ID returned from exchange is null");

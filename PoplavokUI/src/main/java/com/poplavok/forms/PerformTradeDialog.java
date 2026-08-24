@@ -482,20 +482,7 @@ public class PerformTradeDialog extends VBox {
                 return;
             }
 
-            KucoinApiClient apiClient = new KucoinApiClient(provider, proxy);
-            OrderCreateRequest request = ImmutableOrderCreateRequest.builder()
-                .clientOid(UUID.randomUUID().toString())
-                .side("sell")
-                .symbol(ticker.getSymbol())
-                .type("limit")
-                .price(price)
-                .size(size)
-                .marginModel("isolated")
-                .tradeType("MARGIN_ISOLATED_TRADE") 
-                .autoBorrow(checkNotNull(autoBorrowSellCheckBox).isSelected())
-                .build();
-            
-            OrderCreateResponse response = apiClient.createMarginOrder(request);
+            OrderCreateResponse response = createMarginSellOrder(provider, proxy, price, size);
             JavaFxUtils.showMessage("Margin Sell Order created successfully! ID: " + response.orderId());
         } catch (Exception e) {
             LOGGER.error("Error creating sell order", e);
@@ -526,24 +513,75 @@ public class PerformTradeDialog extends VBox {
                 return;
             }
 
-            KucoinApiClient apiClient = new KucoinApiClient(provider, proxy);
-            OrderCreateRequest request = ImmutableOrderCreateRequest.builder()
+            OrderCreateResponse response = createMarginBuyOrder(provider, proxy, price, size);
+            JavaFxUtils.showMessage("Margin Buy Order created successfully! ID: " + response.orderId());
+        } catch (Exception e) {
+            LOGGER.error("Error creating buy order", e);
+            JavaFxUtils.showErrorMessage("Error creating margin buy order: " + e.getMessage());
+        }
+    }
+
+    protected OrderCreateResponse createSpotBuyOrder(KucoinCredentialsProvider provider, @Nullable Proxy proxy,
+                                                     BigDecimal price, BigDecimal size) throws IOException {
+        KucoinApiClient apiClient = new KucoinApiClient(provider, proxy);
+        OrderCreateRequest request = ImmutableOrderCreateRequest.builder()
                 .clientOid(UUID.randomUUID().toString())
                 .side("buy")
                 .symbol(ticker.getSymbol())
                 .type("limit")
                 .price(price)
                 .size(size)
-                .marginModel("isolated")
-                .tradeType("MARGIN_ISOLATED_TRADE")
+                .build();
+
+        return apiClient.createOrder(request);
+    }
+
+    protected OrderCreateResponse createSpotSellOrder(KucoinCredentialsProvider provider, @Nullable Proxy proxy,
+                                                     BigDecimal price, BigDecimal size) throws IOException {
+        KucoinApiClient apiClient = new KucoinApiClient(provider, proxy);
+        OrderCreateRequest request = ImmutableOrderCreateRequest.builder()
+                .clientOid(UUID.randomUUID().toString())
+                .side("sell")
+                .symbol(ticker.getSymbol())
+                .type("limit")
+                .price(price)
+                .size(size)
+                .build();
+
+        return apiClient.createOrder(request);
+    }
+
+    protected OrderCreateResponse createMarginBuyOrder(KucoinCredentialsProvider provider, @Nullable Proxy proxy,
+                                                     BigDecimal price, BigDecimal size) throws IOException {
+        KucoinApiClient apiClient = new KucoinApiClient(provider, proxy);
+        OrderCreateRequest request = ImmutableOrderCreateRequest.builder()
+                .clientOid(UUID.randomUUID().toString())
+                .side("buy")
+                .symbol(ticker.getSymbol())
+                .type("limit")
+                .price(price)
+                .size(size)
+                .isIsolated(true)
                 .autoBorrow(checkNotNull(autoBorrowBuyCheckBox).isSelected())
                 .build();
-            
-            OrderCreateResponse response = apiClient.createMarginOrder(request);
-            JavaFxUtils.showMessage("Margin Buy Order created successfully! ID: " + response.orderId());
-        } catch (Exception e) {
-            LOGGER.error("Error creating buy order", e);
-            JavaFxUtils.showErrorMessage("Error creating margin buy order: " + e.getMessage());
-        }
+
+        return apiClient.createMarginOrder(request);
+    }
+
+    protected OrderCreateResponse createMarginSellOrder(KucoinCredentialsProvider provider, @Nullable Proxy proxy,
+                                                      BigDecimal price, BigDecimal size) throws IOException {
+        KucoinApiClient apiClient = new KucoinApiClient(provider, proxy);
+        OrderCreateRequest request = ImmutableOrderCreateRequest.builder()
+                .clientOid(UUID.randomUUID().toString())
+                .side("sell")
+                .symbol(ticker.getSymbol())
+                .type("limit")
+                .price(price)
+                .size(size)
+                .isIsolated(true)
+                .autoBorrow(checkNotNull(autoBorrowSellCheckBox).isSelected())
+                .build();
+
+        return apiClient.createMarginOrder(request);
     }
 }
