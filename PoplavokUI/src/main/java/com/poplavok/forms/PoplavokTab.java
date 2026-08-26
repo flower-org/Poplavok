@@ -451,20 +451,20 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         }
         BigDecimal fee = parseFee();
 
-        BigDecimal availableBase = nullToZero(level.getAvailableAmountBase());
-        BigDecimal availableQuote = nullToZero(level.getAvailableAmountQuote());
+        BigDecimal holdingsBase = nullToZero(level.getAvailableAmountBase()).add(nullToZero(level.getLentAmountBase()));
+        BigDecimal holdingsQuote = nullToZero(level.getAvailableAmountQuote()).add(nullToZero(level.getLentAmountQuote()));
 
         BigDecimal total;
         BigDecimal debt;
         if (checkNotNull(poplavok).getDirection() == LONG) {
             // Cover QUOTE debt by selling all held BASE for QUOTE.
-            BigDecimal proceedsQuote = LongShortCalculator.calculateQuoteAmountToGetShort(availableBase, price, fee).amount;
-            total = availableQuote.add(proceedsQuote);
+            BigDecimal proceedsQuote = LongShortCalculator.calculateQuoteAmountToGetShort(holdingsBase, price, fee).amount;
+            total = holdingsQuote.add(proceedsQuote);
             debt = nullToZero(level.getDebtQuote());
         } else {
             // Cover BASE debt by buying BASE with all held QUOTE.
-            BigDecimal proceedsBase = LongShortCalculator.calculateBaseAmountToGetLong(availableQuote, price, fee).amount;
-            total = availableBase.add(proceedsBase);
+            BigDecimal proceedsBase = LongShortCalculator.calculateBaseAmountToGetLong(holdingsQuote, price, fee).amount;
+            total = holdingsBase.add(proceedsBase);
             debt = nullToZero(level.getDebtBase());
         }
 
