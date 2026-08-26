@@ -364,9 +364,25 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
 
     private HBox buildFundsGraphic(Level level) {
         boolean useBase = checkNotNull(poplavok).getDirection() == LONG;
-        BigDecimal lent = useBase ? level.getLentAmountBase() : level.getLentAmountQuote();
-        BigDecimal available = useBase ? level.getAvailableAmountBase() : level.getAvailableAmountQuote();
-        return buildRatioBar(lent, available);
+        BigDecimal lentRaw = useBase ? level.getLentAmountBase() : level.getLentAmountQuote();
+        BigDecimal availableRaw = useBase ? level.getAvailableAmountBase() : level.getAvailableAmountQuote();
+
+        BigDecimal lent = nullToZero(lentRaw).max(BigDecimal.ZERO);
+        BigDecimal available = nullToZero(availableRaw).max(BigDecimal.ZERO);
+        BigDecimal total = lent.add(available);
+        double availablePct = total.signum() == 0
+                ? 100.0
+                : available.divide(total, SCALE, RoundingMode.HALF_UP).doubleValue() * 100.0;
+
+        HBox bar = buildRatioBar(lentRaw, availableRaw);
+        HBox.setHgrow(bar, javafx.scene.layout.Priority.ALWAYS);
+
+        Label pct = new Label(String.format("%.0f%%", availablePct));
+        pct.setMinWidth(36.0);
+
+        HBox box = new HBox(4.0, bar, pct);
+        box.setAlignment(Pos.CENTER_LEFT);
+        return box;
     }
 
     private HBox buildRatioBar(@Nullable BigDecimal lentAmount, @Nullable BigDecimal availableAmount) {
@@ -377,7 +393,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
                 ? 0.0
                 : lent.divide(total, SCALE, RoundingMode.HALF_UP).doubleValue();
 
-        DoubleBinding totalWidth = checkNotNull(fundsColumn).widthProperty().subtract(10.0);
+        DoubleBinding totalWidth = checkNotNull(fundsColumn).widthProperty().subtract(52.0);
 
         Region lentRegion = new Region();
         lentRegion.setStyle("-fx-background-color: #e53935;");
