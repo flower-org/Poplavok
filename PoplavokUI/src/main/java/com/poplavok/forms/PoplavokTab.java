@@ -41,16 +41,21 @@ import com.poplavok.forms.wrapper.repayment.RepayRepaymentInfo;
 import com.poplavok.forms.wrapper.repayment.RepaymentInfo;
 import javafx.collections.FXCollections;
 import javafx.collections.transformation.FilteredList;
+import javafx.beans.binding.DoubleBinding;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tab;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -91,6 +96,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
     @Nullable FilteredList<TradeWrapper> trades;
 
     @FXML @Nullable TableView<Level> levelsTable;
+    @FXML @Nullable TableColumn<Level, String> fundsColumn;
     @FXML @Nullable TableView<LevelTransaction> transactionsTable;
     @FXML @Nullable TableView<TradeWrapper> tradesTable;
 
@@ -141,6 +147,8 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         checkNotNull(levelsTable).getSelectionModel().getSelectedItems().addListener((ListChangeListener.Change<? extends Level> c) -> {
             updateLevelsSelection();
         });
+
+        configureFundsColumn();
 
         checkNotNull(showClosedLevelsCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> {
             refreshContent();
@@ -312,6 +320,64 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
                 tradesTable.setItems(FXCollections.emptyObservableList());
             }
         }
+    }
+
+    private void configureFundsColumn() {
+        if (fundsColumn == null) {
+            return;
+        }
+        fundsColumn.setSortable(false);
+        fundsColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                Level level = empty || getTableRow() == null ? null : getTableRow().getItem();
+                if (empty || level == null) {
+                    setText(null);
+                    setGraphic(null);
+                    setTooltip(null);
+                    return;
+                }
+                setText(null);
+                setGraphic(buildFundsGraphic(level));
+            }
+        });
+    }
+
+    private HBox buildFundsGraphic(Level level) {
+        boolean useBase = checkNotNull(poplavok).getDirection() == LONG;
+        BigDecimal lent = useBase ? level.getLentAmountBase() : level.getLentAmountQuote();
+        BigDecimal available = useBase ? level.getAvailableAmountBase() : level.getAvailableAmountQuote();
+        return buildRatioBar(lent, available);
+    }
+
+    private HBox buildRatioBar(@Nullable BigDecimal lentAmount, @Nullable BigDecimal availableAmount) {
+        BigDecimal lent = nullToZero(lentAmount).max(BigDecimal.ZERO);
+        BigDecimal available = nullToZero(availableAmount).max(BigDecimal.ZERO);
+        BigDecimal total = lent.add(available);
+        double lentFraction = total.signum() == 0
+                ? 0.0
+                : lent.divide(total, SCALE, RoundingMode.HALF_UP).doubleValue();
+
+        DoubleBinding totalWidth = checkNotNull(fundsColumn).widthProperty().subtract(10.0);
+
+        Region lentRegion = new Region();
+        lentRegion.setStyle("-fx-background-color: #e53935;");
+        lentRegion.setMinWidth(0);
+        lentRegion.prefWidthProperty().bind(totalWidth.multiply(lentFraction));
+
+        Region remainingRegion = new Region();
+        remainingRegion.setStyle("-fx-background-color: #43a047;");
+        remainingRegion.setMinWidth(0);
+        remainingRegion.prefWidthProperty().bind(totalWidth.multiply(1.0 - lentFraction));
+
+        HBox bar = new HBox(lentRegion, remainingRegion);
+        bar.setMinHeight(12.0);
+        bar.setPrefHeight(12.0);
+        bar.setMaxWidth(Region.USE_PREF_SIZE);
+        bar.prefWidthProperty().bind(totalWidth);
+        bar.setStyle("-fx-border-color: #9e9e9e; -fx-border-width: 0.5;");
+        return bar;
     }
 
     @Override

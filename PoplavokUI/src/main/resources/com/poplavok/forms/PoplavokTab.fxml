@@ -98,6 +98,7 @@
                                         <PropertyValueFactory property="lentAmount" />
                                     </cellValueFactory>
                                 </TableColumn>
+                                <TableColumn fx:id="fundsColumn" text="Funds" prefWidth="130.0" />
                                 <TableColumn text="ProjectedPrice">
                                     <cellValueFactory>
                                         <PropertyValueFactory property="projectedPrice" />
