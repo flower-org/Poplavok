@@ -30,6 +30,7 @@ import com.poplavok.data.dao.LoanDAO;
 import com.poplavok.data.utils.BigDecimalUtil;
 import com.poplavok.data.utils.DBUtil;
 import com.poplavok.data.utils.LoanTransferManager;
+import com.poplavok.data.utils.LongShortCalculator;
 import com.poplavok.data.utils.RepaymentManager;
 import com.poplavok.data.utils.distributors.WithdrawalDistributor;
 import com.poplavok.forms.wrapper.LevelTransaction;
@@ -44,10 +45,12 @@ import javafx.collections.transformation.FilteredList;
 import javafx.beans.binding.DoubleBinding;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -56,6 +59,8 @@ import javafx.scene.control.Tab;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -97,6 +102,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
 
     @FXML @Nullable TableView<Level> levelsTable;
     @FXML @Nullable TableColumn<Level, String> fundsColumn;
+    @FXML @Nullable TableColumn<Level, String> healthColumn;
     @FXML @Nullable TableView<LevelTransaction> transactionsTable;
     @FXML @Nullable TableView<TradeWrapper> tradesTable;
 
@@ -149,6 +155,18 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         });
 
         configureFundsColumn();
+        configureHealthColumn();
+
+        checkNotNull(priceTextField).textProperty().addListener((observable, oldValue, newValue) -> {
+            if (levelsTable != null) {
+                levelsTable.refresh();
+            }
+        });
+        checkNotNull(feeTextField).textProperty().addListener((observable, oldValue, newValue) -> {
+            if (levelsTable != null) {
+                levelsTable.refresh();
+            }
+        });
 
         checkNotNull(showClosedLevelsCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> {
             refreshContent();
@@ -378,6 +396,126 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         bar.prefWidthProperty().bind(totalWidth);
         bar.setStyle("-fx-border-color: #9e9e9e; -fx-border-width: 0.5;");
         return bar;
+    }
+
+    private void configureHealthColumn() {
+        if (healthColumn == null) {
+            return;
+        }
+        healthColumn.setSortable(false);
+        healthColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                Level level = empty || getTableRow() == null ? null : getTableRow().getItem();
+                if (empty || level == null) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
+                setText(null);
+                setGraphic(buildHealthGraphic(level));
+            }
+        });
+    }
+
+    private HBox buildHealthGraphic(Level level) {
+        Circle circle = new Circle(6.0);
+        circle.setStroke(Color.web("#9e9e9e"));
+        circle.setStrokeWidth(0.5);
+
+        Label label = new Label();
+        Double health = computeHealthPercent(level);
+        if (health == null) {
+            circle.setFill(Color.web("#9e9e9e"));
+            label.setText("N/A");
+        } else if (Double.isInfinite(health)) {
+            circle.setFill(healthColor(Double.POSITIVE_INFINITY));
+            label.setText("\u221e");
+        } else {
+            circle.setFill(healthColor(health));
+            label.setText(String.format("%.0f%%", health));
+        }
+
+        HBox box = new HBox(4.0, circle, label);
+        box.setAlignment(Pos.CENTER_LEFT);
+        return box;
+    }
+
+    /** Health = (holdings in debt currency + proceeds of covering trade) / debt, in percent.
+     *  Returns null if the price field is empty or non-parseable, POSITIVE_INFINITY if there is no debt. */
+    private @Nullable Double computeHealthPercent(Level level) {
+        BigDecimal price = parsePrice();
+        if (price == null || price.signum() <= 0) {
+            return null;
+        }
+        BigDecimal fee = parseFee();
+
+        BigDecimal availableBase = nullToZero(level.getAvailableAmountBase());
+        BigDecimal availableQuote = nullToZero(level.getAvailableAmountQuote());
+
+        BigDecimal total;
+        BigDecimal debt;
+        if (checkNotNull(poplavok).getDirection() == LONG) {
+            // Cover QUOTE debt by selling all held BASE for QUOTE.
+            BigDecimal proceedsQuote = LongShortCalculator.calculateQuoteAmountToGetShort(availableBase, price, fee).amount;
+            total = availableQuote.add(proceedsQuote);
+            debt = nullToZero(level.getDebtQuote());
+        } else {
+            // Cover BASE debt by buying BASE with all held QUOTE.
+            BigDecimal proceedsBase = LongShortCalculator.calculateBaseAmountToGetLong(availableQuote, price, fee).amount;
+            total = availableBase.add(proceedsBase);
+            debt = nullToZero(level.getDebtBase());
+        }
+
+        if (debt.signum() <= 0) {
+            return Double.POSITIVE_INFINITY;
+        }
+        return total.divide(debt, SCALE, RoundingMode.HALF_UP).doubleValue() * 100.0;
+    }
+
+    /** 50% and below = bright red, 100% = dull green, 150% and above = bright green. */
+    private static Color healthColor(double healthPercent) {
+        Color brightRed = Color.web("#ff1744");
+        Color dullGreen = Color.web("#7fae7f");
+        Color brightGreen = Color.web("#00e676");
+        if (healthPercent <= 50.0) {
+            return brightRed;
+        } else if (healthPercent >= 150.0) {
+            return brightGreen;
+        } else if (healthPercent <= 100.0) {
+            double t = (healthPercent - 50.0) / 50.0;
+            return brightRed.interpolate(dullGreen, t);
+        } else {
+            double t = (healthPercent - 100.0) / 50.0;
+            return dullGreen.interpolate(brightGreen, t);
+        }
+    }
+
+    private @Nullable BigDecimal parsePrice() {
+        if (priceTextField == null) {
+            return null;
+        }
+        String text = priceTextField.getText();
+        if (text == null || text.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return fromString(text.trim());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private BigDecimal parseFee() {
+        if (feeTextField == null) {
+            return BigDecimal.ZERO;
+        }
+        try {
+            return nullToZero(fromString(checkNotNull(feeTextField).getText()));
+        } catch (Exception e) {
+            return BigDecimal.ZERO;
+        }
     }
 
     @Override

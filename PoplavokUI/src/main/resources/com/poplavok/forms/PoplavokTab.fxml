@@ -68,6 +68,7 @@
                   <children>
                         <TableView fx:id="levelsTable" prefWidth="300.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                             <columns>
+                                <TableColumn fx:id="healthColumn" text="\%" minWidth="60.0" />
                                 <TableColumn text="Id">
                                     <cellValueFactory>
                                         <PropertyValueFactory property="id" />
