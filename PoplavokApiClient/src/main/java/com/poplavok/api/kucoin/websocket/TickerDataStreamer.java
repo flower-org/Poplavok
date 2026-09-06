@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TickerDataStreamer extends WebSocketListener {
@@ -30,6 +32,7 @@ public class TickerDataStreamer extends WebSocketListener {
 
     final static Logger LOGGER = LoggerFactory.getLogger(TickerDataStreamer.class);
     final static Long FIVE_SECONDS_IN_MILLIS = 5 * 1000L;
+    final static Long ONE_SECOND_IN_MILLIS = 1000L;
     final static String PONG = "pong";
 
     final AtomicReference<WebSocket> webSocket = new AtomicReference<>(null);
@@ -41,7 +44,12 @@ public class TickerDataStreamer extends WebSocketListener {
     final OkHttpClient httpClient;
     final ObjectMapper mapper;
 
-    final AtomicReference<Pair<WebSocket, Long>> lastPing = new AtomicReference<>(null);
+    final AtomicBoolean reconnecting = new AtomicBoolean(false);
+    final AtomicBoolean shuttingDown = new AtomicBoolean(false);
+    final AtomicLong pingCounter = new AtomicLong(0);
+
+    // Holds the socket a ping was sent on and the id of the last unacknowledged ping.
+    final AtomicReference<Pair<WebSocket, String>> lastPing = new AtomicReference<>(null);
 
     public TickerDataStreamer(String topic, TickerCallback tickerCallback) {
         this(topic, tickerCallback, null);
@@ -66,35 +74,41 @@ public class TickerDataStreamer extends WebSocketListener {
             while (!Thread.currentThread().isInterrupted()) {
                 WebSocket socket = webSocket.get();
 
-                if (socket != null) {
-                    try {
-                        String pingMsg = "{\"id\":\"pingu\",\"type\":\"ping\"}";
-                        socket.send(pingMsg);
-                        lastPing.set(Pair.of(socket, System.currentTimeMillis()));
-
-                        try {
-                            Thread.sleep(FIVE_SECONDS_IN_MILLIS);
-                        } catch (InterruptedException e) {
-                            LOGGER.info("Ping thread interrupted", e);
-                            Thread.currentThread().interrupt();
-                            break;
-                        }
-
-                        Pair<WebSocket, Long> last = lastPing.get();
-                        if (last != null) {
-                            if (last.getLeft() == socket) {
-                                if (System.currentTimeMillis() - last.getRight() > FIVE_SECONDS_IN_MILLIS) {
-                                    LOGGER.error("Ping confirmation not received, reinitializing connection");
-                                    reInit(socket, 1002, "Ping confirmation not received");
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        LOGGER.info("Ping thread exception", e);
-                        reInit(socket, 1002, "Ping thread exception");
-                    }
-                } else {
+                if (socket == null) {
+                    // Bootstrap the first connection or recover a missing one.
                     reInit(null, -1, null);
+                    // Avoid busy-spinning if another thread already owns the reconnect.
+                    try {
+                        Thread.sleep(ONE_SECOND_IN_MILLIS);
+                    } catch (InterruptedException e) {
+                        LOGGER.info("Ping thread interrupted", e);
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                    continue;
+                }
+
+                try {
+                    String pingId = "ping-" + pingCounter.incrementAndGet();
+                    String pingMsg = "{\"id\":\"" + pingId + "\",\"type\":\"ping\"}";
+                    // Record the pending ping before sending so an immediate pong can match it.
+                    lastPing.set(Pair.of(socket, pingId));
+                    socket.send(pingMsg);
+
+                    Thread.sleep(FIVE_SECONDS_IN_MILLIS);
+
+                    Pair<WebSocket, String> last = lastPing.get();
+                    if (last != null && last.getLeft() == socket && last.getRight().equals(pingId)) {
+                        LOGGER.error("Ping confirmation not received, reinitializing connection");
+                        reInit(socket, 1002, "Ping confirmation not received");
+                    }
+                } catch (InterruptedException e) {
+                    LOGGER.info("Ping thread interrupted", e);
+                    Thread.currentThread().interrupt();
+                    break;
+                } catch (Exception e) {
+                    LOGGER.info("Ping thread exception", e);
+                    reInit(socket, 1002, "Ping thread exception");
                 }
             }
         });
@@ -105,10 +119,11 @@ public class TickerDataStreamer extends WebSocketListener {
     }
 
     public void shutdown() {
+        shuttingDown.set(true);
         if (pingThread != null) {
             pingThread.interrupt();
         }
-        WebSocket socket = webSocket.get();
+        WebSocket socket = webSocket.getAndSet(null);
         if (socket != null) {
             socket.close(1000, "Shutting down");
         }
@@ -159,30 +174,47 @@ public class TickerDataStreamer extends WebSocketListener {
     }
 
     private void reInit(@Nullable WebSocket oldSocket, int code, @Nullable String reason) {
-        if (webSocket.compareAndSet(oldSocket, null)) {
-            if (oldSocket != null) {
-                oldSocket.close(code, reason);
+        if (oldSocket != null) {
+            // Only the thread that successfully clears the current socket may drive the reconnect.
+            if (!webSocket.compareAndSet(oldSocket, null)) {
+                return;
             }
+            oldSocket.close(code, reason);
+        }
 
-            while (true) {
+        if (shuttingDown.get()) {
+            return;
+        }
+
+        // Ensure only one reconnect runs at a time.
+        if (!reconnecting.compareAndSet(false, true)) {
+            return;
+        }
+
+        try {
+            while (webSocket.get() == null && !shuttingDown.get() && !Thread.currentThread().isInterrupted()) {
                 try {
                     WebSocket newWebSocket = initWebSocket();
-                    webSocket.set(newWebSocket);
-                    
+
                     for (String t : topics) {
                         sendSubscribe(newWebSocket, t);
                     }
-                    
+
+                    webSocket.set(newWebSocket);
                     break;
                 } catch (IOException e) {
                     LOGGER.info("Websocket Re-init failed:", e);
                     try {
                         Thread.sleep(FIVE_SECONDS_IN_MILLIS);
                     } catch (InterruptedException ie) {
-                        LOGGER.info("Ping thread interrupted", ie);
+                        LOGGER.info("Reconnect wait interrupted", ie);
+                        Thread.currentThread().interrupt();
+                        break;
                     }
                 }
             }
+        } finally {
+            reconnecting.set(false);
         }
     }
 
@@ -191,7 +223,12 @@ public class TickerDataStreamer extends WebSocketListener {
         try {
             KucoinEvent event = mapper.readValue(text, KucoinEvent.class);
             if (PONG.equals(event.type())) {
-                lastPing.set(null);
+                // Only clear the pending ping if this pong actually acknowledges it,
+                // so a late pong from an earlier cycle can't suppress a needed reconnect.
+                Pair<WebSocket, String> last = lastPing.get();
+                if (last != null && last.getRight().equals(event.id())) {
+                    lastPing.compareAndSet(last, null);
+                }
             } else if ("message".equals(event.type())) {
                 // we assume it's TickerChangeEvent
                 KucoinEvent<TickerChangeEvent> tickerEvent = mapper.readValue(text, mapper.getTypeFactory().constructParametricType(KucoinEvent.class, TickerChangeEvent.class));
@@ -217,11 +254,16 @@ public class TickerDataStreamer extends WebSocketListener {
     @Override
     public void onClosed(WebSocket webSocket, int code, String reason) {
         LOGGER.info("Web socket: onClosed; code {}; reason {}", code, reason);
+        if (!shuttingDown.get()) {
+            reInit(webSocket, code, reason);
+        }
     }
 
     @Override
     public void onFailure(WebSocket socket, Throwable t, @Nullable Response response) {
         LOGGER.info("Web socket: onFailure; exception {}; response {}", t, response);
-        reInit(socket, 1001, t.toString());
+        if (!shuttingDown.get()) {
+            reInit(socket, 1001, t.toString());
+        }
     }
 }
