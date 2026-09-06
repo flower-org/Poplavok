@@ -34,14 +34,18 @@ public class PreciseDistributor implements Distributor {
         if (scale < 0) {
             throw new IllegalArgumentException("scale must be >= 0");
         }
-        if (amounts.isEmpty()) {
-            return List.of();
-        }
         if (distributeAmount.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("distributeAmount cannot be negative");
         }
 
         BigDecimal normalizedTarget = distributeAmount.setScale(scale, RoundingMode.DOWN);
+        if (amounts.isEmpty()) {
+            if (normalizedTarget.signum() == 0) {
+                return List.of();
+            }
+            throw new IllegalArgumentException("amounts cannot be empty for a positive distribution amount");
+        }
+
         BigInteger totalSum = BigInteger.ZERO;
         List<BigInteger> normalizedAmounts = new ArrayList<>(amounts.size());
         for (BigDecimal amount : amounts) {
@@ -59,7 +63,7 @@ public class PreciseDistributor implements Distributor {
             }
 
             if (!allowOverdraft) {
-                throw new RuntimeException("Distributed amount cannot be greater than the sum of all amounts, since overdraft is not enabled");
+                throw new IllegalStateException("Distributed amount cannot be represented without overdraft at the requested scale");
             }
 
             // Fair fallback when all balances are zero and overdraft is allowed.
@@ -76,16 +80,12 @@ public class PreciseDistributor implements Distributor {
 
         List<ShareItem> items = new ArrayList<>();
         BigInteger distributedSum = BigInteger.ZERO;
-        BigInteger remainderFactor = BigInteger.valueOf(100);
 
         for (int i = 0; i < amounts.size(); i++) {
             BigInteger amount = normalizedAmounts.get(i);
-            BigInteger exactScaledAmount = amount
-                    .multiply(normalizedTargetUnits)
-                    .multiply(remainderFactor)
-                    .divide(totalSum);
-            BigInteger calculatedAmount = exactScaledAmount.divide(remainderFactor);
-            BigInteger remainder = exactScaledAmount.remainder(remainderFactor);
+            BigInteger exactNumerator = amount.multiply(normalizedTargetUnits);
+            BigInteger calculatedAmount = exactNumerator.divide(totalSum);
+            BigInteger remainder = exactNumerator.remainder(totalSum);
 
             items.add(new ShareItem(i, amount, calculatedAmount, remainder));
             distributedSum = distributedSum.add(calculatedAmount);

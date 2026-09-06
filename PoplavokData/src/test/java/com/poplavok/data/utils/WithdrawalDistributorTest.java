@@ -105,5 +105,36 @@ class WithdrawalDistributorTest {
         assertEquals(new BigDecimal("0.00"), result.get(0));
         assertEquals(new BigDecimal("0.00"), result.get(1));
     }
+
+    @Test
+    void testPositiveWithdrawalWithEmptyAmountsThrowsException() {
+        assertThrows(IllegalArgumentException.class, () ->
+                WithdrawalDistributor.distributeWithdrawal(List.of(), new BigDecimal("1.00"), 2, false));
+    }
+
+    @Test
+    void testLargestExactRemainderWinsWhenRoundedRemaindersCollide() {
+        List<BigDecimal> amounts = Arrays.asList(
+                new BigDecimal("100000000000000000"),
+                new BigDecimal("100000000000000001"),
+                new BigDecimal("100000000000000000")
+        );
+
+        List<BigDecimal> result = WithdrawalDistributor.distributeWithdrawal(
+                amounts, BigDecimal.ONE, 0, false);
+
+        assertEquals(List.of(BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ZERO), result);
+    }
+
+    @Test
+    void testWithdrawalCannotBeRepresentedWithoutOverdraft() {
+        List<BigDecimal> amounts = Arrays.asList(
+                new BigDecimal("0.005"),
+                new BigDecimal("0.005")
+        );
+
+        assertThrows(IllegalStateException.class, () ->
+                WithdrawalDistributor.distributeWithdrawal(amounts, new BigDecimal("0.01"), 2, false));
+    }
 }
 
