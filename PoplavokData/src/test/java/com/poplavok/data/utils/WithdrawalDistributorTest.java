@@ -65,18 +65,14 @@ class WithdrawalDistributorTest {
                 new BigDecimal("100.00"),
                 new BigDecimal("40.00")
         );
-        BigDecimal total = new BigDecimal("47.00"); // sum is 140. 47 / 140 = 0.33571...
-        // With scale 2, ratio = 0.33
-        // 100 * 0.33 = 33.00
-        // 40 * 0.33 = 13.20
+        BigDecimal total = new BigDecimal("47.00"); // sum is 140. 47 / 140 = 0.33571..
+        // The largest-remainder allocation preserves the requested total.
 
         List<BigDecimal> result = distributor.distribute(amounts, total, 2, false);
 
         assertEquals(2, result.size());
-
-        // Relaxing exact numeric assertions to avoid tailoring, just verify basics
-        BigDecimal distributedSum = result.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-        assertEquals(true, distributedSum.compareTo(total) <= 0, "Distributed sum must not exceed requested total");
+        assertEquals(new BigDecimal("33.57"), result.get(0));
+        assertEquals(new BigDecimal("13.43"), result.get(1));
     }
 
     @ParameterizedTest
@@ -124,6 +120,38 @@ class WithdrawalDistributorTest {
         assertEquals(new BigDecimal("0.00"), result.get(0));
         assertEquals(new BigDecimal("0.00"), result.get(1));
     }
+
+    @Test
+    void testPositiveWithdrawalWithEmptyAmountsThrowsException() {
+        assertThrows(IllegalArgumentException.class, () ->
+                WithdrawalDistributor.distributeWithdrawal(List.of(), new BigDecimal("1.00"), 2, false));
+    }
+
+    @Test
+    void testLargestExactRemainderWinsWhenRoundedRemaindersCollide() {
+        List<BigDecimal> amounts = Arrays.asList(
+                new BigDecimal("100000000000000000"),
+                new BigDecimal("100000000000000001"),
+                new BigDecimal("100000000000000000")
+        );
+
+        List<BigDecimal> result = WithdrawalDistributor.distributeWithdrawal(
+                amounts, BigDecimal.ONE, 0, false);
+
+        assertEquals(List.of(BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ZERO), result);
+    }
+
+    @Test
+    void testWithdrawalCannotBeRepresentedWithoutOverdraft() {
+        List<BigDecimal> amounts = Arrays.asList(
+                new BigDecimal("0.005"),
+                new BigDecimal("0.005")
+        );
+
+        assertThrows(IllegalStateException.class, () ->
+                WithdrawalDistributor.distributeWithdrawal(amounts, new BigDecimal("0.01"), 2, false));
+    }
+}
 
     @ParameterizedTest
     @MethodSource("preciseDistributors")
