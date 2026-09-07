@@ -59,7 +59,7 @@ public class PreciseDistributor implements Distributor {
 
         if (totalSum.signum() == 0) {
             if (normalizedTargetUnits.signum() == 0) {
-                return zeroResults(amounts.size(), 0);
+                return zeroResults(amounts.size(), scale);
             }
 
             if (!allowOverdraft) {
