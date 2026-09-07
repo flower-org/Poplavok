@@ -5,7 +5,7 @@ import java.util.List;
 
 // TODO: dummy implementation, only stubs "100% withdrawal" use case, need to implement the proper distribution logic
 public class WithdrawalDistributor {
-    static final Distributor DISTRIBUTOR = new SloppyDistributor();
+    static final Distributor DISTRIBUTOR = new PreciseDistributor();
 
     public static List<BigDecimal> distributeWithdrawal(List<BigDecimal> amounts, BigDecimal withdrawalAmount, int scale) {
         return DISTRIBUTOR.distribute(amounts, withdrawalAmount, scale);
