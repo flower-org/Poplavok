@@ -4,6 +4,7 @@ import com.poplavok.api.kucoin.KucoinApiClient;
 import com.poplavok.data.utils.DBUtil;
 import com.poplavok.data.utils.HibernateUtil;
 import com.poplavok.forms.MainForm;
+import com.poplavok.kucoin.TickerPriceService;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -35,6 +36,7 @@ public class App extends Application {
 
             //Close all threads when we close JavaFX windows.
             mainStage.setOnHidden(event -> {
+                TickerPriceService.getInstance().shutdown();
                 HibernateUtil.shutdown();
                 DBUtil.shutdown();
                 Platform.exit();

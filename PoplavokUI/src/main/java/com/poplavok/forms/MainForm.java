@@ -3,6 +3,7 @@ package com.poplavok.forms;
 import com.flower.fxutils.ModalWindow;
 import com.poplavok.data.model.Currency;
 import javafx.application.Platform;
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -44,6 +45,17 @@ public class MainForm {
         INSTANCE = this;
         this.mainStage = mainStage;
         this.apiSettingsDialog = new ApiSettingsDialog(mainStage);
+        checkNotNull(tabs).getTabs().addListener((ListChangeListener<Tab>) change -> {
+            while (change.next()) {
+                if (change.wasRemoved()) {
+                    for (Tab removed : change.getRemoved()) {
+                        if (removed.getContent() instanceof PoplavokTab poplavokTab) {
+                            poplavokTab.dispose();
+                        }
+                    }
+                }
+            }
+        });
         Platform.runLater(this::showApiSettingsDialog);
     }
 

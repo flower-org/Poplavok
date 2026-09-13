@@ -40,6 +40,8 @@ import com.poplavok.forms.wrapper.repayment.LossRepaymentInfo;
 import com.poplavok.forms.wrapper.repayment.ProfitRepaymentInfo;
 import com.poplavok.forms.wrapper.repayment.RepayRepaymentInfo;
 import com.poplavok.forms.wrapper.repayment.RepaymentInfo;
+import com.poplavok.kucoin.TickerPriceService;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.transformation.FilteredList;
 import javafx.beans.binding.DoubleBinding;
@@ -135,6 +137,10 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
     protected final MainForm mainApp;
     protected final Long poplavokId;
 
+    @Nullable private String streamedSymbol;
+    @Nullable private TickerPriceService.PriceListener priceListener;
+    private boolean disposed = false;
+
     public PoplavokTab(MainForm mainApp, Long poplavokId) {
         this.mainApp = mainApp;
         this.poplavokId = poplavokId;
@@ -187,6 +193,38 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         checkNotNull(averagingTab).setContent(averagingPane);
 
         averagingPane.updateLabels();
+
+        startPriceStreaming();
+    }
+
+    private void startPriceStreaming() {
+        MarketTicker ticker = checkNotNull(poplavok).getTicker();
+        if (ticker == null) {
+            return;
+        }
+        this.streamedSymbol = ticker.getSymbol();
+        this.priceListener = (symbol, price) -> {
+            if (price == null) {
+                return;
+            }
+            Platform.runLater(() -> {
+                if (!disposed && priceTextField != null) {
+                    priceTextField.setText(formatAmount(price));
+                }
+            });
+        };
+        TickerPriceService.getInstance().subscribe(checkNotNull(streamedSymbol), checkNotNull(priceListener));
+    }
+
+    /** Stops live price streaming for this tab. Safe to call multiple times. */
+    public void dispose() {
+        if (disposed) {
+            return;
+        }
+        disposed = true;
+        if (streamedSymbol != null && priceListener != null) {
+            TickerPriceService.getInstance().unsubscribe(streamedSymbol, priceListener);
+        }
     }
 
     protected boolean isEmpty(@Nullable BigDecimal amount) {
