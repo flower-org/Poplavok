@@ -193,8 +193,9 @@ public class TickerDataStreamer extends WebSocketListener {
 
         try {
             while (webSocket.get() == null && !shuttingDown.get() && !Thread.currentThread().isInterrupted()) {
+                WebSocket newWebSocket = null;
                 try {
-                    WebSocket newWebSocket = initWebSocket();
+                    newWebSocket = initWebSocket();
 
                     for (String t : topics) {
                         sendSubscribe(newWebSocket, t);
@@ -202,8 +203,21 @@ public class TickerDataStreamer extends WebSocketListener {
 
                     webSocket.set(newWebSocket);
                     break;
-                } catch (IOException e) {
+                } catch (Exception e) {
+                    // Catch any failure (IOException, unchecked KucoinApiException, a
+                    // failing send, etc.) so a transient error can never terminate the
+                    // reconnect loop and permanently stop price updates.
                     LOGGER.info("Websocket Re-init failed:", e);
+
+                    // Clean up any partially created socket to avoid leaking connections.
+                    if (newWebSocket != null) {
+                        try {
+                            newWebSocket.close(1011, "Re-init failed");
+                        } catch (Exception closeEx) {
+                            LOGGER.info("Failed to close partial socket", closeEx);
+                        }
+                    }
+
                     try {
                         Thread.sleep(FIVE_SECONDS_IN_MILLIS);
                     } catch (InterruptedException ie) {
