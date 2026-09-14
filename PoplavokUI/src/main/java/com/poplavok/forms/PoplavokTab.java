@@ -75,6 +75,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 import java.math.BigDecimal;
+import java.util.concurrent.atomic.AtomicReference;
+
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.SelectionMode;
 
@@ -141,6 +143,8 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
     @Nullable protected String streamedSymbol;
     @Nullable protected TickerPriceService.PriceListener priceListener;
     protected boolean streaming = false;
+    // Latest price awaiting display; coalesces bursts of ticks into a single UI update.
+    protected final AtomicReference<BigDecimal> pendingPrice = new AtomicReference<>(null);
 
     public PoplavokTab(MainForm mainApp, Long poplavokId) {
         this.mainApp = mainApp;
@@ -208,11 +212,17 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
             if (price == null) {
                 return;
             }
-            Platform.runLater(() -> {
-                if (priceTextField != null) {
-                    priceTextField.setText(formatAmount(price));
-                }
-            });
+            // Keep only the most recent price and schedule a single UI update per burst:
+            // if a refresh is already pending (previous value non-null), it will pick up
+            // this latest value, so we avoid flooding the FX thread with runLater tasks.
+            if (pendingPrice.getAndSet(price) == null) {
+                Platform.runLater(() -> {
+                    BigDecimal latest = pendingPrice.getAndSet(null);
+                    if (latest != null && priceTextField != null) {
+                        priceTextField.setText(formatAmount(latest));
+                    }
+                });
+            }
         };
 
         checkNotNull(priceCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> {
