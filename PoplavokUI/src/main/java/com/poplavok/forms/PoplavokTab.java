@@ -40,6 +40,8 @@ import com.poplavok.forms.wrapper.repayment.LossRepaymentInfo;
 import com.poplavok.forms.wrapper.repayment.ProfitRepaymentInfo;
 import com.poplavok.forms.wrapper.repayment.RepayRepaymentInfo;
 import com.poplavok.forms.wrapper.repayment.RepaymentInfo;
+import com.poplavok.kucoin.TickerPriceService;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.transformation.FilteredList;
 import javafx.beans.binding.DoubleBinding;
@@ -73,6 +75,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 import java.math.BigDecimal;
+import java.util.concurrent.atomic.AtomicReference;
+
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.SelectionMode;
 
@@ -108,6 +112,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
 
     @FXML @Nullable TextField tickerTextField;
     @FXML @Nullable TextField feeTextField;
+    @FXML @Nullable CheckBox priceCheckBox;
     @FXML @Nullable TextField priceTextField;
 
     @FXML @Nullable TextField directionTextBox;
@@ -134,6 +139,12 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
 
     protected final MainForm mainApp;
     protected final Long poplavokId;
+
+    @Nullable protected String streamedSymbol;
+    @Nullable protected TickerPriceService.PriceListener priceListener;
+    protected boolean streaming = false;
+    // Latest price awaiting display; coalesces bursts of ticks into a single UI update.
+    protected final AtomicReference<BigDecimal> pendingPrice = new AtomicReference<>(null);
 
     public PoplavokTab(MainForm mainApp, Long poplavokId) {
         this.mainApp = mainApp;
@@ -187,6 +198,65 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         checkNotNull(averagingTab).setContent(averagingPane);
 
         averagingPane.updateLabels();
+
+        startPriceStreaming();
+    }
+
+    protected void startPriceStreaming() {
+        MarketTicker ticker = checkNotNull(poplavok).getTicker();
+        if (ticker == null) {
+            return;
+        }
+        this.streamedSymbol = ticker.getSymbol();
+        this.priceListener = (symbol, price) -> {
+            if (price == null) {
+                return;
+            }
+            // Keep only the most recent price and schedule a single UI update per burst:
+            // if a refresh is already pending (previous value non-null), it will pick up
+            // this latest value, so we avoid flooding the FX thread with runLater tasks.
+            if (pendingPrice.getAndSet(price) == null) {
+                Platform.runLater(() -> {
+                    BigDecimal latest = pendingPrice.getAndSet(null);
+                    if (latest != null && priceTextField != null) {
+                        priceTextField.setText(formatAmount(latest));
+                    }
+                });
+            }
+        };
+
+        checkNotNull(priceCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                subscribePrice();
+            } else {
+                unsubscribePrice();
+            }
+        });
+
+        if (checkNotNull(priceCheckBox).isSelected()) {
+            subscribePrice();
+        }
+    }
+
+    protected void subscribePrice() {
+        if (streaming || streamedSymbol == null || priceListener == null) {
+            return;
+        }
+        streaming = true;
+        TickerPriceService.getInstance().subscribe(streamedSymbol, priceListener);
+    }
+
+    protected void unsubscribePrice() {
+        if (!streaming || streamedSymbol == null || priceListener == null) {
+            return;
+        }
+        streaming = false;
+        TickerPriceService.getInstance().unsubscribe(streamedSymbol, priceListener);
+    }
+
+    /** Stops live price streaming for this tab. Safe to call multiple times. */
+    public void dispose() {
+        unsubscribePrice();
     }
 
     protected boolean isEmpty(@Nullable BigDecimal amount) {
@@ -340,7 +410,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         }
     }
 
-    private void configureFundsColumn() {
+    protected void configureFundsColumn() {
         if (fundsColumn == null) {
             return;
         }
@@ -362,7 +432,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         });
     }
 
-    private HBox buildFundsGraphic(Level level) {
+    protected HBox buildFundsGraphic(Level level) {
         boolean useBase = checkNotNull(poplavok).getDirection() == LONG;
         BigDecimal lentRaw = useBase ? level.getLentAmountBase() : level.getLentAmountQuote();
         BigDecimal availableRaw = useBase ? level.getAvailableAmountBase() : level.getAvailableAmountQuote();
@@ -385,7 +455,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         return box;
     }
 
-    private HBox buildRatioBar(@Nullable BigDecimal lentAmount, @Nullable BigDecimal availableAmount) {
+    protected HBox buildRatioBar(@Nullable BigDecimal lentAmount, @Nullable BigDecimal availableAmount) {
         BigDecimal lent = nullToZero(lentAmount).max(BigDecimal.ZERO);
         BigDecimal available = nullToZero(availableAmount).max(BigDecimal.ZERO);
         BigDecimal total = lent.add(available);
@@ -414,7 +484,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         return bar;
     }
 
-    private void configureHealthColumn() {
+    protected void configureHealthColumn() {
         if (healthColumn == null) {
             return;
         }
@@ -435,7 +505,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         });
     }
 
-    private HBox buildHealthGraphic(Level level) {
+    protected HBox buildHealthGraphic(Level level) {
         Circle circle = new Circle(6.0);
         circle.setStroke(Color.web("#9e9e9e"));
         circle.setStrokeWidth(0.5);
@@ -460,7 +530,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
 
     /** Health = (holdings in debt currency + proceeds of covering trade) / debt, in percent.
      *  Returns null if the price field is empty or non-parseable, POSITIVE_INFINITY if there is no debt. */
-    private @Nullable Double computeHealthPercent(Level level) {
+    protected @Nullable Double computeHealthPercent(Level level) {
         BigDecimal price = parsePrice();
         if (price == null || price.signum() <= 0) {
             return null;
@@ -491,7 +561,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
     }
 
     /** 50% and below = bright red, 100% = dull green, 150% and above = bright green. */
-    private static Color healthColor(double healthPercent) {
+    protected static Color healthColor(double healthPercent) {
         Color brightRed = Color.web("#ff1744");
         Color dullGreen = Color.web("#7fae7f");
         Color brightGreen = Color.web("#00e676");
@@ -508,7 +578,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         }
     }
 
-    private @Nullable BigDecimal parsePrice() {
+    protected @Nullable BigDecimal parsePrice() {
         if (priceTextField == null) {
             return null;
         }
@@ -523,7 +593,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         }
     }
 
-    private BigDecimal parseFee() {
+    protected BigDecimal parseFee() {
         if (feeTextField == null) {
             return BigDecimal.ZERO;
         }
@@ -793,8 +863,6 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
             alert.showAndWait();
         }
     }
-
-    public void refreshPrice() {}
 
     public void closePoplavok() {
         // Close poplavok IFF - all its levels are closed
