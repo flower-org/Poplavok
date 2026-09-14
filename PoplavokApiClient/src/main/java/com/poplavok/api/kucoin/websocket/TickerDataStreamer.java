@@ -125,7 +125,16 @@ public class TickerDataStreamer extends WebSocketListener {
         if (pingThread != null) {
             pingThread.interrupt();
         }
-        WebSocket socket = webSocket.getAndSet(null);
+        WebSocket socket;
+        // Clear the socket under the lock so we cannot miss one that reInit is concurrently
+        // installing: either we observe and close it here, or reInit observes shuttingDown
+        // and discards the socket it just created.
+        subscriptionLock.lock();
+        try {
+            socket = webSocket.getAndSet(null);
+        } finally {
+            subscriptionLock.unlock();
+        }
         if (socket != null) {
             socket.close(1000, "Shutting down");
         }
@@ -215,6 +224,12 @@ public class TickerDataStreamer extends WebSocketListener {
                     // or fully after (and sees the now-published socket and sends its own frame).
                     subscriptionLock.lock();
                     try {
+                        // Also re-check shuttingDown under the lock: if shutdown() ran while
+                        // initWebSocket() was in progress, discard this socket instead of leaking it.
+                        if (shuttingDown.get()) {
+                            newWebSocket.close(1000, "Shutting down");
+                            break;
+                        }
                         webSocket.set(newWebSocket);
                         for (String t : topics) {
                             sendSubscribe(newWebSocket, t);
