@@ -40,6 +40,9 @@ public class TickerPriceService {
 
     private final Object lock = new Object();
     private final Map<String, Set<PriceListener>> listenersBySymbol = new ConcurrentHashMap<>();
+    // Last price per symbol cache. Only retained while the symbol has active
+    // subscribers - dropped once the last subscriber leaves to avoid stale price data.
+    private final Map<String, BigDecimal> lastPriceBySymbol = new ConcurrentHashMap<>();
     @Nullable private TickerDataStreamer streamer;
 
     private TickerPriceService() {
@@ -59,6 +62,12 @@ public class TickerPriceService {
                 LOGGER.info("Subscribed to ticker {}", symbol);
             } else {
                 existing.add(listener);
+                // Seed the subsequent subscribers with the latest cached price (if any) to
+                // avoid a delay before the next stream update arrives.
+                BigDecimal cachedPrice = lastPriceBySymbol.get(symbol);
+                if (cachedPrice != null) {
+                    listener.onPrice(symbol, cachedPrice);
+                }
             }
         }
     }
@@ -74,6 +83,7 @@ public class TickerPriceService {
 
             if (listeners.isEmpty()) {
                 listenersBySymbol.remove(symbol);
+                lastPriceBySymbol.remove(symbol);
                 if (streamer != null) {
                     streamer.unsubscribe(symbol);
                     LOGGER.info("Unsubscribed from ticker {}", symbol);
@@ -95,6 +105,7 @@ public class TickerPriceService {
     public void shutdown() {
         synchronized (lock) {
             listenersBySymbol.clear();
+            lastPriceBySymbol.clear();
             if (streamer != null) {
                 streamer.shutdown();
                 streamer = null;
@@ -131,6 +142,10 @@ public class TickerPriceService {
         BigDecimal price = data == null ? null : data.price();
 
         LOGGER.debug("Ticker price update: {} = {}", symbol, price);
+
+        if (price != null) {
+            lastPriceBySymbol.put(symbol, price);
+        }
 
         for (PriceListener listener : listeners) {
             try {
