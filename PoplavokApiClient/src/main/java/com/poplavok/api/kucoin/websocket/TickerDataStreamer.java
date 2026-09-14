@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class TickerDataStreamer extends WebSocketListener {
     public final static String ALL_TICKERS = "all";
@@ -39,6 +40,7 @@ public class TickerDataStreamer extends WebSocketListener {
     final Thread pingThread;
 
     final Set<String> topics = ConcurrentHashMap.newKeySet();
+    final ReentrantLock subscriptionLock = new ReentrantLock();
     final TickerCallback tickerCallback;
     final KucoinApiClient apiClient;
     final OkHttpClient httpClient;
@@ -133,20 +135,30 @@ public class TickerDataStreamer extends WebSocketListener {
     }
 
     public void subscribe(String topic) {
-        if (topics.add(topic)) {
-            WebSocket socket = webSocket.get();
-            if (socket != null) {
-                sendSubscribe(socket, topic);
+        subscriptionLock.lock();
+        try {
+            if (topics.add(topic)) {
+                WebSocket socket = webSocket.get();
+                if (socket != null) {
+                    sendSubscribe(socket, topic);
+                }
             }
+        } finally {
+            subscriptionLock.unlock();
         }
     }
 
     public void unsubscribe(String topic) {
-        if (topics.remove(topic)) {
-            WebSocket socket = webSocket.get();
-            if (socket != null) {
-                sendUnsubscribe(socket, topic);
+        subscriptionLock.lock();
+        try {
+            if (topics.remove(topic)) {
+                WebSocket socket = webSocket.get();
+                if (socket != null) {
+                    sendUnsubscribe(socket, topic);
+                }
             }
+        } finally {
+            subscriptionLock.unlock();
         }
     }
 
@@ -197,11 +209,19 @@ public class TickerDataStreamer extends WebSocketListener {
                 try {
                     newWebSocket = initWebSocket();
 
-                    for (String t : topics) {
-                        sendSubscribe(newWebSocket, t);
+                    // Publish the socket and (re)send the topic handshake atomically w.r.t.
+                    // subscribe()/unsubscribe(), so a concurrent topic change can't be dropped:
+                    // it either runs fully before this block (and is picked up by the loop below)
+                    // or fully after (and sees the now-published socket and sends its own frame).
+                    subscriptionLock.lock();
+                    try {
+                        webSocket.set(newWebSocket);
+                        for (String t : topics) {
+                            sendSubscribe(newWebSocket, t);
+                        }
+                    } finally {
+                        subscriptionLock.unlock();
                     }
-
-                    webSocket.set(newWebSocket);
                     break;
                 } catch (Exception e) {
                     // Catch any failure (IOException, unchecked KucoinApiException, a
