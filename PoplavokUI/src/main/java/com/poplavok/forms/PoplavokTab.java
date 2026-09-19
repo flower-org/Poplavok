@@ -44,7 +44,9 @@ import com.poplavok.kucoin.TickerPriceService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.beans.binding.DoubleBinding;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
@@ -105,8 +107,8 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
     @Nullable FilteredList<TradeWrapper> trades;
 
     @FXML @Nullable TableView<Level> levelsTable;
-    @FXML @Nullable TableColumn<Level, String> fundsColumn;
-    @FXML @Nullable TableColumn<Level, String> healthColumn;
+    @FXML @Nullable TableColumn<Level, Number> fundsColumn;
+    @FXML @Nullable TableColumn<Level, Number> healthColumn;
     @FXML @Nullable TableView<LevelTransaction> transactionsTable;
     @FXML @Nullable TableView<TradeWrapper> tradesTable;
 
@@ -414,10 +416,11 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         if (fundsColumn == null) {
             return;
         }
-        fundsColumn.setSortable(false);
+        fundsColumn.setSortable(true);
+        fundsColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(computeAvailablePercent(cell.getValue())));
         fundsColumn.setCellFactory(col -> new TableCell<>() {
             @Override
-            protected void updateItem(String item, boolean empty) {
+            protected void updateItem(Number item, boolean empty) {
                 super.updateItem(item, empty);
                 Level level = empty || getTableRow() == null ? null : getTableRow().getItem();
                 if (empty || level == null) {
@@ -432,7 +435,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         });
     }
 
-    protected HBox buildFundsGraphic(Level level) {
+    protected @Nullable Double computeAvailablePercent(Level level) {
         boolean useBase = checkNotNull(poplavok).getDirection() == LONG;
         BigDecimal lentRaw = useBase ? level.getLentAmountBase() : level.getLentAmountQuote();
         BigDecimal availableRaw = useBase ? level.getAvailableAmountBase() : level.getAvailableAmountQuote();
@@ -440,9 +443,17 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         BigDecimal lent = nullToZero(lentRaw).max(BigDecimal.ZERO);
         BigDecimal available = nullToZero(availableRaw).max(BigDecimal.ZERO);
         BigDecimal total = lent.add(available);
-        double availablePct = total.signum() == 0
+        return total.signum() == 0
                 ? 100.0
                 : available.divide(total, SCALE, RoundingMode.HALF_UP).doubleValue() * 100.0;
+    }
+
+    protected HBox buildFundsGraphic(Level level) {
+        boolean useBase = checkNotNull(poplavok).getDirection() == LONG;
+        BigDecimal lentRaw = useBase ? level.getLentAmountBase() : level.getLentAmountQuote();
+        BigDecimal availableRaw = useBase ? level.getAvailableAmountBase() : level.getAvailableAmountQuote();
+
+        double availablePct = checkNotNull(computeAvailablePercent(level));
 
         HBox bar = buildRatioBar(lentRaw, availableRaw);
         HBox.setHgrow(bar, javafx.scene.layout.Priority.ALWAYS);
@@ -488,10 +499,11 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         if (healthColumn == null) {
             return;
         }
-        healthColumn.setSortable(false);
+        healthColumn.setSortable(true);
+        healthColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(computeHealthPercent(cell.getValue())));
         healthColumn.setCellFactory(col -> new TableCell<>() {
             @Override
-            protected void updateItem(String item, boolean empty) {
+            protected void updateItem(Number item, boolean empty) {
                 super.updateItem(item, empty);
                 Level level = empty || getTableRow() == null ? null : getTableRow().getItem();
                 if (empty || level == null) {
@@ -626,7 +638,9 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
             boolean showClosed = checkNotNull(showClosedLevelsCheckBox).isSelected();
             List<Level> levelList = DBUtil.connectGetResultAndClose(sess -> LevelDAO.findByPoplavokId(sess, poplavokId, showClosed));
             this.levels = new FilteredList<>(FXCollections.observableArrayList(levelList));
-            checkNotNull(levelsTable).setItems(this.levels);
+            SortedList<Level> sortedLevels = new SortedList<>(this.levels);
+            sortedLevels.comparatorProperty().bind(checkNotNull(levelsTable).comparatorProperty());
+            checkNotNull(levelsTable).setItems(sortedLevels);
             autoResizeTableColumns(levelsTable);
 
             if (!selectedLevelIds.isEmpty()) {
