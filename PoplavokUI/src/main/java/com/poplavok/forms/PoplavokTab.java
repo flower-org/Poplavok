@@ -560,19 +560,23 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         return total.divide(debt, SCALE, RoundingMode.HALF_UP).doubleValue() * 100.0;
     }
 
-    /** 50% and below = bright red, 100% = dull green, 150% and above = bright green. */
+    /** Below 100% = shades of red (50% and below = bright red, approaching 100% = dull red).
+     *  100% and above = shades of green (100% = dull green, 150% and above = bright green). */
     protected static Color healthColor(double healthPercent) {
         Color brightRed = Color.web("#ff1744");
+        Color dullRed = Color.web("#ae7f7f");
         Color dullGreen = Color.web("#7fae7f");
         Color brightGreen = Color.web("#00e676");
-        if (healthPercent <= 50.0) {
-            return brightRed;
-        } else if (healthPercent >= 150.0) {
-            return brightGreen;
-        } else if (healthPercent <= 100.0) {
+        if (healthPercent < 100.0) {
+            if (healthPercent <= 50.0) {
+                return brightRed;
+            }
             double t = (healthPercent - 50.0) / 50.0;
-            return brightRed.interpolate(dullGreen, t);
+            return brightRed.interpolate(dullRed, t);
         } else {
+            if (healthPercent >= 150.0) {
+                return brightGreen;
+            }
             double t = (healthPercent - 100.0) / 50.0;
             return dullGreen.interpolate(brightGreen, t);
         }
