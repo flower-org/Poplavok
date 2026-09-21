@@ -11,7 +11,10 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
@@ -20,10 +23,12 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Date;
 
 import static com.flower.fxutils.JavaFxUtils.createDecimalTextFormatter;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.poplavok.data.utils.BigDecimalUtil.SCALE;
 import static com.poplavok.data.utils.BigDecimalUtil.formatAmount;
 import static com.poplavok.data.utils.BigDecimalUtil.fromString;
 import static com.poplavok.data.utils.BigDecimalUtil.nullToZero;
@@ -40,6 +45,9 @@ public class LevelAddDialog extends VBox {
     @FXML @Nullable TextField baseAmountTextField;
     @FXML @Nullable TextField commissionTextField;
     @FXML @Nullable Button addButton;
+    @FXML @Nullable CheckBox excludeLoansCheckBox;
+    @FXML @Nullable Button useCurrentAmountsButton;
+    @FXML @Nullable RowConstraints topRowConstraints;
 
     @FXML @Nullable TextField fxAmountTextField;
 
@@ -107,11 +115,62 @@ public class LevelAddDialog extends VBox {
             checkNotNull(notesTextField).textProperty().set(level.getNotes());
             checkNotNull(quoteAmountTextField).textProperty().set(formatAmount(level.getProjectedAmountQuote()));
             checkNotNull(baseAmountTextField).textProperty().set(formatAmount(level.getProjectedAmountBase()));
+
+            checkNotNull(excludeLoansCheckBox).setVisible(true);
+            checkNotNull(excludeLoansCheckBox).setManaged(true);
+            checkNotNull(useCurrentAmountsButton).setVisible(true);
+            checkNotNull(useCurrentAmountsButton).setManaged(true);
+            if (topRowConstraints != null) {
+                topRowConstraints.setMinHeight(10.0);
+                topRowConstraints.setPrefHeight(30.0);
+                topRowConstraints.setMaxHeight(Region.USE_COMPUTED_SIZE);
+            }
         }
     }
 
     public void setStage(Stage stage) {
         this.stage = stage;
+    }
+
+    public void useCurrentAmounts() {
+        try {
+            Level lvl = level;
+            if (lvl == null) { return; }
+
+            boolean excludeLoans = excludeLoansCheckBox != null && excludeLoansCheckBox.isSelected();
+
+            BigDecimal projectedBase;
+            BigDecimal projectedQuote;
+            if (tradeDirection == Direction.LONG) {
+                // LONG: hold BASE (available + lent), owe QUOTE (debt)
+                BigDecimal holdingsBase = nullToZero(lvl.getAvailableAmountBase());
+                if (!excludeLoans) {
+                    holdingsBase = holdingsBase.add(nullToZero(lvl.getLentAmountBase()));
+                }
+                projectedBase = holdingsBase;
+                projectedQuote = nullToZero(lvl.getDebtQuote());
+            } else {
+                // SHORT: hold QUOTE (available + lent), owe BASE (debt)
+                BigDecimal holdingsQuote = nullToZero(lvl.getAvailableAmountQuote());
+                if (!excludeLoans) {
+                    holdingsQuote = holdingsQuote.add(nullToZero(lvl.getLentAmountQuote()));
+                }
+                projectedQuote = holdingsQuote;
+                projectedBase = nullToZero(lvl.getDebtBase());
+            }
+
+            checkNotNull(baseAmountTextField).setText(formatAmount(projectedBase));
+            checkNotNull(quoteAmountTextField).setText(formatAmount(projectedQuote));
+
+            if (projectedBase.compareTo(BigDecimal.ZERO) != 0) {
+                BigDecimal projectedPrice = projectedQuote.divide(projectedBase, SCALE, RoundingMode.HALF_UP);
+                checkNotNull(priceTextField).setText(formatAmount(projectedPrice));
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Use current amounts error: " + e, ButtonType.OK);
+            LOGGER.error("Use current amounts error:", e);
+            alert.showAndWait();
+        }
     }
 
     public void okClose() {
