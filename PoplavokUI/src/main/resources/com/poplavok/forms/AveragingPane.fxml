@@ -293,7 +293,7 @@
                         </GridPane.margin>
                      </TextField>
                      <Label fx:id="fxUiEntryCurrencyLabel" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="6" />
-                     <CheckBox fx:id="excludeLoansFromDebtCheckBox" mnemonicParsing="false" text="Exclude loans from debt" GridPane.columnIndex="1" />
+                     <CheckBox fx:id="excludeLoansFromHoldingsCheckBox" mnemonicParsing="false" text="Exclude loans from holdings" GridPane.columnIndex="1" />
                   </children>
                </GridPane>
             </children>

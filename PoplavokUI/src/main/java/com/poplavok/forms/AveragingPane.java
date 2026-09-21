@@ -81,7 +81,7 @@ public class AveragingPane extends AnchorPane {
     @FXML @Nullable Label averagingCurrencyLabel;
 
     @FXML @Nullable CheckBox includeLentAmountsCheckBox;
-    @FXML @Nullable CheckBox excludeLoansFromDebtCheckBox;
+    @FXML @Nullable CheckBox excludeLoansFromHoldingsCheckBox;
 
     // Retain holdings
 
@@ -158,7 +158,7 @@ public class AveragingPane extends AnchorPane {
         checkNotNull(includeLentAmountsCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> {
             updateAverageTabEvent();
         });
-        checkNotNull(excludeLoansFromDebtCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> {
+        checkNotNull(excludeLoansFromHoldingsCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> {
             updateAverageTabEvent();
         });
 
@@ -296,7 +296,7 @@ public class AveragingPane extends AnchorPane {
         averageLevels = lvls;
 
         boolean includeLentAmounts = checkNotNull(includeLentAmountsCheckBox).selectedProperty().get();
-        boolean excludeLoansFromDebt = checkNotNull(excludeLoansFromDebtCheckBox).selectedProperty().get();
+        boolean excludeLoansFromHoldings = checkNotNull(excludeLoansFromHoldingsCheckBox).selectedProperty().get();
 
         BigDecimal absoluteDebt = BigDecimal.ZERO;
         BigDecimal available = BigDecimal.ZERO;
@@ -329,7 +329,7 @@ public class AveragingPane extends AnchorPane {
         checkNotNull(toRepayTextField).setText(formatAmount(toRepay));
         checkNotNull(holdingTextField).setText(formatAmount(holding));
 
-        if (!excludeLoansFromDebt) {
+        if (!excludeLoansFromHoldings) {
             holding = holding.add(loans);
         }
 
