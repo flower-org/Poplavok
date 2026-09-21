@@ -81,6 +81,7 @@ public class AveragingPane extends AnchorPane {
     @FXML @Nullable Label averagingCurrencyLabel;
 
     @FXML @Nullable CheckBox includeLentAmountsCheckBox;
+    @FXML @Nullable CheckBox excludeLoansFromDebtCheckBox;
 
     // Retain holdings
 
@@ -155,6 +156,9 @@ public class AveragingPane extends AnchorPane {
             if (newValue) { updateAverageTabEvent(); }
         });
         checkNotNull(includeLentAmountsCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> {
+            updateAverageTabEvent();
+        });
+        checkNotNull(excludeLoansFromDebtCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> {
             updateAverageTabEvent();
         });
 
@@ -292,15 +296,18 @@ public class AveragingPane extends AnchorPane {
         averageLevels = lvls;
 
         boolean includeLentAmounts = checkNotNull(includeLentAmountsCheckBox).selectedProperty().get();
+        boolean excludeLoansFromDebt = checkNotNull(excludeLoansFromDebtCheckBox).selectedProperty().get();
 
         BigDecimal absoluteDebt = BigDecimal.ZERO;
         BigDecimal available = BigDecimal.ZERO;
         BigDecimal holding = BigDecimal.ZERO;
+        BigDecimal loans = BigDecimal.ZERO;
 
         for (Level lvl : averageLevels) {
             if (checkNotNull(direction) == LONG) {
                 absoluteDebt = absoluteDebt.add(nullToZero(lvl.getDebtQuote()));
                 available = available.add(nullToZero(lvl.getAvailableAmountQuote()));
+                loans = loans.add(nullToZero(lvl.getLentAmountBase()));
                 holding = holding.add(nullToZero(lvl.getAvailableAmountBase()));
                 if (includeLentAmounts) {
                     holding = holding.add(nullToZero(lvl.getLentAmountBase()));
@@ -308,6 +315,7 @@ public class AveragingPane extends AnchorPane {
             } else {
                 absoluteDebt = absoluteDebt.add(nullToZero(lvl.getDebtBase()));
                 available = available.add(nullToZero(lvl.getAvailableAmountBase()));
+                loans = loans.add(nullToZero(lvl.getLentAmountQuote()));
                 holding = holding.add(nullToZero(lvl.getAvailableAmountQuote()));
                 if (includeLentAmounts) {
                     holding = holding.add(nullToZero(lvl.getLentAmountQuote()));
@@ -320,6 +328,10 @@ public class AveragingPane extends AnchorPane {
         checkNotNull(availableTextField).setText(formatAmount(available));
         checkNotNull(toRepayTextField).setText(formatAmount(toRepay));
         checkNotNull(holdingTextField).setText(formatAmount(holding));
+
+        if (!excludeLoansFromDebt) {
+            holding = holding.add(loans);
+        }
 
         // ------------------------
 

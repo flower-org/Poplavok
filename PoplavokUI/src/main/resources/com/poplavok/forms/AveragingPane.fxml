@@ -147,6 +147,7 @@
                      <ColumnConstraints hgrow="SOMETIMES" maxWidth="75.0" minWidth="75.0" prefWidth="75.0" />
                  </columnConstraints>
                  <rowConstraints>
+                     <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                      <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                      <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
@@ -159,7 +160,7 @@
                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                  </rowConstraints>
                   <children>
-                     <RadioButton fx:id="commsRadioButton" mnemonicParsing="false" selected="true" text="+ Comms">
+                     <RadioButton fx:id="commsRadioButton" mnemonicParsing="false" selected="true" text="+ Comms" GridPane.rowIndex="1">
                         <GridPane.margin>
                            <Insets left="10.0" />
                         </GridPane.margin>
@@ -167,57 +168,57 @@
                            <ToggleGroup fx:id="addGroup" />
                         </toggleGroup>
                      </RadioButton>
-                     <RadioButton fx:id="percentRadioButton" mnemonicParsing="false" text="+ %" toggleGroup="$addGroup" GridPane.rowIndex="1">
+                     <RadioButton fx:id="percentRadioButton" mnemonicParsing="false" text="+ %" toggleGroup="$addGroup" GridPane.rowIndex="2">
                         <GridPane.margin>
                            <Insets left="10.0" />
                         </GridPane.margin>
                      </RadioButton>
-                     <Label text="To Trade:" GridPane.rowIndex="3">
+                     <Label text="To Trade:" GridPane.rowIndex="4">
                         <GridPane.margin>
                            <Insets left="10.0" />
                         </GridPane.margin>
                      </Label>
-                     <Label text="Trade Price:" GridPane.rowIndex="6">
+                     <Label text="Trade Price:" GridPane.rowIndex="7">
                         <GridPane.margin>
                            <Insets left="10.0" />
                         </GridPane.margin>
                      </Label>
-                     <Label text="Proceeds:" GridPane.rowIndex="7">
+                     <Label text="Proceeds:" GridPane.rowIndex="8">
                         <GridPane.margin>
                            <Insets left="10.0" />
                         </GridPane.margin>
                      </Label>
-                     <Label text="Profit:" GridPane.rowIndex="8">
+                     <Label text="Profit:" GridPane.rowIndex="9">
                         <GridPane.margin>
                            <Insets left="10.0" />
                         </GridPane.margin>
                      </Label>
-                     <TextField fx:id="percentTextField" disable="true" onKeyTyped="#updateAverageTabEvent" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                     <TextField fx:id="percentTextField" disable="true" onKeyTyped="#updateAverageTabEvent" GridPane.columnIndex="1" GridPane.rowIndex="2">
                         <GridPane.margin>
                            <Insets left="10.0" right="10.0" />
                         </GridPane.margin>
                      </TextField>
-                     <TextField fx:id="toSellTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                     <TextField fx:id="toSellTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="4">
                         <GridPane.margin>
                            <Insets left="10.0" right="10.0" />
                         </GridPane.margin>
                      </TextField>
-                     <TextField fx:id="sellPriceTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="6">
+                     <TextField fx:id="sellPriceTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="7">
                         <GridPane.margin>
                            <Insets left="10.0" right="10.0" />
                         </GridPane.margin>
                      </TextField>
-                     <TextField fx:id="proceedsTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="7">
+                     <TextField fx:id="proceedsTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="8">
                         <GridPane.margin>
                            <Insets left="10.0" right="10.0" />
                         </GridPane.margin>
                      </TextField>
-                     <TextField fx:id="profitTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="8">
+                     <TextField fx:id="profitTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="9">
                         <GridPane.margin>
                            <Insets left="10.0" right="10.0" />
                         </GridPane.margin>
                      </TextField>
-                     <GridPane GridPane.columnIndex="1">
+                     <GridPane GridPane.columnIndex="1" GridPane.rowIndex="1">
                        <columnConstraints>
                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="35.0" minWidth="35.0" prefWidth="35.0" />
                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -237,27 +238,27 @@
                            <Insets left="10.0" />
                         </GridPane.margin>
                      </GridPane>
-                     <Label text="Commission:" GridPane.rowIndex="4">
+                     <Label text="Commission:" GridPane.rowIndex="5">
                         <GridPane.margin>
                            <Insets left="10.0" />
                         </GridPane.margin>
                      </Label>
-                     <TextField fx:id="commissionTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                     <TextField fx:id="commissionTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="5">
                         <GridPane.margin>
                            <Insets left="10.0" right="10.0" />
                         </GridPane.margin>
                      </TextField>
-                     <Label fx:id="toTradeCurrencyLabel" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="3" />
-                     <Label fx:id="tradePriceLabel" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="6" />
-                     <Label fx:id="proceedsCurrencyLabel" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="7" />
-                     <Label fx:id="commissionCurrencyLabel" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="4" />
-                     <Label fx:id="profitCurrencyLabel" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="8" />
-                     <Label text="Profit in:" GridPane.rowIndex="2">
+                     <Label fx:id="toTradeCurrencyLabel" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="4" />
+                     <Label fx:id="tradePriceLabel" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="7" />
+                     <Label fx:id="proceedsCurrencyLabel" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="8" />
+                     <Label fx:id="commissionCurrencyLabel" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="5" />
+                     <Label fx:id="profitCurrencyLabel" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="9" />
+                     <Label text="Profit in:" GridPane.rowIndex="3">
                         <GridPane.margin>
                            <Insets left="10.0" />
                         </GridPane.margin>
                      </Label>
-                     <GridPane GridPane.columnIndex="1" GridPane.rowIndex="2">
+                     <GridPane GridPane.columnIndex="1" GridPane.rowIndex="3">
                        <columnConstraints>
                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -281,17 +282,18 @@
                            </RadioButton>
                         </children>
                      </GridPane>
-                     <Label text="CEX UI Entry:" GridPane.rowIndex="5">
+                     <Label text="CEX UI Entry:" GridPane.rowIndex="6">
                         <GridPane.margin>
                            <Insets left="10.0" />
                         </GridPane.margin>
                      </Label>
-                     <TextField fx:id="fxUiEntryTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="5">
+                     <TextField fx:id="fxUiEntryTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="6">
                         <GridPane.margin>
                            <Insets left="10.0" right="10.0" />
                         </GridPane.margin>
                      </TextField>
-                     <Label fx:id="fxUiEntryCurrencyLabel" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="5" />
+                     <Label fx:id="fxUiEntryCurrencyLabel" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="6" />
+                     <CheckBox fx:id="excludeLoansFromDebtCheckBox" mnemonicParsing="false" text="Exclude loans from debt" GridPane.columnIndex="1" />
                   </children>
                </GridPane>
             </children>
