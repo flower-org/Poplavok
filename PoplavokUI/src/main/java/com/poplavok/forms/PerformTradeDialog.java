@@ -15,6 +15,7 @@ import com.poplavok.data.model.MarketTicker;
 import com.poplavok.data.model.TradeOperation;
 import com.poplavok.data.utils.AmountAndCommission;
 import com.poplavok.data.utils.LongShortCalculator;
+import com.poplavok.kucoin.TickerPriceService;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -66,6 +67,7 @@ public class PerformTradeDialog extends VBox {
     @FXML @Nullable Label quoteSellLabel;
     @FXML @Nullable Button buyButton;
     @FXML @Nullable Button sellButton;
+    @FXML @Nullable Button usePriceButton;
 
     @FXML @Nullable CheckBox manualEntryCheckBox;
     @FXML @Nullable Tab buyTab;
@@ -99,9 +101,13 @@ public class PerformTradeDialog extends VBox {
     final MarketTicker ticker;
     final boolean isAveragingTrade;
 
+    @Nullable BigDecimal projectedPrice;
+    boolean useProjectedPriceNext = true;
+
     /** Regular Trade */
     public PerformTradeDialog(MainForm mainApp, @Nullable BigDecimal availableAmountBase, @Nullable BigDecimal availableAmountQuote,
-                              MarketTicker ticker, Direction direction, @Nullable BigDecimal price) {
+                              MarketTicker ticker, Direction direction, @Nullable BigDecimal price,
+                              @Nullable BigDecimal projectedPrice) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("PerformTradeDialog.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
@@ -116,9 +122,10 @@ public class PerformTradeDialog extends VBox {
         this.isAveragingTrade = false;
         this.ticker = ticker;
         this.direction = direction;
+        initPrices(projectedPrice);
 
         checkNotNull(tickerLabel).textProperty().setValue(ticker.getSymbol());
-        checkNotNull(priceTextField).textProperty().setValue(price != null ? price.toPlainString() : "");
+        checkNotNull(priceTextField).textProperty().setValue(projectedPrice != null ? projectedPrice.toPlainString() : "");
         checkNotNull(availableBaseTextField).textProperty().setValue(formatAmount(availableAmountBase));
         checkNotNull(availableQuoteTextField).textProperty().setValue(formatAmount(availableAmountQuote));
         checkNotNull(useAllBaseButton).textProperty().setValue(ticker.getBase().getCurrency());
@@ -147,10 +154,12 @@ public class PerformTradeDialog extends VBox {
 
         checkNotNull(manualEntryCheckBox).selectedProperty().addListener(this::onManualEntryCheckedChanged);
 
-        checkNotNull(debtSeparator).visibleProperty().setValue(false);
         checkNotNull(debtLabel).visibleProperty().setValue(false);
+        checkNotNull(debtLabel).managedProperty().setValue(false);
         checkNotNull(debtTextField).visibleProperty().setValue(false);
+        checkNotNull(debtTextField).managedProperty().setValue(false);
         checkNotNull(debtCurrencyLabel).visibleProperty().setValue(false);
+        checkNotNull(debtCurrencyLabel).managedProperty().setValue(false);
 
         switch (direction) {
             case LONG:
@@ -180,10 +189,14 @@ public class PerformTradeDialog extends VBox {
         this.isAveragingTrade = true;
         this.ticker = ticker;
         this.direction = direction;
+        checkNotNull(usePriceButton).setVisible(false);
+        checkNotNull(usePriceButton).setManaged(false);
 
         checkNotNull(debtTextField).textProperty().setValue(formatAmount(debt));
         checkNotNull(availableToolBar).getItems().remove(availableAmountSeparator);
-        checkNotNull(debtCurrencyLabel).visibleProperty().setValue(false);
+        String debtCurrency = direction == Direction.LONG
+                ? ticker.getQuote().getCurrency() : ticker.getBase().getCurrency();
+        checkNotNull(debtCurrencyLabel).textProperty().setValue(debtCurrency);
 
         checkNotNull(tickerLabel).textProperty().setValue(ticker.getSymbol());
         checkNotNull(priceTextField).textProperty().setValue(price != null ? price.toPlainString() : "");
@@ -308,6 +321,36 @@ public class PerformTradeDialog extends VBox {
             LOGGER.error("Sell Error:", e);
             JavaFxUtils.showErrorMessage("Sell Error: " + e);
         }
+    }
+
+    /** Sets `projectedPrice` (the price passed into the dialog), used by `usePrice` to toggle the price field. */
+    protected void initPrices(@Nullable BigDecimal projectedPrice) {
+        this.projectedPrice = projectedPrice;
+        if (projectedPrice != null) {
+            useProjectedPriceNext = false;
+            checkNotNull(usePriceButton).setText("Use Current Price");
+        }
+    }
+
+    public void usePrice() {
+        Button button = checkNotNull(usePriceButton);
+        if (useProjectedPriceNext) {
+            if (projectedPrice == null) {
+                JavaFxUtils.showErrorMessage("Projected price is not available.");
+            } else {
+                checkNotNull(priceTextField).setText(projectedPrice.toPlainString());
+            }
+            button.setText("Use Current Price");
+        } else {
+            BigDecimal currentTickerPrice = TickerPriceService.getInstance().getLastPrice(ticker.getSymbol());
+            if (currentTickerPrice == null) {
+                JavaFxUtils.showErrorMessage("Current price is not available.");
+            } else {
+                checkNotNull(priceTextField).setText(currentTickerPrice.toPlainString());
+            }
+            button.setText("Use Projected Price");
+        }
+        useProjectedPriceNext = !useProjectedPriceNext;
     }
 
     public void onPriceChanged(ObservableValue<? extends String> observable, String oldValue, String newValue) {

@@ -72,6 +72,13 @@ public class TickerPriceService {
         }
     }
 
+    /** Returns the last known streamed price for {@code symbol} without subscribing,
+     *  or {@code null} if no active subscriber has received a price for it yet. */
+    @Nullable
+    public BigDecimal getLastPrice(String symbol) {
+        return lastPriceBySymbol.get(symbol);
+    }
+
     /** Unregisters a previously registered {@code listener} for {@code symbol}. */
     public void unsubscribe(String symbol, PriceListener listener) {
         synchronized (lock) {

@@ -1299,7 +1299,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
             price = price == null ? lvl.getProjectedPrice() : price;
             PerformTradeDialog performTradeDialog = new PerformTradeDialog(mainApp, lvl.getAvailableAmountBase(), lvl.getAvailableAmountQuote(),
                     checkNotNull(poplavok).getTicker(),
-                    checkNotNull(checkNotNull(poplavok).getDirection()), price);
+                    checkNotNull(checkNotNull(poplavok).getDirection()), price, lvl.getProjectedPrice());
             Stage workspaceStage = ModalWindow.showModal(checkNotNull(mainApp.mainStage),
                     stage -> { performTradeDialog.setStage(stage); return performTradeDialog; },
                     "Perform Trade");

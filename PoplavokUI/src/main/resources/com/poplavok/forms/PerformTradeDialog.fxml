@@ -177,6 +177,7 @@
                      </padding>
                   </Label>
                   <Separator fx:id="debtSeparator" orientation="VERTICAL" />
+                  <Button fx:id="usePriceButton" mnemonicParsing="false" onAction="#usePrice" text="Use Current Price" />
                   <Label fx:id="debtLabel" text="Debt: " />
                   <TextField fx:id="debtTextField" editable="false">
                      <opaqueInsets>
