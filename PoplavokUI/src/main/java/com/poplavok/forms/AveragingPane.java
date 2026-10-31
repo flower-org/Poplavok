@@ -65,6 +65,7 @@ public class AveragingPane extends AnchorPane {
     @FXML @Nullable TextField proceedsTextField;
     @FXML @Nullable TextField commissionTextField;
     @FXML @Nullable TextField profitTextField;
+    @FXML @Nullable TextField profitQuoteTextField;
 
     @FXML @Nullable RadioButton profitInQuoteRadioButton;
     @FXML @Nullable RadioButton profitInBaseRadioButton;
@@ -77,6 +78,7 @@ public class AveragingPane extends AnchorPane {
     @FXML @Nullable Label proceedsCurrencyLabel;
     @FXML @Nullable Label commissionCurrencyLabel;
     @FXML @Nullable Label profitCurrencyLabel;
+    @FXML @Nullable Label profitQuoteCurrencyLabel;
 
     @FXML @Nullable Label poplavokDirectionLabel;
     @FXML @Nullable Label poplavokTickerLabel;
@@ -394,7 +396,7 @@ public class AveragingPane extends AnchorPane {
                         checkNotNull(sellPriceTextField).textProperty().setValue(formatAmount(tradeResult.price));
                         checkNotNull(proceedsTextField).textProperty().setValue(formatAmount(toRepay));
                         checkNotNull(commissionTextField).textProperty().setValue(formatAmount(tradeResult.commissionQuote));
-                        checkNotNull(profitTextField).textProperty().setValue(formatAmount(profitBase));
+                        setProfit(profitBase, tradeResult.price);
                         checkNotNull(fxUiEntryTextField).textProperty().setValue(formatAmount(holdingWithoutProfit));
 
                         resetControls = false;
@@ -417,7 +419,7 @@ public class AveragingPane extends AnchorPane {
                         checkNotNull(sellPriceTextField).textProperty().setValue(formatAmount(tradeResult.price));
                         checkNotNull(proceedsTextField).textProperty().setValue(formatAmount(proceedsQuote));
                         checkNotNull(commissionTextField).textProperty().setValue(formatAmount(tradeResult.commissionQuote));
-                        checkNotNull(profitTextField).textProperty().setValue(formatAmount(profitQuote));
+                        setProfit(profitQuote, tradeResult.price);
                         checkNotNull(fxUiEntryTextField).textProperty().setValue(formatAmount(holding));
 
                         resetControls = false;
@@ -448,7 +450,7 @@ public class AveragingPane extends AnchorPane {
                         checkNotNull(sellPriceTextField).textProperty().setValue(formatAmount(tradeResult.price));
                         checkNotNull(proceedsTextField).textProperty().setValue(formatAmount(toRepay));
                         checkNotNull(commissionTextField).textProperty().setValue(formatAmount(tradeResult.commissionQuote));
-                        checkNotNull(profitTextField).textProperty().setValue(formatAmount(profitQuote));
+                        setProfit(profitQuote, tradeResult.price);
                         checkNotNull(fxUiEntryTextField).textProperty().setValue(formatAmount((tradeResult).entryQuote));
 
                         resetControls = false;
@@ -471,7 +473,7 @@ public class AveragingPane extends AnchorPane {
                         checkNotNull(sellPriceTextField).textProperty().setValue(formatAmount(tradeResult.price));
                         checkNotNull(proceedsTextField).textProperty().setValue(formatAmount(proceedsBase));
                         checkNotNull(commissionTextField).textProperty().setValue(formatAmount(tradeResult.commissionQuote));
-                        checkNotNull(profitTextField).textProperty().setValue(formatAmount(profitBase));
+                        setProfit(profitBase, tradeResult.price);
                         checkNotNull(fxUiEntryTextField).textProperty().setValue(formatAmount((tradeResult).entryQuote));
 
                         resetControls = false;
@@ -487,7 +489,7 @@ public class AveragingPane extends AnchorPane {
             checkNotNull(sellPriceTextField).textProperty().setValue(formatAmount(BigDecimal.ZERO));
             checkNotNull(proceedsTextField).textProperty().setValue(formatAmount(BigDecimal.ZERO));
             checkNotNull(commissionTextField).textProperty().setValue(formatAmount(BigDecimal.ZERO));
-            checkNotNull(profitTextField).textProperty().setValue(formatAmount(BigDecimal.ZERO));
+            setProfit(BigDecimal.ZERO, BigDecimal.ZERO);
             checkNotNull(fxUiEntryTextField).textProperty().setValue(formatAmount(BigDecimal.ZERO));
         }
 
@@ -538,8 +540,15 @@ public class AveragingPane extends AnchorPane {
         checkNotNull(sellPriceTextField).textProperty().setValue(formatAmount(price));
         checkNotNull(proceedsTextField).textProperty().setValue(formatAmount(proceeds));
         checkNotNull(commissionTextField).textProperty().setValue(formatAmount(commissionQuote));
-        checkNotNull(profitTextField).textProperty().setValue(formatAmount(profit));
+        setProfit(profit, price);
         checkNotNull(fxUiEntryTextField).textProperty().setValue(formatAmount(cexUiEntry));
+    }
+
+    /** Sets profit and its quote-currency reference value; BASE profit is converted at the trade price without commission. */
+    protected void setProfit(BigDecimal profit, BigDecimal tradePrice) {
+        BigDecimal profitQuote = checkNotNull(profitInBaseRadioButton).isSelected() ? profit.multiply(tradePrice) : profit;
+        checkNotNull(profitTextField).textProperty().setValue(formatAmount(profit));
+        checkNotNull(profitQuoteTextField).textProperty().setValue(formatAmount(profitQuote));
     }
 
     public void updateLabels() {
@@ -578,6 +587,7 @@ public class AveragingPane extends AnchorPane {
         }
 
         checkNotNull(commissionCurrencyLabel).textProperty().setValue(quoteCurrency);
+        checkNotNull(profitQuoteCurrencyLabel).textProperty().setValue(quoteCurrency);
         checkNotNull(profitCurrencyLabel).textProperty().setValue(
                 checkNotNull(profitInBaseRadioButton).isSelected() ? baseCurrency : quoteCurrency);
     }
