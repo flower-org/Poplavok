@@ -513,6 +513,9 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
                 setGraphic(buildHealthGraphic(level));
             }
         });
+
+        healthColumn.setSortType(TableColumn.SortType.DESCENDING);
+        checkNotNull(levelsTable).getSortOrder().setAll(List.of(healthColumn));
     }
 
     protected HBox buildHealthGraphic(Level level) {
