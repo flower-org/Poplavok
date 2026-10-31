@@ -101,6 +101,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
 
     @Nullable Poplavok poplavok;
     @Nullable FilteredList<Level> levels;
+    @Nullable SortedList<Level> sortedLevels;
     @Nullable FilteredList<LevelTransaction> transactions;
     @Nullable FilteredList<TradeWrapper> trades;
 
@@ -171,6 +172,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         checkNotNull(priceTextField).textProperty().addListener((observable, oldValue, newValue) -> {
             if (levelsTable != null) {
                 levelsTable.refresh();
+                resortLevels();
             }
             if (averagingPane != null) {
                 averagingPane.setMainPrice(parsePrice());
@@ -179,6 +181,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         checkNotNull(feeTextField).textProperty().addListener((observable, oldValue, newValue) -> {
             if (levelsTable != null) {
                 levelsTable.refresh();
+                resortLevels();
             }
         });
 
@@ -502,6 +505,18 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         return bar;
     }
 
+    /** Price/fee-derived columns (e.g. %) change without the list or comparator changing, so SortedList
+     *  won't re-sort on its own; reset and rebind the comparator to force it. */
+    protected void resortLevels() {
+        SortedList<Level> sorted = sortedLevels;
+        if (sorted == null || levelsTable == null) {
+            return;
+        }
+        sorted.comparatorProperty().unbind();
+        sorted.setComparator(null);
+        sorted.comparatorProperty().bind(levelsTable.comparatorProperty());
+    }
+
     protected void configureHealthColumn() {
         if (healthColumn == null) {
             return;
@@ -650,6 +665,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
             this.levels = new FilteredList<>(FXCollections.observableArrayList(levelList));
             SortedList<Level> sortedLevels = new SortedList<>(this.levels);
             sortedLevels.comparatorProperty().bind(checkNotNull(levelsTable).comparatorProperty());
+            this.sortedLevels = sortedLevels;
             checkNotNull(levelsTable).setItems(sortedLevels);
             autoResizeTableColumns(levelsTable);
 
