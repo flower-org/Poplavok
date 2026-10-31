@@ -173,7 +173,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
                 levelsTable.refresh();
             }
             if (averagingPane != null) {
-                averagingPane.prefillTargetPrice(parsePrice());
+                averagingPane.setMainPrice(parsePrice());
             }
         });
         checkNotNull(feeTextField).textProperty().addListener((observable, oldValue, newValue) -> {
@@ -202,7 +202,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
 
         averagingPane.updateLabels();
         averagingPane.setProfitInQuote(MainForm.isDefaultProfitInQuote());
-        averagingPane.prefillTargetPrice(parsePrice());
+        averagingPane.setMainPrice(parsePrice());
 
         startPriceStreaming();
     }

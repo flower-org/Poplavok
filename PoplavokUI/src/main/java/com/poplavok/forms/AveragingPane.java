@@ -8,17 +8,14 @@ import com.poplavok.data.utils.BuyPriceInfo;
 import com.poplavok.data.utils.LongShortCalculator;
 import com.poplavok.data.utils.PriceCalculator;
 import com.poplavok.data.utils.PriceInfo;
-import com.poplavok.kucoin.TickerPriceService;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.AnchorPane;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +58,7 @@ public class AveragingPane extends AnchorPane {
     @FXML @Nullable TextField percentTextField;
     @FXML @Nullable RadioButton priceRadioButton;
     @FXML @Nullable TextField targetPriceTextField;
-    @FXML @Nullable Button useCurrentPriceButton;
+    @FXML @Nullable CheckBox syncPriceCheckBox;
 
     @FXML @Nullable TextField toSellTextField;
     @FXML @Nullable TextField sellPriceTextField;
@@ -111,7 +108,7 @@ public class AveragingPane extends AnchorPane {
     protected Collection<Level> averageLevels;
     protected final Direction direction;
     protected final BigDecimal fee;
-    protected boolean targetPricePrefilled = false;
+    protected @Nullable BigDecimal mainPrice;
 
     public AveragingPane(MarketTicker ticker, Direction direction, Collection<Level> lvls, BigDecimal fee) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("AveragingPane.fxml"));
@@ -173,6 +170,10 @@ public class AveragingPane extends AnchorPane {
         checkNotNull(targetPriceTextField).textProperty().addListener((observable, oldValue, newValue) -> {
             if (checkNotNull(priceRadioButton).isSelected()) { updateAverageTabEvent(); }
         });
+        checkNotNull(syncPriceCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> {
+            updateAddModeControls();
+            if (newValue) { setMainPrice(mainPrice); }
+        });
         checkNotNull(retainTextField).setTextFormatter(createDecimalTextFormatter());
         checkNotNull(retainWorthTextField).setTextFormatter(createDecimalTextFormatter());
 
@@ -203,26 +204,15 @@ public class AveragingPane extends AnchorPane {
         checkNotNull(commsCountSlider).setDisable(!comms);
         checkNotNull(percentTextField).setDisable(!percent);
         checkNotNull(targetPriceTextField).setDisable(!price);
-        checkNotNull(useCurrentPriceButton).setDisable(!price);
+        checkNotNull(targetPriceTextField).setEditable(!checkNotNull(syncPriceCheckBox).isSelected());
+        checkNotNull(syncPriceCheckBox).setDisable(!price);
     }
 
-    /** Fills the target price once, with the first valid price seen, unless the user already entered one. */
-    public void prefillTargetPrice(@Nullable BigDecimal price) {
-        if (targetPricePrefilled || price == null || price.signum() <= 0) {
-            return;
-        }
-        targetPricePrefilled = true;
-        if (StringUtils.isBlank(checkNotNull(targetPriceTextField).getText())) {
-            checkNotNull(targetPriceTextField).setText(price.toPlainString());
-        }
-    }
-
-    public void useCurrentPrice() {
-        BigDecimal currentTickerPrice = TickerPriceService.getInstance().getLastPrice(ticker.getSymbol());
-        if (currentTickerPrice == null) {
-            showMessage("Current price is not available.");
-        } else {
-            checkNotNull(targetPriceTextField).setText(currentTickerPrice.toPlainString());
+    /** Receives the main tab's price; mirrored into the target price field while Sync is checked. */
+    public void setMainPrice(@Nullable BigDecimal price) {
+        this.mainPrice = price;
+        if (checkNotNull(syncPriceCheckBox).isSelected()) {
+            checkNotNull(targetPriceTextField).setText(price == null ? "" : formatAmount(price));
         }
     }
 
