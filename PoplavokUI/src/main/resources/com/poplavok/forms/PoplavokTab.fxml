@@ -68,7 +68,7 @@
                   <children>
                         <TableView fx:id="levelsTable" prefWidth="300.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                             <columns>
-                                <TableColumn fx:id="healthColumn" minWidth="60.0" text="\%" />
+                                <TableColumn fx:id="healthColumn" minWidth="60.0" prefWidth="60.0" maxWidth="60.0" text="\%" />
                                 <TableColumn text="Id">
                                     <cellValueFactory>
                                         <PropertyValueFactory property="id" />
@@ -99,7 +99,7 @@
                                         <PropertyValueFactory property="lentAmount" />
                                     </cellValueFactory>
                                 </TableColumn>
-                                <TableColumn fx:id="fundsColumn" minWidth="90.0" text="Available" />
+                                <TableColumn fx:id="fundsColumn" minWidth="90.0" prefWidth="90.0" maxWidth="90.0" text="Available" />
                                 <TableColumn text="ProjectedPrice">
                                     <cellValueFactory>
                                         <PropertyValueFactory property="projectedPrice" />
