@@ -8,14 +8,17 @@ import com.poplavok.data.utils.BuyPriceInfo;
 import com.poplavok.data.utils.LongShortCalculator;
 import com.poplavok.data.utils.PriceCalculator;
 import com.poplavok.data.utils.PriceInfo;
+import com.poplavok.kucoin.TickerPriceService;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.AnchorPane;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +59,9 @@ public class AveragingPane extends AnchorPane {
     @FXML @Nullable TextField commsCountTextField;
     @FXML @Nullable Slider commsCountSlider;
     @FXML @Nullable TextField percentTextField;
+    @FXML @Nullable RadioButton priceRadioButton;
+    @FXML @Nullable TextField targetPriceTextField;
+    @FXML @Nullable Button useCurrentPriceButton;
 
     @FXML @Nullable TextField toSellTextField;
     @FXML @Nullable TextField sellPriceTextField;
@@ -105,6 +111,7 @@ public class AveragingPane extends AnchorPane {
     protected Collection<Level> averageLevels;
     protected final Direction direction;
     protected final BigDecimal fee;
+    protected boolean targetPricePrefilled = false;
 
     public AveragingPane(MarketTicker ticker, Direction direction, Collection<Level> lvls, BigDecimal fee) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("AveragingPane.fxml"));
@@ -122,19 +129,11 @@ public class AveragingPane extends AnchorPane {
         this.direction = direction;
         this.fee = fee;
 
-        checkNotNull(commsRadioButton).selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
-                checkNotNull(commsCountTextField).setDisable(false);
-                checkNotNull(commsCountSlider).setDisable(false);
-                checkNotNull(percentTextField).setDisable(true);
-            }
-        });
-        checkNotNull(percentRadioButton).selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
-                checkNotNull(percentTextField).setDisable(false);
-                checkNotNull(commsCountTextField).setDisable(true);
-                checkNotNull(commsCountSlider).setDisable(true);
-            }
+        checkNotNull(commsRadioButton).selectedProperty().addListener((observable, oldValue, newValue) -> updateAddModeControls());
+        checkNotNull(percentRadioButton).selectedProperty().addListener((observable, oldValue, newValue) -> updateAddModeControls());
+        checkNotNull(priceRadioButton).selectedProperty().addListener((observable, oldValue, newValue) -> {
+            updateAddModeControls();
+            if (newValue) { updateAverageTabEvent(); }
         });
 
         checkNotNull(profitInQuoteRadioButton).selectedProperty().addListener((observable, oldValue, newValue) -> {
@@ -162,15 +161,7 @@ public class AveragingPane extends AnchorPane {
             updateAverageTabEvent();
         });
 
-        if (checkNotNull(commsRadioButton).isSelected()) {
-            checkNotNull(commsCountTextField).setDisable(false);
-            checkNotNull(commsCountSlider).setDisable(false);
-            checkNotNull(percentTextField).setDisable(true);
-        } else if (checkNotNull(percentRadioButton).isSelected()) {
-            checkNotNull(percentTextField).setDisable(false);
-            checkNotNull(commsCountTextField).setDisable(true);
-            checkNotNull(commsCountSlider).setDisable(true);
-        }
+        updateAddModeControls();
 
         checkNotNull(commsCountSlider).valueProperty().addListener((observable, oldValue, newValue) -> {
             checkNotNull(commsCountTextField).setText(String.valueOf(newValue.intValue()));
@@ -178,6 +169,10 @@ public class AveragingPane extends AnchorPane {
         });
 
         checkNotNull(percentTextField).setTextFormatter(createDecimalTextFormatter());
+        checkNotNull(targetPriceTextField).setTextFormatter(createDecimalTextFormatter());
+        checkNotNull(targetPriceTextField).textProperty().addListener((observable, oldValue, newValue) -> {
+            if (checkNotNull(priceRadioButton).isSelected()) { updateAverageTabEvent(); }
+        });
         checkNotNull(retainTextField).setTextFormatter(createDecimalTextFormatter());
         checkNotNull(retainWorthTextField).setTextFormatter(createDecimalTextFormatter());
 
@@ -198,6 +193,37 @@ public class AveragingPane extends AnchorPane {
 
     public void updateAverageTabEvent() {
         updateAverageTab(checkNotNull(averageLevels));
+    }
+
+    protected void updateAddModeControls() {
+        boolean comms = checkNotNull(commsRadioButton).isSelected();
+        boolean percent = checkNotNull(percentRadioButton).isSelected();
+        boolean price = checkNotNull(priceRadioButton).isSelected();
+        checkNotNull(commsCountTextField).setDisable(!comms);
+        checkNotNull(commsCountSlider).setDisable(!comms);
+        checkNotNull(percentTextField).setDisable(!percent);
+        checkNotNull(targetPriceTextField).setDisable(!price);
+        checkNotNull(useCurrentPriceButton).setDisable(!price);
+    }
+
+    /** Fills the target price once, with the first valid price seen, unless the user already entered one. */
+    public void prefillTargetPrice(@Nullable BigDecimal price) {
+        if (targetPricePrefilled || price == null || price.signum() <= 0) {
+            return;
+        }
+        targetPricePrefilled = true;
+        if (StringUtils.isBlank(checkNotNull(targetPriceTextField).getText())) {
+            checkNotNull(targetPriceTextField).setText(price.toPlainString());
+        }
+    }
+
+    public void useCurrentPrice() {
+        BigDecimal currentTickerPrice = TickerPriceService.getInstance().getLastPrice(ticker.getSymbol());
+        if (currentTickerPrice == null) {
+            showMessage("Current price is not available.");
+        } else {
+            checkNotNull(targetPriceTextField).setText(currentTickerPrice.toPlainString());
+        }
     }
 
     public void switchDisableRetainControls(boolean disable) {
@@ -335,14 +361,15 @@ public class AveragingPane extends AnchorPane {
 
         // ------------------------
 
-        BigDecimal profitRate;
+        BigDecimal profitRate = BigDecimal.ZERO;
+        boolean priceMode = checkNotNull(priceRadioButton).selectedProperty().get();
 
         if (checkNotNull(commsRadioButton).selectedProperty().get()) {
             BigDecimal commsNumber = nullToZero(fromString(checkNotNull(commsCountTextField).textProperty().get()));
             profitRate = checkNotNull(fee).multiply(commsNumber);
         } else if (checkNotNull(percentRadioButton).selectedProperty().get()) {
             profitRate = nullToZero(fromString(checkNotNull(percentTextField).textProperty().get())).divide(ONE_HUNDRED, SCALE, RoundingMode.CEILING);
-        } else {
+        } else if (!priceMode) {
             throw new RuntimeException("Unknown Profit Mode Selection");
         }
 
@@ -351,7 +378,13 @@ public class AveragingPane extends AnchorPane {
 
         boolean resetControls = true;
         if (holding.compareTo(BigDecimal.ZERO) != 0 && toRepay.compareTo(BigDecimal.ZERO) > 0) {
-            if (checkNotNull(direction) == LONG) {
+            if (priceMode) {
+                BigDecimal targetPrice = nullToZero(fromString(checkNotNull(targetPriceTextField).textProperty().get()));
+                if (targetPrice.compareTo(BigDecimal.ZERO) > 0) {
+                    updateAverageTabAtPrice(holding, toRepay, targetPrice, profitInQuote);
+                    resetControls = false;
+                }
+            } else if (checkNotNull(direction) == LONG) {
                 // LONG
 
                 if (profitInBase) {
@@ -469,6 +502,54 @@ public class AveragingPane extends AnchorPane {
         }
 
         updateRetainedAmountByQuote();
+    }
+
+    /** Averaging trade at a fixed price. Profit currency decides whether we trade only what's needed to cover the debt
+     *  (profit = leftover holdings) or trade all holdings (profit = proceeds above debt). Profit may be negative. */
+    protected void updateAverageTabAtPrice(BigDecimal holding, BigDecimal toRepay, BigDecimal price, boolean profitInQuote) {
+        BigDecimal toTrade;
+        BigDecimal proceeds;
+        BigDecimal commissionQuote;
+        BigDecimal profit;
+        BigDecimal cexUiEntry;
+        if (checkNotNull(direction) == LONG) {
+            if (profitInQuote) {
+                toTrade = holding;
+                AmountAndCommission sell = LongShortCalculator.calculateQuoteAmountToGetShort(toTrade, price, fee);
+                proceeds = sell.amount;
+                commissionQuote = sell.commissionQuote;
+                profit = proceeds.subtract(toRepay);
+            } else {
+                AmountAndCommission sell = LongShortCalculator.calculateBaseAmountToGiveShort(toRepay, price, fee);
+                toTrade = sell.amount;
+                proceeds = LongShortCalculator.calculateQuoteAmountToGetShort(toTrade, price, fee).amount;
+                commissionQuote = sell.commissionQuote;
+                profit = holding.subtract(toTrade);
+            }
+            cexUiEntry = toTrade;
+        } else {
+            if (profitInQuote) {
+                AmountAndCommission buy = LongShortCalculator.calculateQuoteAmountToGiveLong(toRepay, price, fee);
+                toTrade = buy.amount;
+                proceeds = LongShortCalculator.calculateBaseAmountToGetLong(toTrade, price, fee).amount;
+                commissionQuote = buy.commissionQuote;
+                profit = holding.subtract(toTrade);
+            } else {
+                toTrade = holding;
+                AmountAndCommission buy = LongShortCalculator.calculateBaseAmountToGetLong(toTrade, price, fee);
+                proceeds = buy.amount;
+                commissionQuote = buy.commissionQuote;
+                profit = proceeds.subtract(toRepay);
+            }
+            cexUiEntry = toTrade.subtract(commissionQuote);
+        }
+
+        checkNotNull(toSellTextField).textProperty().setValue(formatAmount(toTrade));
+        checkNotNull(sellPriceTextField).textProperty().setValue(formatAmount(price));
+        checkNotNull(proceedsTextField).textProperty().setValue(formatAmount(proceeds));
+        checkNotNull(commissionTextField).textProperty().setValue(formatAmount(commissionQuote));
+        checkNotNull(profitTextField).textProperty().setValue(formatAmount(profit));
+        checkNotNull(fxUiEntryTextField).textProperty().setValue(formatAmount(cexUiEntry));
     }
 
     public void updateLabels() {
