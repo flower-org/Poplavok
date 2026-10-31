@@ -738,8 +738,16 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
                     try {
                         Level level = levelAddDialog.getReturnLevel();
                         if (level != null) {
-                            level.setPoplavok(checkNotNull(poplavok));
-                            DBUtil.connectCommitAndClose(sess -> LevelDAO.update(sess, checkNotNull(level)));
+                            // Update only edited fields on a fresh DB copy; merging the in-memory (possibly stale)
+                            // level would overwrite available/lent/debt amounts changed elsewhere.
+                            DBUtil.connectCommitAndClose(sess -> {
+                                Level dbLevel = LevelDAO.findById(sess, level.getId())
+                                        .orElseThrow(() -> new RuntimeException("Level not found: " + level.getId()));
+                                dbLevel.setProjectedPrice(level.getProjectedPrice());
+                                dbLevel.setProjectedAmountBase(level.getProjectedAmountBase());
+                                dbLevel.setProjectedAmountQuote(level.getProjectedAmountQuote());
+                                dbLevel.setNotes(StringUtils.defaultString(level.getNotes()));
+                            });
                             refreshContent();
                         }
                     } catch (Exception e) {
