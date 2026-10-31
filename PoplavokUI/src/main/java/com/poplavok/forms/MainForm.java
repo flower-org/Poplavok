@@ -8,13 +8,20 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
+import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nullable;
+import java.util.List;
+import java.util.prefs.Preferences;
 
+import static com.flower.crypt.keys.UserPreferencesManager.getUserPreference;
+import static com.flower.crypt.keys.UserPreferencesManager.updateUserPreference;
+import static com.flower.fxutils.JavaFxUtils.YesNo.YES;
+import static com.flower.fxutils.JavaFxUtils.showYesNoDialog;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MainForm {
@@ -25,6 +32,17 @@ public class MainForm {
 
     @FXML @Nullable Label serverInfoLabel;
     @FXML @Nullable TabPane tabs;
+    @FXML @Nullable RadioMenuItem defaultProfitInQuoteMenuItem;
+    @FXML @Nullable RadioMenuItem defaultProfitInBaseMenuItem;
+
+    final static String DEFAULT_PROFIT_IN = "Poplavok_DefaultProfitIn";
+    final static String PROFIT_IN_QUOTE = "QUOTE";
+    final static String PROFIT_IN_BASE = "BASE";
+
+    /** Default "Profit in" for new Poplavok tabs; QUOTE unless BASE was saved. */
+    public static boolean isDefaultProfitInQuote() {
+        return !PROFIT_IN_BASE.equals(getUserPreference(DEFAULT_PROFIT_IN));
+    }
 
     public MainForm() {
         //This form is created automatically.
@@ -56,7 +74,28 @@ public class MainForm {
                 }
             }
         });
+        boolean profitInQuote = isDefaultProfitInQuote();
+        checkNotNull(defaultProfitInQuoteMenuItem).setSelected(profitInQuote);
+        checkNotNull(defaultProfitInBaseMenuItem).setSelected(!profitInQuote);
         Platform.runLater(this::showApiSettingsDialog);
+    }
+
+    public void onDefaultProfitInChanged() {
+        boolean profitInQuote = checkNotNull(defaultProfitInQuoteMenuItem).isSelected();
+        if (profitInQuote == isDefaultProfitInQuote()) {
+            return;
+        }
+        updateUserPreference(Preferences.userRoot(), DEFAULT_PROFIT_IN, profitInQuote ? PROFIT_IN_QUOTE : PROFIT_IN_BASE);
+
+        List<PoplavokTab> openPoplavokTabs = checkNotNull(tabs).getTabs().stream()
+                .filter(tab -> tab.getContent() instanceof PoplavokTab)
+                .map(tab -> (PoplavokTab) tab.getContent())
+                .toList();
+        if (!openPoplavokTabs.isEmpty() && YES == showYesNoDialog("Default Profit In",
+                "Set \"Profit in\" to " + (profitInQuote ? PROFIT_IN_QUOTE : PROFIT_IN_BASE)
+                        + " for all " + openPoplavokTabs.size() + " open Poplavok tab(s)?")) {
+            openPoplavokTabs.forEach(poplavokTab -> poplavokTab.setProfitInQuote(profitInQuote));
+        }
     }
 
     public void setStatusText(String text) {

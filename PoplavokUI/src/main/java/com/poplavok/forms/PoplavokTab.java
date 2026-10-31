@@ -201,6 +201,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         checkNotNull(averagingTab).setContent(averagingPane);
 
         averagingPane.updateLabels();
+        averagingPane.setProfitInQuote(MainForm.isDefaultProfitInQuote());
         averagingPane.prefillTargetPrice(parsePrice());
 
         startPriceStreaming();
@@ -261,6 +262,10 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
     /** Stops live price streaming for this tab. Safe to call multiple times. */
     public void dispose() {
         unsubscribePrice();
+    }
+
+    public void setProfitInQuote(boolean profitInQuote) {
+        checkNotNull(averagingPane).setProfitInQuote(profitInQuote);
     }
 
     protected boolean isEmpty(@Nullable BigDecimal amount) {

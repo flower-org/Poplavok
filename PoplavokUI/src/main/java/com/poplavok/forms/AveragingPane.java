@@ -588,8 +588,16 @@ public class AveragingPane extends AnchorPane {
         }
 
         checkNotNull(commissionCurrencyLabel).textProperty().setValue(quoteCurrency);
-        // Default: take profit in quote
-        checkNotNull(profitCurrencyLabel).textProperty().setValue(quoteCurrency);
+        checkNotNull(profitCurrencyLabel).textProperty().setValue(
+                checkNotNull(profitInBaseRadioButton).isSelected() ? baseCurrency : quoteCurrency);
+    }
+
+    public void setProfitInQuote(boolean profitInQuote) {
+        if (profitInQuote) {
+            checkNotNull(profitInQuoteRadioButton).setSelected(true);
+        } else {
+            checkNotNull(profitInBaseRadioButton).setSelected(true);
+        }
     }
 
     public BigDecimal getTotalDebt() {

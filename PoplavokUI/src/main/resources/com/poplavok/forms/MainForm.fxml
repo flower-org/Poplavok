@@ -4,8 +4,10 @@
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.RadioMenuItem?>
 <?import javafx.scene.control.SeparatorMenuItem?>
 <?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
 
@@ -14,6 +16,16 @@
       <Menu mnemonicParsing="false" text="Trade">
         <items>
           <MenuItem mnemonicParsing="false" onAction="#openPoplavokListTab" text="Poplavoks" />
+            <Menu mnemonicParsing="false" text="Default Profit In">
+              <items>
+                <RadioMenuItem fx:id="defaultProfitInQuoteMenuItem" mnemonicParsing="false" onAction="#onDefaultProfitInChanged" selected="true" text="QUOTE">
+                  <toggleGroup>
+                    <ToggleGroup fx:id="defaultProfitInGroup" />
+                  </toggleGroup>
+                </RadioMenuItem>
+                <RadioMenuItem fx:id="defaultProfitInBaseMenuItem" mnemonicParsing="false" onAction="#onDefaultProfitInChanged" text="BASE" toggleGroup="$defaultProfitInGroup" />
+              </items>
+            </Menu>
             <SeparatorMenuItem mnemonicParsing="false" />
                <MenuItem mnemonicParsing="false" onAction="#closeAllTabs" text="Close all tabs" />
                <MenuItem mnemonicParsing="false" onAction="#quit" text="Quit" />
