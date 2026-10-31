@@ -5,7 +5,6 @@ import com.flower.fxutils.Refreshable;
 import com.poplavok.data.dao.AccountDAO;
 import com.poplavok.data.dao.LevelTradeDAO;
 import com.poplavok.data.dao.LoanTransferDAO;
-import com.poplavok.data.dao.RateDAO;
 import com.poplavok.data.dao.RepaymentDAO;
 import com.poplavok.data.dao.TradeDAO;
 import com.poplavok.data.dao.TransactionDAO;
@@ -19,7 +18,6 @@ import com.poplavok.data.model.Loan;
 import com.poplavok.data.model.LoanTransfer;
 import com.poplavok.data.model.MarketTicker;
 import com.poplavok.data.model.Poplavok;
-import com.poplavok.data.model.Rate;
 import com.poplavok.data.model.Repayment;
 import com.poplavok.data.model.RepaymentType;
 import com.poplavok.data.model.Trade;
@@ -656,10 +654,6 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
                 checkNotNull(tickerTextField).setText(poplavok.getTicker().getSymbol());
                 checkNotNull(feeTextField).setText(formatAmount(poplavok.getTicker().getMakerFee()));
                 checkNotNull(directionTextBox).setText(checkNotNull(poplavok.getDirection()).name());
-                Rate rate = RateDAO.getLatestRateForTicker(ticker.getId());
-                if (rate != null && rate.getPrice() != null) {
-                    checkNotNull(priceTextField).setText(formatAmount(rate.getPrice()));
-                }
             }
             updateLevelsSelection(); // Update stats in case something changed
         } catch (Exception e) {
