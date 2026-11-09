@@ -11,6 +11,7 @@ import com.poplavok.data.utils.PriceInfo;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.CheckBox;
+import javafx.scene.input.MouseButton;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.Slider;
@@ -176,6 +177,12 @@ public class AveragingPane extends AnchorPane {
             updateAddModeControls();
             if (newValue) { setMainPrice(mainPrice); }
         });
+        checkNotNull(targetPriceTextField).setOnMouseClicked(event -> {
+            CheckBox sync = checkNotNull(syncPriceCheckBox);
+            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2 && !sync.isDisabled()) {
+                sync.setSelected(!sync.isSelected());
+            }
+        });
         checkNotNull(retainTextField).setTextFormatter(createDecimalTextFormatter());
         checkNotNull(retainWorthTextField).setTextFormatter(createDecimalTextFormatter());
 
@@ -206,7 +213,9 @@ public class AveragingPane extends AnchorPane {
         checkNotNull(commsCountSlider).setDisable(!comms);
         checkNotNull(percentTextField).setDisable(!percent);
         checkNotNull(targetPriceTextField).setDisable(!price);
-        checkNotNull(targetPriceTextField).setEditable(!checkNotNull(syncPriceCheckBox).isSelected());
+        boolean synced = checkNotNull(syncPriceCheckBox).isSelected();
+        checkNotNull(targetPriceTextField).setEditable(!synced);
+        checkNotNull(targetPriceTextField).setStyle(synced ? "-fx-control-inner-background: #e8e8e8;" : "");
         checkNotNull(syncPriceCheckBox).setDisable(!price);
     }
 

@@ -52,6 +52,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
+import javafx.scene.input.MouseButton;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -148,6 +149,8 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
     protected boolean streaming = false;
     // Latest price awaiting display; coalesces bursts of ticks into a single UI update.
     protected final AtomicReference<BigDecimal> pendingPrice = new AtomicReference<>(null);
+    // Most recent streamed price, tracked even while auto-update is off so re-enabling applies it immediately.
+    protected final AtomicReference<BigDecimal> lastKnownPrice = new AtomicReference<>(null);
 
     public PoplavokTab(MainForm mainApp, Long poplavokId) {
         this.mainApp = mainApp;
@@ -224,30 +227,47 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
             if (price == null) {
                 return;
             }
+            lastKnownPrice.set(price);
             // Keep only the most recent price and schedule a single UI update per burst:
             // if a refresh is already pending (previous value non-null), it will pick up
             // this latest value, so we avoid flooding the FX thread with runLater tasks.
             if (pendingPrice.getAndSet(price) == null) {
                 Platform.runLater(() -> {
                     BigDecimal latest = pendingPrice.getAndSet(null);
-                    if (latest != null && priceTextField != null) {
+                    if (latest != null && priceTextField != null
+                            && priceCheckBox != null && priceCheckBox.isSelected()) {
                         priceTextField.setText(formatAmount(latest));
                     }
                 });
             }
         };
 
+        // Stay subscribed while the tab is open; the checkbox only controls whether the field follows the stream.
         checkNotNull(priceCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> {
+            updatePriceFieldEditable();
             if (newValue) {
-                subscribePrice();
-            } else {
-                unsubscribePrice();
+                BigDecimal latest = lastKnownPrice.get();
+                if (latest != null) {
+                    checkNotNull(priceTextField).setText(formatAmount(latest));
+                }
             }
         });
 
-        if (checkNotNull(priceCheckBox).isSelected()) {
-            subscribePrice();
-        }
+        checkNotNull(priceTextField).setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                CheckBox autoUpdate = checkNotNull(priceCheckBox);
+                autoUpdate.setSelected(!autoUpdate.isSelected());
+            }
+        });
+
+        updatePriceFieldEditable();
+        subscribePrice();
+    }
+
+    protected void updatePriceFieldEditable() {
+        boolean autoUpdate = checkNotNull(priceCheckBox).isSelected();
+        checkNotNull(priceTextField).setEditable(!autoUpdate);
+        checkNotNull(priceTextField).setStyle(autoUpdate ? "-fx-control-inner-background: #e8e8e8;" : "");
     }
 
     protected void subscribePrice() {
