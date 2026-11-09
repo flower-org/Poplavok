@@ -122,19 +122,20 @@ public class AccountAddDialog extends VBox {
 
     public void okClose() {
         try {
+            String accountName = checkNotNull(accountNameTextField).textProperty().get();
             if (accountToEdit == null) {
                 Account account = new Account();
                 account.setId(accountId);
                 account.setCreationDate(new Date());
                 account.setCurrency(checkNotNull(currencyComboBox).getSelectionModel().getSelectedItem());
-                account.setAccountName(checkNotNull(accountNameTextField).textProperty().get());
+                account.setAccountName(accountName);
                 account.setAvailableAmount(BigDecimal.ZERO);
                 account.setLentAmount(BigDecimal.ZERO);
                 account.setTradingAccountType(checkNotNull(tradingAccountTypeComboBox).getSelectionModel().getSelectedItem());
 
                 returnAccount = account;
             } else {
-                accountToEdit.setAccountName(checkNotNull(accountNameTextField).textProperty().get());
+                accountToEdit.setAccountName(accountName);
 
                 returnAccount = accountToEdit;
             }

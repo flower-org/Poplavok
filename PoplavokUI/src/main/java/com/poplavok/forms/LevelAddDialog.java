@@ -175,25 +175,27 @@ public class LevelAddDialog extends VBox {
 
     public void okClose() {
         try {
+            // Parse all inputs before mutating anything, so a parse failure can't leave `level` partially updated
+            BigDecimal projectedPrice = nullToZero(fromString(checkNotNull(priceTextField).textProperty().get()));
+            BigDecimal projectedAmountBase = nullToZero(fromString(checkNotNull(baseAmountTextField).textProperty().get()));
+            BigDecimal projectedAmountQuote = nullToZero(fromString(checkNotNull(quoteAmountTextField).textProperty().get()));
+            String notes = checkNotNull(notesTextField).textProperty().get();
+
+            Level targetLevel;
             if (level == null) {
-                Level level = new Level();
-                level.setState(LevelState.INCEPTION);
-                level.setId(levelId); // TODO: wtf
-                level.setCreationDate(new Date());
-                level.setProjectedPrice(nullToZero(fromString(checkNotNull(priceTextField).textProperty().get())));
-                level.setProjectedAmountBase(nullToZero(fromString(checkNotNull(baseAmountTextField).textProperty().get())));
-                level.setProjectedAmountQuote(nullToZero(fromString(checkNotNull(quoteAmountTextField).textProperty().get())));
-                level.setNotes(checkNotNull(notesTextField).textProperty().get());
-
-                returnLevel = level;
+                targetLevel = new Level();
+                targetLevel.setState(LevelState.INCEPTION);
+                targetLevel.setId(levelId); // TODO: wtf
+                targetLevel.setCreationDate(new Date());
             } else {
-                level.setProjectedPrice(nullToZero(fromString(checkNotNull(priceTextField).textProperty().get())));
-                level.setProjectedAmountBase(nullToZero(fromString(checkNotNull(baseAmountTextField).textProperty().get())));
-                level.setProjectedAmountQuote(nullToZero(fromString(checkNotNull(quoteAmountTextField).textProperty().get())));
-                level.setNotes(checkNotNull(notesTextField).textProperty().get());
-
-                returnLevel = level;
+                targetLevel = level;
             }
+            targetLevel.setProjectedPrice(projectedPrice);
+            targetLevel.setProjectedAmountBase(projectedAmountBase);
+            targetLevel.setProjectedAmountQuote(projectedAmountQuote);
+            targetLevel.setNotes(notes);
+
+            returnLevel = targetLevel;
             checkNotNull(stage).close();
        } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "LevelAddDialog close Error: " + e, ButtonType.OK);
