@@ -31,7 +31,7 @@ override with `-Dlog4j2.configurationFile=...`). When embedded, the host applica
 gradle :MultiCoinChartsServer:run
 # or
 gradle :MultiCoinChartsServer:shadowJar
-java -jar MultiCoinChartsServer/build/libs/MultiCoinChartsServer-1.1.8-all.jar
+java -jar MultiCoinChartsServer/build/libs/MultiCoinChartsServer-1.2.0-all.jar
 ```
 
 Defaults to `http://127.0.0.1:8000/`; override with `--host 0.0.0.0 --port 8080` (`--help` for usage).
