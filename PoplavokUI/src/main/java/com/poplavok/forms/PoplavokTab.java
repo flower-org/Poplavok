@@ -569,7 +569,8 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
             label.setText("\u221e");
         } else {
             circle.setFill(healthColor(health));
-            label.setText(String.format("%.0f%%", health));
+            // Truncate (never round up) so the label can't show profit that isn't there, e.g. 103.999% -> 103.99%
+            label.setText(BigDecimal.valueOf(health).setScale(2, RoundingMode.DOWN).toPlainString() + "%");
         }
 
         HBox box = new HBox(4.0, circle, label);
@@ -606,7 +607,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         if (debt.signum() <= 0) {
             return Double.POSITIVE_INFINITY;
         }
-        return total.divide(debt, SCALE, RoundingMode.HALF_UP).doubleValue() * 100.0;
+        return total.multiply(AveragingPane.ONE_HUNDRED).divide(debt, SCALE, RoundingMode.DOWN).doubleValue();
     }
 
     /** Below 100% = shades of red (50% and below = bright red, approaching 100% = dull red).
