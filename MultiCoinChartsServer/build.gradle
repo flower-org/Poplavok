@@ -1,0 +1,109 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.beryx.runtime' version '2.0.1'
+    id "net.ltgt.errorprone" version "3.0.1"
+    id "com.github.johnrengelman.shadow" version "8.1.1"
+}
+
+group 'com.multicoincharts'
+version '1.1.8'
+def jpackageVersion = version.toString().replaceFirst(/-.*/, '')
+def mainClassName = 'com.multicoincharts.server.MultiCoinChartsMain'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+application {
+    mainClass = mainClassName
+}
+
+runtime {
+    imageDir = layout.buildDirectory.dir("image").get().asFile
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information']
+    addModules('java.logging', 'java.naming', 'java.management', 'jdk.unsupported')
+    launcher {
+        jvmArgs = ['-Dfile.encoding=UTF-8']
+    }
+
+    jpackage {
+        imageName = project.name
+        installerName = project.name
+        appVersion = jpackageVersion
+        installerType = 'app-image'
+    }
+}
+
+compileJava {
+    options.compilerArgs << '-parameters'
+}
+compileTestJava {
+    options.compilerArgs << '-parameters'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+dependencies {
+    implementation platform('io.vertx:vertx-stack-depchain:4.5.24')
+    implementation 'io.vertx:vertx-core'
+    implementation 'io.vertx:vertx-web'
+
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    implementation 'org.apache.logging.log4j:log4j-api:2.25.3'
+    implementation 'org.apache.logging.log4j:log4j-core:2.25.3'
+    implementation 'org.apache.logging.log4j:log4j-slf4j2-impl:2.25.3'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.1'
+
+    annotationProcessor 'com.uber.nullaway:nullaway:0.10.26'
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    errorprone 'com.google.errorprone:error_prone_core:2.10.0'
+    errorproneJavac 'com.google.errorprone:javac:9+181-r4173-1'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+import net.ltgt.gradle.errorprone.CheckSeverity
+
+tasks.withType(JavaCompile) {
+    if (!name.toLowerCase().contains("test")) {
+        options.errorprone {
+            check("NullAway", CheckSeverity.ERROR)
+            option("NullAway:AnnotatedPackages", "com.multicoincharts")
+        }
+    } else {
+        options.errorprone {
+            check("DoNotMock", CheckSeverity.WARN)
+        }
+    }
+}
+
+// Build artifacts:
+// - `shadowJar` produces the runnable fat JAR with runtime dependencies bundled.
+// - `jpackageImage` produces a self-contained app image with a trimmed runtime.
+jar {
+    manifest {
+        attributes 'Main-Class': mainClassName
+    }
+}
+
+shadowJar {
+    archiveClassifier.set('all')
+    mergeServiceFiles()
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+    manifest {
+        attributes 'Main-Class': mainClassName
+    }
+}

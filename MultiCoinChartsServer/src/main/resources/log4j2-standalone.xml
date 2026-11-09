@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Used only when running standalone: MultiCoinChartsMain selects this file. When embedded, the host application's
+  log4j2.xml applies. Not named log4j2.xml so it is never picked up automatically from a shared classpath.
+  shutdownHook disabled: MultiCoinChartsMain shuts log4j down after the server has stopped.
+-->
+<Configuration status="WARN" shutdownHook="disable">
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT" follow="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1} - %m%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="console"/>
+        </Root>
+    </Loggers>
+</Configuration>
