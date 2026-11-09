@@ -54,6 +54,7 @@
               </items>
             </Menu>
             <SeparatorMenuItem mnemonicParsing="false" />
+               <MenuItem mnemonicParsing="false" onAction="#refreshAllTabs" text="Refresh all tabs" />
                <MenuItem mnemonicParsing="false" onAction="#closeAllTabs" text="Close all tabs" />
                <MenuItem mnemonicParsing="false" onAction="#quit" text="Quit" />
         </items>

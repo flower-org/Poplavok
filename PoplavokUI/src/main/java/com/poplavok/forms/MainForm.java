@@ -1,6 +1,7 @@
 package com.poplavok.forms;
 
 import com.flower.fxutils.ModalWindow;
+import com.flower.fxutils.Refreshable;
 import com.poplavok.data.model.Currency;
 import com.poplavok.mcc.MultiCoinChartsService;
 import javafx.application.HostServices;
@@ -220,6 +221,23 @@ public class MainForm {
 
     public void closeAllTabs() {
         checkNotNull(tabs).getTabs().clear();
+    }
+
+    public void refreshAllTabs() {
+        List<Refreshable> refreshableTabs = checkNotNull(tabs).getTabs().stream()
+                .filter(tab -> tab.getContent() instanceof Refreshable)
+                .map(tab -> (Refreshable) tab.getContent())
+                .toList();
+        if (refreshableTabs.isEmpty()) {
+            return;
+        }
+        // Defer so the prompt doesn't appear while the menu is still closing
+        Platform.runLater(() -> {
+            if (YES == showYesNoDialog("Refresh all tabs",
+                    "Refresh " + refreshableTabs.size() + " open tab(s)?")) {
+                refreshableTabs.forEach(Refreshable::refreshContent);
+            }
+        });
     }
 
     public void openCurrenciesTab() {
