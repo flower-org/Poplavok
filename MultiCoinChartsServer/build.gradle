@@ -7,7 +7,7 @@ plugins {
 }
 
 group 'com.multicoincharts'
-version '1.2.3'
+version '1.2.4'
 def jpackageVersion = version.toString().replaceFirst(/-.*/, '')
 def mainClassName = 'com.multicoincharts.server.MultiCoinChartsMain'
 
