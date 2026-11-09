@@ -49,9 +49,18 @@ jobs:
         with:
           gradle-version: '8.14'
 
+      # Node is set up here, not inside minify: a nested action's post step makes the runner re-read the local
+      # minify action.yml at job end, which "Keep only minified site" deletes
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       # Builds <site>/dist using the action shipped in the MCC submodule itself
       - name: Minify MultiCoinCharts site
         uses: ./MultiCoinChartsServer/src/main/resources/multicoincharts-minimal/.github/actions/minify
+        with:
+          setup-node: 'false'
 
       # CI only (destructive): replace the site sources with the minified dist, so the server code is unchanged
       - name: Keep only minified site
