@@ -28,7 +28,7 @@ application {
 runtime {
     imageDir = layout.buildDirectory.dir("image").get().asFile
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information']
-    addModules('java.logging', 'java.naming', 'java.management', 'jdk.unsupported')
+    addModules('java.logging', 'java.naming', 'java.management', 'java.xml', 'java.desktop', 'jdk.unsupported')
     launcher {
         jvmArgs = ['-Dfile.encoding=UTF-8']
     }
@@ -38,6 +38,10 @@ runtime {
         installerName = project.name
         appVersion = jpackageVersion
         installerType = 'app-image'
+        // Console server: on Windows the launcher must be a console app, otherwise no logs and no Ctrl+C
+        if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+            imageOptions = ['--win-console']
+        }
     }
 }
 

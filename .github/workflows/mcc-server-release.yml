@@ -1,0 +1,162 @@
+name: MultiCoinChartsServer Release
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+
+env:
+  SITE_DIR: MultiCoinChartsServer/src/main/resources/multicoincharts-minimal
+  JAR_NAME: MultiCoinChartsServer-${{ github.ref_name }}.jar
+
+jobs:
+  build-mcc-server:
+    name: Build MultiCoinChartsServer on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    permissions:
+      contents: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: MultiCoinChartsServer-${{ github.ref_name }}-portable-linux
+            launcher: MultiCoinChartsServer/bin/MultiCoinChartsServer
+          - os: windows-latest
+            artifact_name: MultiCoinChartsServer-${{ github.ref_name }}-portable-windows
+            launcher: MultiCoinChartsServer/MultiCoinChartsServer.exe
+          - os: macos-latest
+            artifact_name: MultiCoinChartsServer-${{ github.ref_name }}-portable-macos
+            launcher: MultiCoinChartsServer.app/Contents/MacOS/MultiCoinChartsServer
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14'
+
+      # Builds <site>/dist using the action shipped in the MCC submodule itself
+      - name: Minify MultiCoinCharts site
+        uses: ./MultiCoinChartsServer/src/main/resources/multicoincharts-minimal/.github/actions/minify
+
+      # CI only (destructive): replace the site sources with the minified dist, so the server code is unchanged
+      - name: Keep only minified site
+        shell: bash
+        run: |
+          find "$SITE_DIR" -mindepth 1 -maxdepth 1 ! -name dist -exec rm -rf {} +
+          shopt -s dotglob
+          mv "$SITE_DIR"/dist/* "$SITE_DIR"/
+          rmdir "$SITE_DIR/dist"
+          test -f "$SITE_DIR/index.html"
+          ls -al "$SITE_DIR"
+
+      - name: Build MultiCoinChartsServer jar and app image
+        run: gradle :MultiCoinChartsServer:shadowJar :MultiCoinChartsServer:jpackageImage
+
+      - name: Smoke test
+        shell: bash
+        run: |
+          smoke() {
+            "$@" --port 18080 &
+            local pid=$!
+            curl -fsS --retry 30 --retry-connrefused --retry-delay 1 -o /dev/null http://127.0.0.1:18080/
+            curl -fsS -o /dev/null http://127.0.0.1:18080/home/
+            curl -fsS -o /dev/null http://127.0.0.1:18080/adv-scanner
+            curl -fsS -o /dev/null http://127.0.0.1:18080/css/main.css
+            kill $pid || true
+            wait $pid || true
+          }
+          smoke "MultiCoinChartsServer/build/jpackage/${{ matrix.launcher }}"
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            smoke java -jar MultiCoinChartsServer/build/libs/MultiCoinChartsServer-*-all.jar
+          fi
+
+      # Fat jar is platform independent: publish it once, from Linux
+      - name: Copy jar (Linux)
+        if: runner.os == 'Linux'
+        run: cp MultiCoinChartsServer/build/libs/MultiCoinChartsServer-*-all.jar ${{ env.JAR_NAME }}
+
+      - name: Archive app image (macOS/Linux)
+        if: runner.os != 'Windows'
+        run: |
+          cd MultiCoinChartsServer/build/jpackage
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            zip -r ../../../${{ matrix.artifact_name }}.zip MultiCoinChartsServer.app
+          else
+            zip -r ../../../${{ matrix.artifact_name }}.zip MultiCoinChartsServer
+          fi
+
+      - name: Archive app image (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd MultiCoinChartsServer/build/jpackage
+          Compress-Archive -Path MultiCoinChartsServer -DestinationPath ..\..\..\${{ matrix.artifact_name }}.zip
+
+      - name: ls-mcc-server-jar (Linux)
+        if: runner.os == 'Linux'
+        run: ls -al ${{ env.JAR_NAME }}
+
+      - name: ls-mcc-server-zip (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: ls -al ${{ matrix.artifact_name }}.zip
+
+      - name: ls-mcc-server-zip (Windows)
+        if: runner.os == 'Windows'
+        run: dir ${{ matrix.artifact_name }}.zip
+
+      - name: sha256-mcc-server-jar (Linux)
+        if: runner.os == 'Linux'
+        run: openssl sha256 ${{ env.JAR_NAME }}
+
+      - name: sha256-mcc-server-zip (Linux)
+        if: runner.os == 'Linux'
+        run: openssl sha256 ${{ matrix.artifact_name }}.zip
+
+      - name: sha256-mcc-server-zip (macOS)
+        if: runner.os == 'macOS'
+        run: shasum -a 256 ${{ matrix.artifact_name }}.zip
+
+      - name: sha256-mcc-server-zip (Windows)
+        if: runner.os == 'Windows'
+        run: (Get-FileHash ${{ matrix.artifact_name }}.zip -Algorithm SHA256).Hash
+
+      - name: Upload jar artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: MultiCoinChartsServer-${{ github.ref_name }}-jar
+          path: ${{ env.JAR_NAME }}
+          if-no-files-found: error
+
+      - name: Upload app image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}.zip
+          if-no-files-found: error
+
+      - name: Upload jar to Release (Linux)
+        if: startsWith(github.ref, 'refs/tags/') && runner.os == 'Linux'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.JAR_NAME }}
+
+      - name: Upload app image to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact_name }}.zip

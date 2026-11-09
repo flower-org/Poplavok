@@ -51,3 +51,25 @@ server.stop();    // Future<Void>
 gradle :MultiCoinChartsServer:shadowJar       # fat jar (classifier "all")
 gradle :MultiCoinChartsServer:jpackageImage   # app-image with bundled runtime, for the current OS only
 ```
+
+## Running the packaged app (jpackage image)
+
+The server is a console application without a UI, so start it from a terminal to see its log and stop it with Ctrl+C.
+Command line options are the same as above.
+
+| OS      | Start from a terminal                                               | Double-click                                                           |
+|---------|---------------------------------------------------------------------|------------------------------------------------------------------------|
+| Linux   | `MultiCoinChartsServer/bin/MultiCoinChartsServer`                    | Usually runs hidden, without a terminal; stop with `kill`              |
+| Windows | `MultiCoinChartsServer\MultiCoinChartsServer.exe`                    | Opens a console window with the log; close it or press Ctrl+C to stop  |
+| macOS   | `MultiCoinChartsServer.app/Contents/MacOS/MultiCoinChartsServer`     | Runs hidden, without a window; stop it via Activity Monitor            |
+
+## Release
+
+`.github/workflows/mcc-server-release.yml` runs on the same `x.y.z` tags as Poplavok (shared version) and attaches to
+the same GitHub release:
+
+- `MultiCoinChartsServer-<tag>.jar` (fat jar, needs Java 17+)
+- `MultiCoinChartsServer-<tag>-portable-{linux,windows,macos}.zip` (app images with bundled runtime)
+
+Before building, it runs the submodule's own minify action and replaces the site sources with the minified `dist/`
+(CI only), then smoke-tests the app image (and the jar on Linux).
