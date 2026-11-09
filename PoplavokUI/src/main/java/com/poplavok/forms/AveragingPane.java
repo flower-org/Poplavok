@@ -612,6 +612,14 @@ public class AveragingPane extends AnchorPane {
         return nullToZero(fromString(checkNotNull(toRepayTextField).textProperty().get()));
     }
 
+    public BigDecimal getProfit() {
+        return nullToZero(fromString(checkNotNull(profitTextField).textProperty().get()));
+    }
+
+    public String getProfitCurrency() {
+        return checkNotNull(profitCurrencyLabel).textProperty().get();
+    }
+
     public BigDecimal getAveragingPrice() {
         return nullToZero(fromString(checkNotNull(sellPriceTextField).textProperty().get()));
     }

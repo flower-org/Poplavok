@@ -83,6 +83,8 @@ import javafx.scene.control.SelectionMode;
 import static com.flower.fxutils.JavaFxUtils.autoResizeTableColumns;
 import static com.flower.fxutils.JavaFxUtils.showErrorMessage;
 import static com.flower.fxutils.JavaFxUtils.showMessage;
+import static com.flower.fxutils.JavaFxUtils.showYesNoDialog;
+import static com.flower.fxutils.JavaFxUtils.YesNo.YES;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.poplavok.data.model.Direction.LONG;
 import static com.poplavok.data.model.Direction.SHORT;
@@ -991,6 +993,15 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
                 LevelState state = lvl.getState();
                 if (state != LevelState.TRADING && state != LevelState.FUNDING) {
                     showErrorMessage("Levels in " + state + " state can't perform trades.");
+                    return;
+                }
+            }
+
+            BigDecimal profit = checkNotNull(averagingPane).getProfit();
+            if (profit.compareTo(BigDecimal.ZERO) < 0) {
+                if (YES != showYesNoDialog("Averaging trade at a loss",
+                        "Current averaging settings result in a negative profit of " + formatAmount(profit) + " "
+                                + averagingPane.getProfitCurrency() + ". Are you sure you want to trade at a loss?")) {
                     return;
                 }
             }
