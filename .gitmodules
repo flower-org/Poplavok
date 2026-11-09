@@ -7,3 +7,6 @@
 [submodule "CryptCore"]
 	path = CryptCore
 	url = https://github.com/flower-org/CryptCore.git
+[submodule "MultiCoinChartsServer/src/main/resources/multicoincharts-minimal"]
+	path = MultiCoinChartsServer/src/main/resources/multicoincharts-minimal
+	url = https://github.com/flower-org/multicoincharts-minimal.git
