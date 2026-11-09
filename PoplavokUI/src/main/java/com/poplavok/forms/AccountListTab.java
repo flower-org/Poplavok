@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.function.Predicate;
 
@@ -287,13 +288,19 @@ public class AccountListTab extends AnchorPane implements Refreshable {
                             transaction.setCurrency(account.getCurrency());
 
                             // update accounts balances according to transaction amount
-                            account.setAvailableAmount(account.getAvailableAmount().add(transaction.getAmount()));
+                            BigDecimal previousAvailableAmount = account.getAvailableAmount();
+                            account.setAvailableAmount(previousAvailableAmount.add(transaction.getAmount()));
 
-                            // add transaction to DB
-                            DBUtil.connectCommitAndClose(sess -> {
-                                AccountDAO.update(sess, checkNotNull(account));
-                                TransactionDAO.save(sess, checkNotNull(transaction));
-                            });
+                            // add transaction to DB; on failure, restore the in-memory balance so a retry starts from the persisted value
+                            try {
+                                DBUtil.connectCommitAndClose(sess -> {
+                                    AccountDAO.update(sess, checkNotNull(account));
+                                    TransactionDAO.save(sess, checkNotNull(transaction));
+                                });
+                            } catch (Exception e) {
+                                account.setAvailableAmount(previousAvailableAmount);
+                                throw e;
+                            }
                             refreshContent();
                         }
                     } catch (Exception e) {
@@ -331,13 +338,19 @@ public class AccountListTab extends AnchorPane implements Refreshable {
 
                                 if (account.getAvailableAmount().compareTo(transaction.getAmount()) > 0) {
                                     // update accounts balances according to transaction amount
-                                    account.setAvailableAmount(account.getAvailableAmount().subtract(transaction.getAmount()));
+                                    BigDecimal previousAvailableAmount = account.getAvailableAmount();
+                                    account.setAvailableAmount(previousAvailableAmount.subtract(transaction.getAmount()));
 
-                                    // add transaction to DB
-                                    DBUtil.connectCommitAndClose(sess -> {
-                                        AccountDAO.update(sess, checkNotNull(account));
-                                        TransactionDAO.save(sess, checkNotNull(transaction));
-                                    });
+                                    // add transaction to DB; on failure, restore the in-memory balance so a retry starts from the persisted value
+                                    try {
+                                        DBUtil.connectCommitAndClose(sess -> {
+                                            AccountDAO.update(sess, checkNotNull(account));
+                                            TransactionDAO.save(sess, checkNotNull(transaction));
+                                        });
+                                    } catch (Exception e) {
+                                        account.setAvailableAmount(previousAvailableAmount);
+                                        throw e;
+                                    }
                                     refreshContent();
                                 } else {
                                     Alert alert = new Alert(Alert.AlertType.ERROR, "Not enough available amount to withdraw", ButtonType.OK);
