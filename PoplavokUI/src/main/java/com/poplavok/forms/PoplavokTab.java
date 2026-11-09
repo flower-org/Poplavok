@@ -207,6 +207,8 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
 
         averagingPane.updateLabels();
         averagingPane.setProfitInQuote(MainForm.isDefaultProfitInQuote());
+        averagingPane.setCommsCount(MainForm.getDefaultCommsCount());
+        averagingPane.setProfitPercent(MainForm.getDefaultProfitPercent());
         averagingPane.setMainPrice(parsePrice());
 
         startPriceStreaming();
@@ -271,6 +273,14 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
 
     public void setProfitInQuote(boolean profitInQuote) {
         checkNotNull(averagingPane).setProfitInQuote(profitInQuote);
+    }
+
+    public void setCommsCount(int commsCount) {
+        checkNotNull(averagingPane).setCommsCount(commsCount);
+    }
+
+    public void setProfitPercent(String profitPercent) {
+        checkNotNull(averagingPane).setProfitPercent(profitPercent);
     }
 
     protected boolean isEmpty(@Nullable BigDecimal amount) {

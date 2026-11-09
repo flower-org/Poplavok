@@ -600,6 +600,18 @@ public class AveragingPane extends AnchorPane {
         }
     }
 
+    /** Sets the "+ Comms" count; the slider listener mirrors it into the text field and recalculates. */
+    public void setCommsCount(int commsCount) {
+        checkNotNull(commsCountSlider).setValue(commsCount);
+        checkNotNull(commsCountTextField).setText(String.valueOf(commsCount));
+        updateAverageTabEvent();
+    }
+
+    public void setProfitPercent(String profitPercent) {
+        checkNotNull(percentTextField).setText(profitPercent);
+        updateAverageTabEvent();
+    }
+
     public BigDecimal getTotalDebt() {
         return nullToZero(fromString(checkNotNull(debtTextField).textProperty().get()));
     }

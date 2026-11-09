@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.CustomMenuItem?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.RadioMenuItem?>
 <?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.control.Slider?>
 <?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
@@ -16,7 +19,7 @@
 
 <VBox prefHeight="400.0" prefWidth="478.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.poplavok.forms.MainForm">
     <MenuBar VBox.vgrow="NEVER">
-      <Menu mnemonicParsing="false" text="Trade">
+      <Menu fx:id="tradeMenu" mnemonicParsing="false" onHidden="#onTradeMenuHidden" text="Trade">
         <items>
           <MenuItem mnemonicParsing="false" onAction="#openPoplavokListTab" text="Poplavoks" />
             <Menu mnemonicParsing="false" text="Default Profit In">
@@ -27,6 +30,27 @@
                   </toggleGroup>
                 </RadioMenuItem>
                 <RadioMenuItem fx:id="defaultProfitInBaseMenuItem" mnemonicParsing="false" onAction="#onDefaultProfitInChanged" text="BASE" toggleGroup="$defaultProfitInGroup" />
+              </items>
+            </Menu>
+            <Menu mnemonicParsing="false" text="Default + Comms">
+              <items>
+                <CustomMenuItem hideOnClick="false" mnemonicParsing="false">
+                  <content>
+                    <HBox alignment="CENTER_LEFT" spacing="10.0">
+                      <TextField fx:id="defaultCommsCountTextField" editable="false" maxWidth="35.0" minWidth="35.0" prefWidth="35.0" text="1" />
+                      <Slider fx:id="defaultCommsCountSlider" blockIncrement="1.0" max="10.0" prefWidth="100.0" value="1.0" />
+                    </HBox>
+                  </content>
+                </CustomMenuItem>
+              </items>
+            </Menu>
+            <Menu mnemonicParsing="false" text="Default + %">
+              <items>
+                <CustomMenuItem hideOnClick="false" mnemonicParsing="false">
+                  <content>
+                    <TextField fx:id="defaultProfitPercentTextField" prefWidth="145.0" />
+                  </content>
+                </CustomMenuItem>
               </items>
             </Menu>
             <SeparatorMenuItem mnemonicParsing="false" />
