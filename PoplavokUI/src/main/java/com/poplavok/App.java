@@ -5,6 +5,7 @@ import com.poplavok.data.utils.DBUtil;
 import com.poplavok.data.utils.HibernateUtil;
 import com.poplavok.forms.MainForm;
 import com.poplavok.kucoin.TickerPriceService;
+import com.poplavok.mcc.MultiCoinChartsService;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -30,12 +31,13 @@ public class App extends Application {
             Parent rootNode = fxmlLoader.load();
 
             MainForm mainForm = fxmlLoader.getController();
-            mainForm.init(mainStage);
+            mainForm.init(mainStage, getHostServices());
 
             Scene mainScene = new Scene(rootNode, 1200, 800);
 
             //Close all threads when we close JavaFX windows.
             mainStage.setOnHidden(event -> {
+                MultiCoinChartsService.getInstance().shutdown();
                 TickerPriceService.getInstance().shutdown();
                 HibernateUtil.shutdown();
                 DBUtil.shutdown();

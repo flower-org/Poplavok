@@ -45,6 +45,9 @@ server.start();   // Future<Void>
 server.stop();    // Future<Void>
 ```
 
+Vert.x core is an `api` dependency, so embedders get `Future` on their compile classpath.
+PoplavokUI embeds it (External → MultiCoinCharts…); its jpackage workflow minifies the site first, like the server release does.
+
 ## Packaging
 
 ```bash

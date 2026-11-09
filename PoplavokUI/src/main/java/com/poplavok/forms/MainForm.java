@@ -2,15 +2,20 @@ package com.poplavok.forms;
 
 import com.flower.fxutils.ModalWindow;
 import com.poplavok.data.model.Currency;
+import com.poplavok.mcc.MultiCoinChartsService;
+import javafx.application.HostServices;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
 
@@ -29,8 +34,11 @@ public class MainForm {
 
     @Nullable ApiSettingsDialog apiSettingsDialog;
     @Nullable Stage appSettingsStage;
+    @Nullable HostServices hostServices;
+    @Nullable Stage multiCoinChartsStage;
 
     @FXML @Nullable Label serverInfoLabel;
+    @FXML @Nullable Label mccStatusLabel;
     @FXML @Nullable TabPane tabs;
     @FXML @Nullable RadioMenuItem defaultProfitInQuoteMenuItem;
     @FXML @Nullable RadioMenuItem defaultProfitInBaseMenuItem;
@@ -59,9 +67,10 @@ public class MainForm {
         return checkNotNull(apiSettingsDialog);
     }
 
-    public void init(Stage mainStage) {
+    public void init(Stage mainStage, HostServices hostServices) {
         INSTANCE = this;
         this.mainStage = mainStage;
+        this.hostServices = hostServices;
         this.apiSettingsDialog = new ApiSettingsDialog(mainStage);
         checkNotNull(tabs).getTabs().addListener((ListChangeListener<Tab>) change -> {
             while (change.next()) {
@@ -77,6 +86,14 @@ public class MainForm {
         boolean profitInQuote = isDefaultProfitInQuote();
         checkNotNull(defaultProfitInQuoteMenuItem).setSelected(profitInQuote);
         checkNotNull(defaultProfitInBaseMenuItem).setSelected(!profitInQuote);
+
+        MultiCoinChartsService multiCoinChartsService = MultiCoinChartsService.getInstance();
+        checkNotNull(mccStatusLabel).textProperty().bind(
+                Bindings.concat("MultiCoinCharts: ", multiCoinChartsService.statusTextProperty()));
+        if (MultiCoinChartsService.isAutoStart()) {
+            multiCoinChartsService.start(MultiCoinChartsService.savedPort());
+        }
+
         Platform.runLater(this::showApiSettingsDialog);
     }
 
@@ -186,5 +203,20 @@ public class MainForm {
         } else {
             appSettingsStage.show();
         }
+    }
+
+    public void showMultiCoinChartsDialog() {
+        if (multiCoinChartsStage == null) {
+            // Not modal: the dialog can stay open while working in Poplavok
+            Stage stage = new Stage();
+            stage.initOwner(checkNotNull(mainStage));
+            stage.initModality(Modality.NONE);
+            stage.setTitle("MultiCoinCharts");
+            stage.setResizable(false);
+            stage.setScene(new Scene(new MultiCoinChartsDialog(checkNotNull(hostServices))));
+            multiCoinChartsStage = stage;
+        }
+        multiCoinChartsStage.show();
+        multiCoinChartsStage.toFront();
     }
 }

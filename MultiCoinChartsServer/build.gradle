@@ -1,5 +1,5 @@
 plugins {
-    id 'java'
+    id 'java-library'
     id 'application'
     id 'org.beryx.runtime' version '2.0.1'
     id "net.ltgt.errorprone" version "3.0.1"
@@ -57,8 +57,9 @@ tasks.withType(JavaCompile) {
 }
 
 dependencies {
-    implementation platform('io.vertx:vertx-stack-depchain:4.5.24')
-    implementation 'io.vertx:vertx-core'
+    // api: start()/stop() return Vert.x Futures to embedders
+    api platform('io.vertx:vertx-stack-depchain:4.5.24')
+    api 'io.vertx:vertx-core'
     implementation 'io.vertx:vertx-web'
 
     implementation 'org.slf4j:slf4j-api:2.0.9'

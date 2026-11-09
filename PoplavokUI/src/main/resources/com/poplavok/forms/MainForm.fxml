@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
@@ -9,6 +10,8 @@
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox prefHeight="400.0" prefWidth="478.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.poplavok.forms.MainForm">
@@ -42,9 +45,10 @@
           <MenuItem mnemonicParsing="false" onAction="#openMarketTickersTab" text="Market Tickers" />
         </items>
       </Menu>
-      <Menu mnemonicParsing="false" text="API">
+      <Menu mnemonicParsing="false" text="External">
         <items>
           <MenuItem mnemonicParsing="false" onAction="#showApiSettingsDialog" text="API settings" />
+          <MenuItem mnemonicParsing="false" onAction="#showMultiCoinChartsDialog" text="MultiCoinCharts…" />
         </items>
       </Menu>
         <Menu mnemonicParsing="false" text="Help">
@@ -56,7 +60,12 @@
           <TabPane fx:id="tabs" tabClosingPolicy="ALL_TABS" tabDragPolicy="REORDER" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
       </children>
     </AnchorPane>
-    <AnchorPane maxHeight="20.0" minHeight="20.0" prefHeight="20.0" prefWidth="241.0">
-        <Label fx:id="serverInfoLabel" alignment="CENTER_RIGHT" layoutX="3.0" layoutY="2.0" prefHeight="16.0" prefWidth="235.0" text="Server not assigned" textAlignment="RIGHT" AnchorPane.leftAnchor="3.0" AnchorPane.rightAnchor="3.0" />
-    </AnchorPane>
+    <HBox alignment="CENTER_LEFT" maxHeight="20.0" minHeight="20.0" prefHeight="20.0" spacing="10.0">
+        <padding>
+            <Insets left="3.0" right="3.0" />
+        </padding>
+        <Label fx:id="mccStatusLabel" text="MultiCoinCharts: Stopped" />
+        <Region HBox.hgrow="ALWAYS" />
+        <Label fx:id="serverInfoLabel" alignment="CENTER_RIGHT" text="Server not assigned" textAlignment="RIGHT" />
+    </HBox>
 </VBox>
