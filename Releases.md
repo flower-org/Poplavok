@@ -1,5 +1,31 @@
 ```
 Nov 8, 2026
+104431822
+Poplavok-1.2.4-portable-linux.zip
+SHA2-256(Poplavok-1.2.4-portable-linux.zip)= 3eb1a73939db0a2837e8350335840052540ffaf4c649d0f957206eac82a306c3
+99926522
+Poplavok-1.2.4-portable-macos.zip
+d4b1481617cc4ea919bb68f6b41b3d8dc1f2879dda740a021db0d0624b791959  Poplavok-1.2.4-portable-macos.zip
+100834728
+Poplavok-1.2.4-portable-windows.zip
+92C60544CCA9D789C447FE6A1CDE31932D3B5D4A22346CDDC36B29389498A8F7
+9769660
+MultiCoinChartsServer-1.2.4.jar
+SHA2-256(MultiCoinChartsServer-1.2.4.jar)= 52b2565c8da3cdd31fbebf65bfa27172bb6cc0bc077b02a1c0b228414eb1b813
+43313293
+MultiCoinChartsServer-1.2.4-portable-linux.zip
+SHA2-256(MultiCoinChartsServer-1.2.4-portable-linux.zip)= 779d0db6cf77a68421d784e5da96b3f3d859c302d0070ec70a6e0b25c719c63a
+38814772
+MultiCoinChartsServer-1.2.4-portable-macos.zip
+0e6adc5a6a810c88bbee2608419b9cbb0a906dd852602993cdaf92c4bdb9a7a0  MultiCoinChartsServer-1.2.4-portable-macos.zip
+39601010
+MultiCoinChartsServer-1.2.4-portable-windows.zip
+D7DBD47450D80E0C7FCBB6C92FB11C9EEBCB70969AA356A937693796E07A910A
+```
+
+
+```
+Nov 8, 2026
 104427223
 Poplavok-1.2.3-portable-linux.zip
 SHA2-256(Poplavok-1.2.3-portable-linux.zip)= a9d9b979f64afe8d166f65e3836ec8fd9b7b739395878469f0263a599ce09b28
