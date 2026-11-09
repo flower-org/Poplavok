@@ -254,19 +254,20 @@ public class PerformTradeDialog extends VBox {
 
     public void buy() {
         try {
-            returnTrade = new Trade();
+            returnTrade = null;
+            Trade trade = new Trade();
 
             BigDecimal price = nullToZero(fromString((checkNotNull(priceTextField).getText())));
             BigDecimal fee = nullToZero(fromString(checkNotNull(feeTextField).getText()));
             BigDecimal tradeQuoteAmount = nullToZero(fromString(checkNotNull(giveQuoteBuyTextField).getText()));
             BigDecimal tradeBaseAmount = nullToZero(fromString(checkNotNull(getBaseBuyTextField).getText()));
-            returnTrade.setAmountQuoteIn(tradeQuoteAmount);
-            returnTrade.setAmountBaseOut(tradeBaseAmount);
-            returnTrade.setOperation(TradeOperation.BUY);
-            returnTrade.setDate(new Date());
+            trade.setAmountQuoteIn(tradeQuoteAmount);
+            trade.setAmountBaseOut(tradeBaseAmount);
+            trade.setOperation(TradeOperation.BUY);
+            trade.setDate(new Date());
 
-            returnTrade.setCommissionQuote(tradeQuoteAmount.multiply(fee));
-            returnTrade.setCommissionBase(tradeQuoteAmount.multiply(fee).divide(price, SCALE, RoundingMode.CEILING));
+            trade.setCommissionQuote(tradeQuoteAmount.multiply(fee));
+            trade.setCommissionBase(tradeQuoteAmount.multiply(fee).divide(price, SCALE, RoundingMode.CEILING));
 
             if (isAveragingTrade) {
                 BigDecimal debt = nullToZero(fromString(checkNotNull(debtTextField).getText()));
@@ -280,6 +281,7 @@ public class PerformTradeDialog extends VBox {
                 }
             }
 
+            returnTrade = trade;
             checkNotNull(stage).close();
         } catch (Exception e) {
             LOGGER.error("Buy Error:", e);
@@ -289,20 +291,21 @@ public class PerformTradeDialog extends VBox {
 
     public void sell() {
         try {
-            returnTrade = new Trade();
+            returnTrade = null;
+            Trade trade = new Trade();
 
             BigDecimal price = nullToZero(fromString(checkNotNull(priceTextField).getText()));
             BigDecimal fee = nullToZero(fromString(checkNotNull(feeTextField).getText()));
 
             BigDecimal tradeBaseAmount = nullToZero(fromString(checkNotNull(giveBaseSellTextField).getText()));
             BigDecimal tradeQuoteAmount = nullToZero(fromString(checkNotNull(getQuoteSellTextField).getText()));
-            returnTrade.setAmountBaseIn(tradeBaseAmount);
-            returnTrade.setAmountQuoteOut(tradeQuoteAmount);
-            returnTrade.setOperation(TradeOperation.SELL);
-            returnTrade.setDate(new Date());
+            trade.setAmountBaseIn(tradeBaseAmount);
+            trade.setAmountQuoteOut(tradeQuoteAmount);
+            trade.setOperation(TradeOperation.SELL);
+            trade.setDate(new Date());
 
-            returnTrade.setCommissionBase(tradeBaseAmount.multiply(fee));
-            returnTrade.setCommissionQuote(tradeBaseAmount.multiply(fee).multiply(price));
+            trade.setCommissionBase(tradeBaseAmount.multiply(fee));
+            trade.setCommissionQuote(tradeBaseAmount.multiply(fee).multiply(price));
 
             if (isAveragingTrade) {
                 BigDecimal debt = nullToZero(fromString(checkNotNull(debtTextField).getText()));
@@ -316,6 +319,7 @@ public class PerformTradeDialog extends VBox {
                 }
             }
 
+            returnTrade = trade;
             checkNotNull(stage).close();
        } catch (Exception e) {
             LOGGER.error("Sell Error:", e);
