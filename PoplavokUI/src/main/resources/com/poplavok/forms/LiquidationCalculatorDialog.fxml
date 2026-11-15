@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import com.poplavok.forms.TickerPricePicker?>
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.CheckBox?>
-<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.RadioButton?>
 <?import javafx.scene.control.Separator?>
@@ -17,14 +16,7 @@
     <padding>
         <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
     </padding>
-    <HBox alignment="CENTER_LEFT" spacing="8.0">
-        <Label minWidth="-Infinity" text="Ticker:" />
-        <TextField fx:id="tickerFilterTextField" onKeyTyped="#filterTickers" prefWidth="70.0" promptText="Filter" />
-        <ComboBox fx:id="tickerComboBox" prefWidth="140.0" />
-        <Label minWidth="-Infinity" text="Price:" />
-        <TextField fx:id="priceTextField" prefWidth="100.0" HBox.hgrow="ALWAYS" />
-        <CheckBox fx:id="streamPriceCheckBox" minWidth="-Infinity" mnemonicParsing="false" selected="true" text="stream" />
-    </HBox>
+    <TickerPricePicker fx:id="tickerPricePicker" />
     <Label fx:id="marginInfoLabel" wrapText="true" />
     <Separator />
     <GridPane hgap="10.0" vgap="6.0">

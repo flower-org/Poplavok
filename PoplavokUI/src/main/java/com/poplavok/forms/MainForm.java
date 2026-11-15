@@ -110,6 +110,8 @@ public class MainForm {
                     for (Tab removed : change.getRemoved()) {
                         if (removed.getContent() instanceof PoplavokTab poplavokTab) {
                             poplavokTab.dispose();
+                        } else if (removed.getContent() instanceof SellDownGameTab sellDownGameTab) {
+                            sellDownGameTab.dispose();
                         }
                     }
                 }
@@ -322,6 +324,31 @@ public class MainForm {
         stage.show();
         stage.setMinWidth(stage.getWidth());
         stage.setMinHeight(stage.getHeight());
+    }
+
+    public void showTradeCalculator() {
+        Stage stage = new Stage();
+        stage.initOwner(checkNotNull(mainStage));
+        stage.initModality(Modality.NONE);
+        stage.setTitle("Trade Calculator");
+        TradeCalculatorDialog calculator = new TradeCalculatorDialog();
+        stage.setScene(new Scene(calculator));
+        stage.setOnHidden(event -> calculator.dispose());
+        stage.show();
+        stage.setMinWidth(stage.getWidth());
+        stage.setMinHeight(stage.getHeight());
+    }
+
+    public void showSellDownGame() {
+        // A new tab each time so several scenarios can be compared
+        addSellDownGameTab(new SellDownGameTab(this::addSellDownGameTab), "Sell-down Game");
+    }
+
+    void addSellDownGameTab(SellDownGameTab game, String title) {
+        final Tab tab = new Tab(title, game);
+        tab.setClosable(true);
+
+        addTab(tab);
     }
 
     public void showMultiCoinChartsDialog() {

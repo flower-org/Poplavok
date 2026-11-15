@@ -1,25 +1,15 @@
 package com.poplavok.forms;
 
 import com.poplavok.api.kucoin.model.response.IsolatedSymbolResponse;
-import com.poplavok.data.dao.MarketTickerDAO;
-import com.poplavok.data.model.MarketTicker;
-import com.poplavok.data.utils.DBUtil;
 import com.poplavok.data.utils.LiquidationCalculator;
 import com.poplavok.kucoin.KucoinTool;
-import com.poplavok.kucoin.TickerPriceService;
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.transformation.FilteredList;
-import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
-import javafx.util.StringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,11 +18,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.flower.fxutils.JavaFxUtils.createDecimalTextFormatter;
@@ -46,12 +33,8 @@ import static com.poplavok.data.utils.BigDecimalUtil.formatAmount;
 public class LiquidationCalculatorDialog extends VBox {
     final static Logger LOGGER = LoggerFactory.getLogger(LiquidationCalculatorDialog.class);
     static final String NOT_REACHABLE = "N/A";
-    static final String READ_ONLY_STYLE = "-fx-control-inner-background: #e8e8e8;";
 
-    @FXML @Nullable TextField tickerFilterTextField;
-    @FXML @Nullable ComboBox<MarketTicker> tickerComboBox;
-    @FXML @Nullable TextField priceTextField;
-    @FXML @Nullable CheckBox streamPriceCheckBox;
+    @FXML @Nullable TickerPricePicker tickerPricePicker;
     @FXML @Nullable Label marginInfoLabel;
 
     @FXML @Nullable TextField debtTextField;
@@ -72,11 +55,7 @@ public class LiquidationCalculatorDialog extends VBox {
     @FXML @Nullable TextField distanceToLiquidationTextField;
     @FXML @Nullable Label hintLabel;
 
-    @Nullable FilteredList<MarketTicker> tickers;
-    @Nullable String streamedSymbol;
     long marginInfoRequest;
-    final AtomicReference<BigDecimal> pendingPrice = new AtomicReference<>();
-    final TickerPriceService.PriceListener priceListener = this::onStreamedPrice;
 
     public LiquidationCalculatorDialog() {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("LiquidationCalculatorDialog.fxml"));
@@ -89,49 +68,21 @@ public class LiquidationCalculatorDialog extends VBox {
             throw new RuntimeException(exception);
         }
 
-        for (TextField input : new TextField[] { checkNotNull(priceTextField), checkNotNull(debtTextField),
+        TickerPricePicker picker = checkNotNull(tickerPricePicker);
+        picker.priceTextField().textProperty().addListener((observable, oldValue, newValue) -> recalculate());
+        for (TextField input : new TextField[] { checkNotNull(debtTextField),
                 checkNotNull(holdingBaseTextField), checkNotNull(holdingQuoteTextField),
                 checkNotNull(liquidationRatioTextField) }) {
             input.setTextFormatter(createDecimalTextFormatter());
             input.textProperty().addListener((observable, oldValue, newValue) -> recalculate());
         }
         checkNotNull(debtInQuoteRadioButton).selectedProperty().addListener((observable, oldValue, newValue) -> recalculate());
-
-        initTickers();
-        checkNotNull(streamPriceCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> updateStreaming());
-
-        updateStreaming();
-        recalculate();
-    }
-
-    void initTickers() {
-        ComboBox<MarketTicker> comboBox = checkNotNull(tickerComboBox);
-        comboBox.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(@Nullable MarketTicker ticker) {
-                return ticker != null ? ticker.getSymbol() : "";
-            }
-
-            @Override
-            public MarketTicker fromString(String string) {
-                throw new UnsupportedOperationException("ComboBox is not editable");
-            }
-        });
-
-        List<MarketTicker> allTickers;
-        try {
-            allTickers = DBUtil.connectGetResultAndClose(MarketTickerDAO::findAll);
-        } catch (Exception e) {
-            LOGGER.error("Failed to load market tickers", e);
-            allTickers = List.of();
-        }
-        tickers = new FilteredList<>(FXCollections.observableArrayList(allTickers));
-        comboBox.setItems(new SortedList<>(tickers, Comparator.comparing(MarketTicker::getSymbol)));
-        comboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+        picker.selectedTickerProperty().addListener((observable, oldValue, newValue) -> {
             updateCurrencyLabels();
-            updateStreaming();
             updateMarginInfo();
         });
+
+        recalculate();
     }
 
     /** Requests KuCoin isolated margin pair settings off the FX thread. */
@@ -199,86 +150,22 @@ public class LiquidationCalculatorDialog extends VBox {
         return base ? "base only" : quote ? "quote only" : "disabled";
     }
 
-    public void filterTickers() {
-        if (tickers == null) {
-            return;
-        }
-        String searchText = checkNotNull(tickerFilterTextField).getText();
-        String needle = searchText == null ? "" : searchText.trim().toLowerCase();
-        tickers.setPredicate(ticker -> needle.isEmpty() || ticker.getSymbol().toLowerCase().contains(needle));
-        checkNotNull(tickerComboBox).getSelectionModel().selectFirst();
-    }
-
     @Nullable String selectedSymbol() {
-        MarketTicker ticker = checkNotNull(tickerComboBox).getValue();
-        return ticker == null ? null : ticker.getSymbol();
+        return checkNotNull(tickerPricePicker).selectedSymbol();
     }
 
-    /** Base/quote names from a KuCoin "BASE-QUOTE" symbol (avoids touching lazy-loaded currencies). */
     void updateCurrencyLabels() {
-        String symbol = selectedSymbol();
-        String base = "BASE";
-        String quote = "QUOTE";
-        if (symbol != null) {
-            int dash = symbol.indexOf('-');
-            if (dash > 0 && dash < symbol.length() - 1) {
-                base = symbol.substring(0, dash);
-                quote = symbol.substring(dash + 1);
-            }
-        }
+        String base = checkNotNull(tickerPricePicker).baseCurrency();
+        String quote = tickerPricePicker.quoteCurrency();
         checkNotNull(holdingBaseLabel).setText("Holding " + base + ":");
         checkNotNull(holdingQuoteLabel).setText("Holding " + quote + ":");
         checkNotNull(debtInQuoteRadioButton).setText(quote + " (long)");
         checkNotNull(debtInBaseRadioButton).setText(base + " (short)");
     }
 
-    /** Subscribes to the selected ticker while "stream" is checked; otherwise the price is entered manually. */
-    void updateStreaming() {
-        String symbol = selectedSymbol();
-        CheckBox streamCheckBox = checkNotNull(streamPriceCheckBox);
-        streamCheckBox.setDisable(symbol == null);
-        boolean stream = symbol != null && streamCheckBox.isSelected();
-        String targetSymbol = stream ? symbol : null;
-
-        if (streamedSymbol != null && !streamedSymbol.equals(targetSymbol)) {
-            TickerPriceService.getInstance().unsubscribe(streamedSymbol, priceListener);
-            streamedSymbol = null;
-        }
-        if (targetSymbol != null && streamedSymbol == null) {
-            streamedSymbol = targetSymbol;
-            TickerPriceService.getInstance().subscribe(targetSymbol, priceListener);
-            BigDecimal cached = TickerPriceService.getInstance().getLastPrice(targetSymbol);
-            if (cached != null) {
-                checkNotNull(priceTextField).setText(formatAmount(cached));
-            }
-        }
-
-        TextField priceField = checkNotNull(priceTextField);
-        priceField.setEditable(!stream);
-        priceField.setStyle(stream ? READ_ONLY_STYLE : "");
-    }
-
-    void onStreamedPrice(String symbol, @Nullable BigDecimal price) {
-        if (price == null) {
-            return;
-        }
-        // Coalesce bursts into a single FX update with the latest price
-        if (pendingPrice.getAndSet(price) == null) {
-            Platform.runLater(() -> {
-                BigDecimal latest = pendingPrice.getAndSet(null);
-                if (latest != null && symbol.equals(streamedSymbol)) {
-                    checkNotNull(priceTextField).setText(formatAmount(latest));
-                }
-            });
-        }
-    }
-
     /** Stops price streaming. Safe to call multiple times. */
     public void dispose() {
-        if (streamedSymbol != null) {
-            TickerPriceService.getInstance().unsubscribe(streamedSymbol, priceListener);
-            streamedSymbol = null;
-        }
+        checkNotNull(tickerPricePicker).dispose();
     }
 
     static BigDecimal parse(@Nullable TextField textField) {
@@ -299,7 +186,7 @@ public class LiquidationCalculatorDialog extends VBox {
         BigDecimal holdingBase = parse(holdingBaseTextField);
         BigDecimal holdingQuote = parse(holdingQuoteTextField);
         BigDecimal liquidationPercent = parse(liquidationRatioTextField);
-        BigDecimal currentPrice = parse(priceTextField);
+        BigDecimal currentPrice = parse(checkNotNull(tickerPricePicker).priceTextField());
 
         setPrice(price85TextField, debt, debtInQuote, holdingBase, holdingQuote, new BigDecimal("85"));
         setPrice(price90TextField, debt, debtInQuote, holdingBase, holdingQuote, new BigDecimal("90"));
