@@ -14,6 +14,7 @@ import com.poplavok.api.kucoin.model.response.CurrencyDetailV2Response;
 import com.poplavok.api.kucoin.model.response.CurrencyExtendedInfoResponse;
 import com.poplavok.api.kucoin.model.response.CurrencyResponse;
 import com.poplavok.api.kucoin.model.response.IsolatedMarginAccountInfo;
+import com.poplavok.api.kucoin.model.response.IsolatedSymbolResponse;
 import com.poplavok.api.kucoin.model.response.KucoinResponse;
 import com.poplavok.api.kucoin.model.response.MarginAccountResponse;
 import com.poplavok.api.kucoin.model.response.OrderCreateResponse;
@@ -178,6 +179,11 @@ public class KucoinApiClient {
         if (balanceCurrency != null) urlBuilder.addQueryParameter("balanceCurrency", balanceCurrency);
         Request request = new Request.Builder().url(urlBuilder.build()).get().build();
         return execute(request, new TypeReference<KucoinResponse<IsolatedMarginAccountInfo>>() {});
+    }
+
+    public List<IsolatedSymbolResponse> getIsolatedSymbols() throws IOException {
+        Request request = new Request.Builder().url(BASE_URL + "api/v1/isolated/symbols").get().build();
+        return execute(request, new TypeReference<KucoinResponse<List<IsolatedSymbolResponse>>>() {});
     }
 
     public AllTickersResponse getAllTickers() throws IOException {
