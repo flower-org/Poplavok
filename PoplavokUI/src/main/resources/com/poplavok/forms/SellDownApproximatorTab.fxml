@@ -21,6 +21,7 @@
         <Button defaultButton="true" mnemonicParsing="false" onAction="#calculate" text="Calculate" />
         <Button mnemonicParsing="false" onAction="#save" text="Save…" />
         <Button mnemonicParsing="false" onAction="#load" text="Load…" />
+        <Button mnemonicParsing="false" onAction="#createBot" text="Create bot…" />
         <Label fx:id="startStateLabel" wrapText="true" HBox.hgrow="ALWAYS" />
     </HBox>
     <TickerPricePicker fx:id="tickerPricePicker" />

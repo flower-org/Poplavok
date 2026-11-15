@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -392,6 +393,42 @@ public class SellDownApproximatorTab extends VBox {
         } catch (IOException | RuntimeException e) {
             LOGGER.error("Failed to load approximation from {}", file, e);
             new Alert(Alert.AlertType.ERROR, "Failed to load approximation: " + e, ButtonType.OK).showAndWait();
+        }
+    }
+
+    /** Saves the last calculated plan as a sell-down bot definition (.sdb). */
+    @FXML
+    public void createBot() {
+        SellDownPlanner.Params params = lastParams;
+        SellDownPlanner.Plan plan = lastPlan;
+        String symbol = checkNotNull(tickerPricePicker).selectedSymbol();
+        if (params == null || plan == null || plan.levels().isEmpty() || symbol == null) {
+            new Alert(Alert.AlertType.WARNING, "Select a pair and calculate a plan first.", ButtonType.OK)
+                    .showAndWait();
+            return;
+        }
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Create Sell-down Bot");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Sell-down Bot ("
+                + SellDownBotState.EXTENSION + ")", SellDownBotState.EXTENSION));
+        File directory = lastDirectory;
+        if (directory != null && directory.isDirectory()) {
+            chooser.setInitialDirectory(directory);
+        }
+        chooser.setInitialFileName(symbol + ".sdb");
+        File file = chooser.showSaveDialog(getScene().getWindow());
+        if (file == null) {
+            return;
+        }
+        if (!file.getName().endsWith(".sdb")) {
+            file = new File(file.getParentFile(), file.getName() + ".sdb");
+        }
+        try {
+            SellDownBotState.of(symbol, params, plan, Instant.now()).write(file);
+            lastDirectory = file.getParentFile();
+        } catch (IOException | RuntimeException e) {
+            LOGGER.error("Failed to create sell-down bot {}", file, e);
+            new Alert(Alert.AlertType.ERROR, "Failed to create sell-down bot: " + e, ButtonType.OK).showAndWait();
         }
     }
 
