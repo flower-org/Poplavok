@@ -1009,6 +1009,15 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
         return new LevelHoldingsAndDebts(levelDebts, levelHoldings);
     }
 
+    /** Sums amounts the same way distributors see them (each truncated to SCALE). */
+    static BigDecimal sumAtScale(List<BigDecimal> amounts) {
+        BigDecimal sum = BigDecimal.ZERO.setScale(SCALE, RoundingMode.DOWN);
+        for (BigDecimal amount : amounts) {
+            sum = sum.add(nullToZero(amount).setScale(SCALE, RoundingMode.DOWN));
+        }
+        return sum;
+    }
+
     public void averagingTrade() {
         try {
             MarketTicker ticker = checkNotNull(poplavok).getTicker();
@@ -1046,6 +1055,24 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
 
             BigDecimal debtToRepay = fullDebtToRepay.subtract(retainedDebt);
             BigDecimal amountToTrade = fullAmountToTrade.subtract(retainedAmount);
+
+            if (retainedAmount.compareTo(BigDecimal.ZERO) > 0 || retainedDebt.compareTo(BigDecimal.ZERO) > 0) {
+                // Trading at a loss can make the amount to trade exceed actual holdings, leaving nothing to retain.
+                LevelHoldingsAndDebts current = getLevelHoldingsAndDebts(levels, direction, false);
+                BigDecimal availableHoldings = sumAtScale(current.levelHoldings);
+                BigDecimal totalDebt = sumAtScale(current.levelDebts);
+                if (amountToTrade.add(retainedAmount).compareTo(availableHoldings) > 0) {
+                    showErrorMessage("Amount to trade (" + formatAmount(amountToTrade) + ") plus retained amount ("
+                            + formatAmount(retainedAmount) + ") exceeds available holdings (" + formatAmount(availableHoldings)
+                            + ") of selected levels. Reduce the retained amount or disable retaining holdings.");
+                    return;
+                }
+                if (retainedDebt.compareTo(totalDebt) > 0) {
+                    showErrorMessage("Retained debt (" + formatAmount(retainedDebt) + ") exceeds total debt ("
+                            + formatAmount(totalDebt) + ") of selected levels.");
+                    return;
+                }
+            }
 
             BigDecimal availableAmountBase;
             BigDecimal availableAmountQuote;
@@ -1086,12 +1113,26 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
                                     amountIn = quoteIn;
                                     amountOut = baseOut;
                                 }
-                                BigDecimal amountInForCheck = amountIn;
                                 amountIn = amountIn.setScale(SCALE, RoundingMode.CEILING);
                                 amountOut = amountOut.setScale(SCALE, RoundingMode.FLOOR);
 
                                 // 1. Determine holdings and debts for each level
                                 LevelHoldingsAndDebts levelHoldingsAndDebts = getLevelHoldingsAndDebts(levels, direction, true);
+
+                                // Validate retained amounts against actual holdings before mutating any level
+                                if (retainedAmount.compareTo(BigDecimal.ZERO) > 0 || retainedDebt.compareTo(BigDecimal.ZERO) > 0) {
+                                    BigDecimal remainingHoldings = sumAtScale(levelHoldingsAndDebts.levelHoldings).subtract(amountIn);
+                                    if (remainingHoldings.compareTo(retainedAmount.setScale(SCALE, RoundingMode.DOWN)) < 0) {
+                                        throw new RuntimeException("Retained amount " + formatAmount(retainedAmount)
+                                                + " exceeds holdings remaining after trade " + formatAmount(remainingHoldings)
+                                                + " (traded " + formatAmount(amountIn) + ")");
+                                    }
+                                    BigDecimal totalDebt = sumAtScale(getLevelHoldingsAndDebts(levels, direction, false).levelDebts);
+                                    if (totalDebt.compareTo(retainedDebt.setScale(SCALE, RoundingMode.DOWN)) < 0) {
+                                        throw new RuntimeException("Retained debt " + formatAmount(retainedDebt)
+                                                + " exceeds total debt " + formatAmount(totalDebt));
+                                    }
+                                }
 
                                 // 2. Create LevelTrades
                                 List<LevelTrade> levelTrades = new ArrayList<>();
@@ -1144,13 +1185,6 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
                                 if (retainedAmount.compareTo(BigDecimal.ZERO) > 0 || retainedDebt.compareTo(BigDecimal.ZERO) > 0) {
                                     // 3.1. Determine updated holdings and debts for each level
                                     levelHoldingsAndDebts = getLevelHoldingsAndDebts(levels, direction, false);
-
-                                    // Make sure retained amount is within limits
-                                    // TODO: SCALE is all over the place, need to properly handle it in all calculations and checks
-                                    if (fullAmountToTrade.subtract(amountInForCheck).compareTo(retainedAmount) < 0) {
-                                        throw new RuntimeException("RetainedAmount too large: FullAmount " + formatAmount(fullAmountToTrade) +
-                                                "; TradedAmount " + formatAmount(amountIn) + "; RetainedAmount " + retainedAmount);
-                                    }
 
                                     // 3.2 Create a new level for this poplavok to transfer retained debt and amount to
                                     Level newLevel = new Level();
@@ -1286,8 +1320,15 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
                                 refreshContent();
                             }
                         } catch (Exception e) {
-                            Alert alert = new Alert(Alert.AlertType.ERROR, "Error performing averaging trade: " + e, ButtonType.OK);
                             LOGGER.error("Error performing averaging trade: ", e);
+                            // Levels may have been partially mutated in memory; reload them from DB to discard those changes
+                            try {
+                                refreshContent();
+                            } catch (Exception re) {
+                                LOGGER.error("Error refreshing content after failed averaging trade: ", re);
+                            }
+                            Alert alert = new Alert(Alert.AlertType.ERROR, "Error performing averaging trade: " + e
+                                    + "\n\nThe trade was NOT recorded.", ButtonType.OK);
                             alert.showAndWait();
                         }
                     }
