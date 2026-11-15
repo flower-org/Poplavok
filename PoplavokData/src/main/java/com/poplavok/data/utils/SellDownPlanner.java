@@ -11,14 +11,17 @@ import java.util.List;
  * in equal chunks at debt ratio levels spread evenly from {@code startRatio} to {@code endRatio}, so the position
  * ends up all QUOTE before reaching the liquidation ratio.
  * <p>
- * Each level's trigger price is where the holdings left at that point reach the level's debt ratio.
- * The sell order is placed {@code fillBuffer} above the trigger so it has room to fill before the level is hit,
- * and pays the maker fee. If that price is already at/above the market (the level is already passed), the chunk is
+ * Each level's sell price is where the holdings left at that point reach the level's debt ratio; the chunk
+ * is sold there and pays the maker fee. Selling starts at the sell trigger price, {@code fillBuffer} above it, so the
+ * sell price isn't missed. If the trigger is already at/above the market (the level is already passed), the chunk is
  * sold right away at market minus {@code slippage} and pays the taker fee. The market price starts at the current
- * price and moves down to each resting order's fill price.
- * Every level N > 1 gets an averaging buy: the break-even price is the highest price at which the QUOTE received by
- * levels N-1 and N buys back (maker fee) all the BASE both sold; the buy is placed one fill buffer below it, so a fill
- * recovers the BASE with surplus.
+ * price and moves down to each resting order's sell price.
+ * Every level N > 1 gets a break-even buy: the break-even price is the highest price at which the QUOTE received by
+ * levels N-1 and N buys back (maker fee) all the BASE both sold. As the price rebounds, buying starts at the break-even
+ * trigger price, one fill buffer below it. That range must stay above level N's sell range (up to its sell trigger).
+ * <p>
+ * Naming: each action has a price (where we hope to act) and a trigger price (where we start acting). Sell trigger =
+ * sell price x (1 + fill buffer); break-even trigger = break-even price x (1 - fill buffer).
  * Selling doesn't change the debt ratio at the sell price (apart from the fee); it only reduces how
  * fast the ratio grows as the price keeps falling.
  */
@@ -38,17 +41,19 @@ public final class SellDownPlanner {
     }
 
     /**
-     * One sell level. {@code immediate}: the level was already passed at the market price, so it sells right
+     * One sell level. {@code ratioPrice}: price where the remaining holdings reach the target ratio.
+     * {@code sellPrice}: price the chunk is sold at, the ratio price (or market minus slippage if immediate).
+     * {@code sellTriggerPrice}: ratio price plus the fill buffer, where selling starts. {@code immediate}: the level was already passed at the market price, so it sells right
      * away at market minus slippage. {@code liqPriceIfUnfilled}: liquidation price if this chunk does NOT fill (holdings before this
      * sale). {@code liqPriceAfter}: liquidation price after this sale, null once all BASE is sold.
-     * {@code averageBreakEven}: max price to buy back levels N-1 and N in full with their QUOTE, null for level 1.
-     * {@code averageBuyPrice}: break-even minus the fill buffer, null for level 1.
+     * {@code breakEvenPrice}: max price to buy back levels N-1 and N in full with their QUOTE, null for level 1.
+     * {@code breakEvenTriggerPrice}: break-even price minus the fill buffer, where buying starts; null for level 1.
      */
-    public record Level(int number, BigDecimal targetRatio, BigDecimal triggerPrice, BigDecimal sellPrice,
-                        boolean immediate, BigDecimal baseSold, BigDecimal quoteReceived,
+    public record Level(int number, BigDecimal targetRatio, BigDecimal ratioPrice, BigDecimal sellPrice,
+                        BigDecimal sellTriggerPrice, boolean immediate, BigDecimal baseSold, BigDecimal quoteReceived,
                         BigDecimal baseLeft, BigDecimal quoteAfter, @Nullable BigDecimal ratioAfter,
                         @Nullable BigDecimal liqPriceIfUnfilled, @Nullable BigDecimal liqPriceAfter,
-                        @Nullable BigDecimal averageBreakEven, @Nullable BigDecimal averageBuyPrice) {
+                        @Nullable BigDecimal breakEvenPrice, @Nullable BigDecimal breakEvenTriggerPrice) {
     }
 
     /**
@@ -61,7 +66,7 @@ public final class SellDownPlanner {
 
     /**
      * Plans with as many levels as possible (up to {@link #MAX_AUTO_LEVELS}) such that every chunk's sell price is
-     * at least 2 x fill buffer (relative) above the next chunk's sell price, and every averaging buy price is above
+     * at least 2 x fill buffer (relative) above the next chunk's sell price, and every break-even trigger price is above
      * its level's sell price (outside that level's fill buffer range). {@code p.levels()} is ignored.
      */
     public static Plan planAutoLevels(Params p) {
@@ -86,11 +91,15 @@ public final class SellDownPlanner {
         return true;
     }
 
-    /** True if each averaging buy price is above its level's sell price, so the buy and the sell can't both fill. */
+    /**
+     * True if each break-even range (from its trigger up) is above its level's sell range (up to the sell trigger; just
+     * the sell price if sold immediately), so the buy and the sell can't both fill.
+     */
     static boolean isAveragingClear(Plan plan) {
         for (Level level : plan.levels()) {
-            BigDecimal buy = level.averageBuyPrice();
-            if (buy != null && buy.compareTo(level.sellPrice()) <= 0) {
+            BigDecimal buy = level.breakEvenTriggerPrice();
+            BigDecimal rangeTop = level.immediate() ? level.sellPrice() : level.sellTriggerPrice();
+            if (buy != null && buy.compareTo(rangeTop) <= 0) {
                 return false;
             }
         }
@@ -102,16 +111,16 @@ public final class SellDownPlanner {
                 p.fillBuffer(), p.slippage(), p.makerFee(), p.takerFee(), p.liquidationRatio());
     }
 
-    /** Position after averaging: same debt, BASE re-bought, QUOTE spent on it. */
+    /** Position after breaking even: same debt, BASE re-bought, QUOTE spent on it. */
     public record BreakEven(int fromLevel, BigDecimal price, BigDecimal debt, BigDecimal base, BigDecimal quote) {
     }
 
     /**
-     * Break even from {@code level} (N > 1): at its averaging buy price, all QUOTE received by levels 1..N buys BASE
+     * Break even from {@code level} (N > 1): at its break-even price, all QUOTE received by levels 1..N buys BASE
      * (maker fee). Returns null for level 1, or if the level isn't part of {@code plan}.
      */
     public static @Nullable BreakEven breakEven(Params p, Plan plan, Level level) {
-        BigDecimal buyPrice = level.averageBuyPrice();
+        BigDecimal buyPrice = level.breakEvenPrice();
         int index = level.number() - 1;
         if (buyPrice == null || index < 0 || index >= plan.levels().size()
                 || !plan.levels().get(index).equals(level)) {
@@ -121,7 +130,7 @@ public final class SellDownPlanner {
         for (int i = 0; i <= index; i++) {
             spent = spent.add(plan.levels().get(i).quoteReceived());
         }
-        BigDecimal bought = spent.multiply(BigDecimal.ONE.subtract(p.makerFee()), MC).divide(buyPrice, MC);
+        BigDecimal bought = LongShortCalculator.calculateBaseAmountToGetLong(spent, buyPrice, p.makerFee()).amount;
         return new BreakEven(level.number(), buyPrice, p.debt(), level.baseLeft().add(bought),
                 level.quoteAfter().subtract(spent));
     }
@@ -139,32 +148,31 @@ public final class SellDownPlanner {
             BigDecimal targetRatio = p.levels() == 1 ? p.startRatio()
                     : p.startRatio().add(p.endRatio().subtract(p.startRatio())
                             .multiply(BigDecimal.valueOf(i)).divide(BigDecimal.valueOf(p.levels() - 1L), MC));
-            BigDecimal trigger = LiquidationCalculator.priceAtDebtRatio(p.debt(), true, base, quote, targetRatio);
-            if (trigger == null) {
+            BigDecimal ratioPrice = LiquidationCalculator.priceAtDebtRatio(p.debt(), true, base, quote, targetRatio);
+            if (ratioPrice == null) {
                 note = "QUOTE alone keeps the debt ratio below " + percent(targetRatio)
                         + " at any price; remaining levels aren't needed.";
                 break;
             }
-            BigDecimal sellPrice = trigger.multiply(BigDecimal.ONE.add(p.fillBuffer()), MC);
-            boolean immediate = sellPrice.compareTo(marketPrice) >= 0;
-            if (immediate) {
-                sellPrice = marketPrice.multiply(BigDecimal.ONE.subtract(p.slippage()), MC);
-            }
+            BigDecimal sellTrigger = ratioPrice.multiply(BigDecimal.ONE.add(p.fillBuffer()), MC);
+            boolean immediate = sellTrigger.compareTo(marketPrice) >= 0;
+            BigDecimal sellPrice = immediate ? marketPrice.multiply(BigDecimal.ONE.subtract(p.slippage()), MC)
+                    : ratioPrice;
             BigDecimal fee = immediate ? p.takerFee() : p.makerFee();
             BigDecimal liqIfUnfilled = LiquidationCalculator.priceAtDebtRatio(p.debt(), true, base, quote,
                     p.liquidationRatio());
 
             // Last level sells whatever is left so division residue doesn't stay behind
             BigDecimal sold = i == p.levels() - 1 ? base : chunk.min(base);
-            BigDecimal received = sold.multiply(sellPrice, MC).multiply(BigDecimal.ONE.subtract(fee), MC);
+            BigDecimal received = LongShortCalculator.calculateQuoteAmountToGetShort(sold, sellPrice, fee).amount;
             base = base.subtract(sold);
             quote = quote.add(received);
 
             Level previous = levels.isEmpty() ? null : levels.get(levels.size() - 1);
             BigDecimal breakEven = previous == null ? null
-                    : previous.quoteReceived().add(received).multiply(BigDecimal.ONE.subtract(p.makerFee()), MC)
-                            .divide(previous.baseSold().add(sold), MC);
-            levels.add(new Level(i + 1, targetRatio, trigger, sellPrice, immediate, sold, received, base, quote,
+                    : PriceCalculator.calculateBuyPriceExact(previous.quoteReceived().add(received),
+                            previous.baseSold().add(sold), p.makerFee()).price;
+            levels.add(new Level(i + 1, targetRatio, ratioPrice, sellPrice, sellTrigger, immediate, sold, received, base, quote,
                     LiquidationCalculator.debtRatio(p.debt(), true, base, quote, sellPrice),
                     liqIfUnfilled,
                     base.signum() > 0

@@ -7,6 +7,8 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
@@ -15,10 +17,12 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -59,6 +63,8 @@ public class SellDownGameTab extends VBox {
     final BiConsumer<SellDownGameTab, String> openTab;
     @Nullable SellDownPlanner.Params lastParams;
     @Nullable SellDownPlanner.Plan lastPlan;
+    /** Folder of the last saved/loaded game, shared by all game tabs. */
+    static @Nullable File lastDirectory;
 
     public SellDownGameTab(BiConsumer<SellDownGameTab, String> openTab) {
         this.openTab = openTab;
@@ -147,17 +153,18 @@ public class SellDownGameTab extends VBox {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.getColumns().add(column("#", level -> String.valueOf(level.number())));
         table.getColumns().add(column("Target ratio", level -> percent(level.targetRatio())));
-        table.getColumns().add(column("Sell trigger price", level -> formatAmount(level.sellPrice())
+        table.getColumns().add(column("Sell price", level -> formatAmount(level.sellPrice())
                 + (level.immediate() ? " (now)" : "")));
-        table.getColumns().add(column("Average buy at (N-1 + N)", level -> priceWithDrop(level.averageBuyPrice(),
-                level.sellPrice())));
-        table.getColumns().add(column("Average break-even", level -> level.averageBreakEven() == null ? NONE
-                : formatAmount(level.averageBreakEven())));
+        table.getColumns().add(column("Sell trigger price", level -> formatAmount(level.sellTriggerPrice())));
+        table.getColumns().add(column("Break-even price", level -> level.breakEvenPrice() == null ? NONE
+                : formatAmount(level.breakEvenPrice())));
+        table.getColumns().add(column("Break-even trigger price", level -> priceWithDrop(
+                level.breakEvenTriggerPrice(), level.sellPrice())));
         table.getColumns().add(column("BASE if break even", level -> {
             SellDownPlanner.BreakEven be = breakEven(level);
             return be == null ? NONE : formatAmount(be.base());
         }));
-        table.getColumns().add(column("Ratio hit at", level -> formatAmount(level.triggerPrice())));
+        table.getColumns().add(column("Ratio hit at", level -> formatAmount(level.ratioPrice())));
         table.getColumns().add(column("BASE sold", level -> formatAmount(level.baseSold())));
         table.getColumns().add(column("QUOTE received", level -> formatAmount(level.quoteReceived())));
         table.getColumns().add(column("BASE left", level -> formatAmount(level.baseLeft())));
@@ -210,28 +217,103 @@ public class SellDownGameTab extends VBox {
         if (be == null) {
             return;
         }
+        SellDownGameState current = state();
         SellDownGameTab game = new SellDownGameTab(openTab);
-        game.tickerPricePicker().selectFixedPrice(checkNotNull(tickerPricePicker).selectedSymbol(),
-                formatAmount(be.price().setScale(8, RoundingMode.HALF_UP)));
-        for (TextField[] fromTo : new TextField[][] {
-                { endRatioTextField, game.endRatioTextField },
-                { liquidationRatioTextField, game.liquidationRatioTextField },
-                { fillBufferTextField, game.fillBufferTextField },
-                { slippageTextField, game.slippageTextField },
-                { makerFeeTextField, game.makerFeeTextField },
-                { takerFeeTextField, game.takerFeeTextField } }) {
-            checkNotNull(fromTo[1]).setText(checkNotNull(fromTo[0]).getText());
-        }
-        checkNotNull(game.debtTextField).setText(formatAmount(be.debt()));
-        checkNotNull(game.baseTextField).setText(formatAmount(be.base().setScale(8, RoundingMode.DOWN)));
-        checkNotNull(game.quoteTextField).setText(formatAmount(be.quote().setScale(8, RoundingMode.DOWN)));
-        game.start();
-        String symbol = checkNotNull(tickerPricePicker).selectedSymbol();
+        // Start ratio left out: the new tab derives it from the new position
+        game.apply(new SellDownGameState(current.symbol(),
+                formatAmount(be.price().setScale(8, RoundingMode.HALF_UP)), formatAmount(be.debt()),
+                formatAmount(be.base().setScale(8, RoundingMode.DOWN)),
+                formatAmount(be.quote().setScale(8, RoundingMode.DOWN)), null, current.endRatio(),
+                current.liquidationRatio(), current.fillBuffer(), current.slippage(), current.makerFee(),
+                current.takerFee()));
+        String symbol = current.symbol();
         openTab.accept(game, "Sell-down" + (symbol == null ? "" : " " + symbol) + " (BE L" + be.fromLevel() + ")");
     }
 
-    TickerPricePicker tickerPricePicker() {
-        return checkNotNull(tickerPricePicker);
+    /** Current inputs as entered. */
+    SellDownGameState state() {
+        TickerPricePicker picker = checkNotNull(tickerPricePicker);
+        return new SellDownGameState(picker.selectedSymbol(), picker.priceTextField().getText(),
+                text(debtTextField), text(baseTextField), text(quoteTextField), text(startRatioTextField),
+                text(endRatioTextField), text(liquidationRatioTextField), text(fillBufferTextField),
+                text(slippageTextField), text(makerFeeTextField), text(takerFeeTextField));
+    }
+
+    /** Fills the inputs from {@code state} (price fixed, streaming off) and recalculates. Missing values are kept. */
+    void apply(SellDownGameState state) {
+        // Pair first: selecting it overwrites the fees, and the position overwrites the start ratio
+        checkNotNull(tickerPricePicker).selectFixedPrice(state.symbol(),
+                state.price() == null ? checkNotNull(tickerPricePicker).priceTextField().getText() : state.price());
+        setText(endRatioTextField, state.endRatio());
+        setText(liquidationRatioTextField, state.liquidationRatio());
+        setText(fillBufferTextField, state.fillBuffer());
+        setText(slippageTextField, state.slippage());
+        setText(makerFeeTextField, state.makerFee());
+        setText(takerFeeTextField, state.takerFee());
+        setText(debtTextField, state.debt());
+        setText(baseTextField, state.base());
+        setText(quoteTextField, state.quote());
+        setText(startRatioTextField, state.startRatio());
+        start();
+    }
+
+    static @Nullable String text(@Nullable TextField field) {
+        return checkNotNull(field).getText();
+    }
+
+    static void setText(@Nullable TextField field, @Nullable String value) {
+        if (value != null) {
+            checkNotNull(field).setText(value);
+        }
+    }
+
+    FileChooser gameFileChooser(String title) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(title);
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Sell-down Game (" +
+                SellDownGameState.EXTENSION + ")", SellDownGameState.EXTENSION));
+        File directory = lastDirectory;
+        if (directory != null && directory.isDirectory()) {
+            chooser.setInitialDirectory(directory);
+        }
+        return chooser;
+    }
+
+    @FXML
+    public void save() {
+        FileChooser chooser = gameFileChooser("Save Sell-down Game");
+        String symbol = checkNotNull(tickerPricePicker).selectedSymbol();
+        chooser.setInitialFileName((symbol == null ? "game" : symbol) + ".sdg.yaml");
+        File file = chooser.showSaveDialog(getScene().getWindow());
+        if (file == null) {
+            return;
+        }
+        if (!file.getName().endsWith(".sdg.yaml")) {
+            file = new File(file.getParentFile(), file.getName() + ".sdg.yaml");
+        }
+        try {
+            state().write(file);
+            lastDirectory = file.getParentFile();
+        } catch (IOException | RuntimeException e) {
+            LOGGER.error("Failed to save game to {}", file, e);
+            new Alert(Alert.AlertType.ERROR, "Failed to save game: " + e, ButtonType.OK).showAndWait();
+        }
+    }
+
+    @FXML
+    public void load() {
+        File file = gameFileChooser("Load Sell-down Game").showOpenDialog(getScene().getWindow());
+        if (file == null) {
+            return;
+        }
+        try {
+            SellDownGameState state = SellDownGameState.read(file);
+            lastDirectory = file.getParentFile();
+            apply(state);
+        } catch (IOException | RuntimeException e) {
+            LOGGER.error("Failed to load game from {}", file, e);
+            new Alert(Alert.AlertType.ERROR, "Failed to load game: " + e, ButtonType.OK).showAndWait();
+        }
     }
 
     /** A level is dangerous if the position would already be liquidated at its sell price should it not fill. */

@@ -52,7 +52,7 @@ class SellDownPlannerTest {
         SellDownPlanner.Level third = plan.levels().get(2);
         SellDownPlanner.BreakEven be = SellDownPlanner.breakEven(p, plan, third);
         assertNotNull(be);
-        BigDecimal buyPrice = third.averageBuyPrice();
+        BigDecimal buyPrice = third.breakEvenPrice();
         assertNotNull(buyPrice);
         assertClose(buyPrice.toPlainString(), be.price());
         assertClose("800", be.debt());
@@ -61,26 +61,26 @@ class SellDownPlannerTest {
                 .add(third.quoteReceived());
         assertClose(third.baseLeft().add(spent.multiply(bd("0.999")).divide(buyPrice,
                 java.math.MathContext.DECIMAL128)).toPlainString(), be.base());
-        // Levels 1-2 sold higher than the 2-level averaging price, so more BASE comes back than was sold
+        // Level 1 sold higher than level 3's break-even price, so more BASE comes back than was sold
         assertTrue(be.base().compareTo(bd("10")) > 0);
     }
 
     @Test
-    void averagingBuyRecoversBothChunks() {
+    void breakEvenRecoversBothChunksTriggeredOneBufferBelow() {
         SellDownPlanner.Plan plan = SellDownPlanner.plan(params("0.002", "0.01"));
         SellDownPlanner.Level first = plan.levels().get(0);
         SellDownPlanner.Level second = plan.levels().get(1);
-        assertNull(first.averageBreakEven());
-        assertNull(first.averageBuyPrice());
-        BigDecimal breakEven = second.averageBreakEven();
-        BigDecimal buy = second.averageBuyPrice();
+        assertNull(first.breakEvenPrice());
+        assertNull(first.breakEvenTriggerPrice());
+        BigDecimal breakEven = second.breakEvenPrice();
+        BigDecimal buy = second.breakEvenTriggerPrice();
         assertNotNull(breakEven);
         assertNotNull(buy);
         // Spending both levels' QUOTE at break-even (1% buy fee) recovers exactly both chunks
         BigDecimal quote = first.quoteReceived().add(second.quoteReceived()).multiply(bd("0.99"));
         assertClose("1", quote.divide(breakEven, java.math.MathContext.DECIMAL128));
         assertClose(breakEven.multiply(bd("0.998")).toPlainString(), buy);
-        assertTrue(buy.compareTo(second.sellPrice()) > 0 && breakEven.compareTo(first.sellPrice()) < 0);
+        assertTrue(buy.compareTo(second.sellTriggerPrice()) > 0 && breakEven.compareTo(first.sellPrice()) < 0);
     }
 
     @Test
@@ -89,14 +89,14 @@ class SellDownPlannerTest {
         assertEquals(2, plan.levels().size());
 
         SellDownPlanner.Level first = plan.levels().get(0);
-        assertClose("941.17647059", first.triggerPrice()); // 800 / 0.85
+        assertClose("941.17647059", first.ratioPrice()); // 800 / 0.85
         assertClose("0.5", first.baseSold());
         assertClose("0.85", checkedRatio(first));
         assertFalse(first.immediate());
 
         SellDownPlanner.Level second = plan.levels().get(1);
         // (800/0.9 - 470.588235) / 0.5
-        assertClose("836.60130719", second.triggerPrice());
+        assertClose("836.60130719", second.ratioPrice());
         assertClose("0", second.baseLeft());
         assertNull(second.liqPriceAfter());
 
@@ -105,10 +105,12 @@ class SellDownPlannerTest {
     }
 
     @Test
-    void bufferSellsAheadOfTrigger() {
+    void sellsAtRatioPriceTriggeredOneBufferAbove() {
         SellDownPlanner.Level first = SellDownPlanner.plan(params("0.002", "0")).levels().get(0);
-        assertClose(first.triggerPrice().multiply(bd("1.002")).toPlainString(), first.sellPrice());
-        assertTrue(checkedRatio(first).compareTo(bd("0.85")) < 0);
+        assertFalse(first.immediate());
+        assertClose(first.ratioPrice().toPlainString(), first.sellPrice());
+        assertClose(first.sellPrice().multiply(bd("1.002")).toPlainString(), first.sellTriggerPrice());
+        assertClose("0.85", checkedRatio(first));
     }
 
     @Test

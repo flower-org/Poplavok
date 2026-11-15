@@ -56,6 +56,8 @@
     </GridPane>
     <HBox alignment="CENTER_LEFT" spacing="10.0">
         <Button defaultButton="true" mnemonicParsing="false" onAction="#start" text="Start" />
+        <Button mnemonicParsing="false" onAction="#save" text="Save…" />
+        <Button mnemonicParsing="false" onAction="#load" text="Load…" />
         <Label fx:id="startStateLabel" wrapText="true" HBox.hgrow="ALWAYS" />
     </HBox>
     <Separator />
