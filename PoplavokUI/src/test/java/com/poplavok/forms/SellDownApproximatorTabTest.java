@@ -35,11 +35,21 @@ class SellDownApproximatorTabTest {
     }
 
     @Test
-    void cantContinueWhenBuybackLandsAtOrAboveEndRatio() {
+    void cantContinueWhenBreakEvenLandsAtOrAboveEndRatio() {
         // Debt 945 against 10 BASE at 100: 94.5%
         SellDownPlanner.BreakEven be = new SellDownPlanner.BreakEven(9, new BigDecimal("100"), new BigDecimal("945"),
                 BigDecimal.TEN, BigDecimal.ZERO);
         assertTrue(SellDownApproximatorTab.cantContinue(be, new BigDecimal("0.945")));
         assertFalse(SellDownApproximatorTab.cantContinue(be, new BigDecimal("0.946")));
+    }
+
+    @Test
+    void breakEvenRatioAndLiquidationPrice() {
+        // Debt 900 against 10 BASE at 100: 90%; 95% is hit at 900 / 0.95 / 10 = 94.7368...
+        SellDownPlanner.BreakEven be = new SellDownPlanner.BreakEven(5, new BigDecimal("100"), new BigDecimal("900"),
+                BigDecimal.TEN, BigDecimal.ZERO);
+        assertEquals("90.00%", SellDownApproximatorTab.percent(SellDownApproximatorTab.breakEvenRatio(be)));
+        BigDecimal liq = SellDownApproximatorTab.breakEvenLiqPrice(be, new BigDecimal("0.95"));
+        assertEquals(new BigDecimal("94.7368"), liq == null ? null : liq.setScale(4, java.math.RoundingMode.DOWN));
     }
 }

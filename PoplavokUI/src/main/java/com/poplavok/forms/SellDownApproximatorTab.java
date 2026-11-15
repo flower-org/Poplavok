@@ -45,6 +45,8 @@ public class SellDownApproximatorTab extends VBox {
     static final String CANT_CONTINUE_STYLE = "-fx-background-color: #ffd6d6; -fx-text-background-color: black;";
     static final String CANT_CONTINUE_SELECTED_STYLE =
             "-fx-background-color: #ff8a8a; -fx-text-background-color: black;";
+    static final String ACCENTED_COLUMN_STYLE = "-fx-font-weight: bold; -fx-border-color: transparent #2f6fd0;"
+            + " -fx-border-width: 0 2 0 2;";
     static final BigDecimal DEFAULT_START_PERCENT = new BigDecimal("85");
 
     @FXML @Nullable TickerPricePicker tickerPricePicker;
@@ -177,11 +179,20 @@ public class SellDownApproximatorTab extends VBox {
     void initTable() {
         TableView<SellDownPlanner.Level> table = checkNotNull(levelsTable);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.getColumns().add(column("#", level -> String.valueOf(level.number())));
+        TableColumn<SellDownPlanner.Level, String> numberColumn = column("#", level -> String.valueOf(level.number()));
+        numberColumn.setPrefWidth(40);
+        numberColumn.setMaxWidth(40);
+        table.getColumns().add(numberColumn);
         table.getColumns().add(column("Target ratio", level -> percent(level.targetRatio())));
+        table.getColumns().add(column("Ratio after", level -> percent(level.ratioAfter())));
+        table.getColumns().add(column("Ratio hit at", level -> formatAmount(level.ratioPrice())));
         table.getColumns().add(column("Sell price", level -> formatAmount(level.sellPrice())
                 + (level.immediate() ? " (now)" : "")));
         table.getColumns().add(column("Sell trigger price", level -> formatAmount(level.sellTriggerPrice())));
+        table.getColumns().add(column("BASE sold", level -> formatAmount(level.baseSold())));
+        table.getColumns().add(column("QUOTE received", level -> formatAmount(level.quoteReceived())));
+        table.getColumns().add(column("BASE left", level -> formatAmount(level.baseLeft())));
+        table.getColumns().add(column("QUOTE after", level -> formatAmount(level.quoteAfter())));
         table.getColumns().add(column("Break-even price", level -> level.breakEvenPrice() == null ? NONE
                 : formatAmount(level.breakEvenPrice())));
         table.getColumns().add(column("Break-even trigger price", level -> priceWithDrop(
@@ -190,12 +201,16 @@ public class SellDownApproximatorTab extends VBox {
             SellDownPlanner.BreakEven be = breakEven(level);
             return be == null ? NONE : formatAmount(be.base());
         }));
-        table.getColumns().add(column("Ratio hit at", level -> formatAmount(level.ratioPrice())));
-        table.getColumns().add(column("BASE sold", level -> formatAmount(level.baseSold())));
-        table.getColumns().add(column("QUOTE received", level -> formatAmount(level.quoteReceived())));
-        table.getColumns().add(column("BASE left", level -> formatAmount(level.baseLeft())));
-        table.getColumns().add(column("QUOTE after", level -> formatAmount(level.quoteAfter())));
-        table.getColumns().add(column("Ratio after", level -> percent(level.ratioAfter())));
+        table.getColumns().add(accented(column("Ratio if break even", level -> {
+            SellDownPlanner.BreakEven be = breakEven(level);
+            return be == null ? NONE : percent(breakEvenRatio(be));
+        })));
+        table.getColumns().add(accented(column("Liq. if break even", level -> {
+            SellDownPlanner.BreakEven be = breakEven(level);
+            SellDownPlanner.Params params = lastParams;
+            return be == null || params == null ? NONE
+                    : priceWithDrop(breakEvenLiqPrice(be, params.liquidationRatio()), be.price());
+        })));
         table.getColumns().add(column("Liq. if unfilled", level -> priceWithDrop(level.liqPriceIfUnfilled(),
                 level.sellPrice())));
         table.getColumns().add(column("Liq. after", level -> priceWithDrop(level.liqPriceAfter(), level.sellPrice())));
@@ -238,6 +253,12 @@ public class SellDownApproximatorTab extends VBox {
         TableColumn<SellDownPlanner.Level, String> column = new TableColumn<>(title);
         column.setSortable(false);
         column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
+        return column;
+    }
+
+    /** Bold, framed in blue; cell backgrounds are untouched, so row colours still show through. */
+    static TableColumn<SellDownPlanner.Level, String> accented(TableColumn<SellDownPlanner.Level, String> column) {
+        column.setStyle(ACCENTED_COLUMN_STYLE);
         return column;
     }
 
@@ -374,7 +395,7 @@ public class SellDownApproximatorTab extends VBox {
         }
     }
 
-    /** Red: can't continue after buyback; orange: dangerous. Selected rows get a stronger shade. */
+    /** Red: can't continue after break even; orange: dangerous. Selected rows get a stronger shade. */
     String rowStyle(SellDownPlanner.Level level, boolean selected) {
         if (cantContinue(level)) {
             return selected ? CANT_CONTINUE_SELECTED_STYLE : CANT_CONTINUE_STYLE;
@@ -392,12 +413,22 @@ public class SellDownApproximatorTab extends VBox {
     }
 
     /**
-     * Buying back is possible, but the position after it is already at/above the end ratio, so the sell-down can't
+     * Breaking even is possible, but the position after it is already at/above the end ratio, so the sell-down can't
      * continue from there.
      */
     static boolean cantContinue(SellDownPlanner.BreakEven be, BigDecimal endRatio) {
-        BigDecimal ratio = LiquidationCalculator.debtRatio(be.debt(), true, be.base(), be.quote(), be.price());
+        BigDecimal ratio = breakEvenRatio(be);
         return ratio != null && ratio.compareTo(endRatio) >= 0;
+    }
+
+    /** Debt ratio right after breaking even, at the break-even price. */
+    static @Nullable BigDecimal breakEvenRatio(SellDownPlanner.BreakEven be) {
+        return LiquidationCalculator.debtRatio(be.debt(), true, be.base(), be.quote(), be.price());
+    }
+
+    /** Liquidation price of the position after breaking even. */
+    static @Nullable BigDecimal breakEvenLiqPrice(SellDownPlanner.BreakEven be, BigDecimal liquidationRatio) {
+        return LiquidationCalculator.priceAtDebtRatio(be.debt(), true, be.base(), be.quote(), liquidationRatio);
     }
 
     /** A level is dangerous if the position would already be liquidated at its sell price should it not fill. */
@@ -437,7 +468,7 @@ public class SellDownApproximatorTab extends VBox {
             table.getItems().setAll(plan.levels());
             long cantContinue = plan.levels().stream().filter(this::cantContinue).count();
             summary.setText(summarize(plan, params) + (cantContinue > 0 ? " " + cantContinue
-                    + " level(s) in red: buyback possible, but the sell-down can't continue from there." : ""));
+                    + " level(s) in red: break even possible, but the sell-down can't continue from there." : ""));
         } catch (IllegalArgumentException e) {
             startState.setText(String.valueOf(e.getMessage()));
             summary.setText("");
