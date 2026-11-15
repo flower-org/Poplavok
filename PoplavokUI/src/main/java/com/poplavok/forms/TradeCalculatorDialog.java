@@ -114,11 +114,11 @@ public class TradeCalculatorDialog extends VBox {
         checkNotNull(commissionQuoteLabel).setText("Commission (" + quote + "):");
         checkNotNull(commissionBaseLabel).setText("Commission (" + base + " equiv.):");
 
-        BigDecimal price = SellDownGameTab.parse(picker.priceTextField());
+        BigDecimal price = SellDownApproximatorTab.parse(picker.priceTextField());
         TextField inputField = checkNotNull(amountIsGive ? giveTextField : getTextField);
         TextField outputField = checkNotNull(amountIsGive ? getTextField : giveTextField);
-        BigDecimal amount = SellDownGameTab.parse(inputField);
-        BigDecimal fee = SellDownGameTab.parsePercent(feeTextField);
+        BigDecimal amount = SellDownApproximatorTab.parse(inputField);
+        BigDecimal fee = SellDownApproximatorTab.parsePercent(feeTextField);
         if (price.signum() <= 0 || amount.signum() <= 0) {
             clearResults(outputField, "Enter a price and what you give or get.");
             return;

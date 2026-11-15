@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Sell-down game for a long margin position (debt in QUOTE): as the price falls, the remaining BASE is sold
+ * Sell-down approximator for a long margin position (debt in QUOTE): as the price falls, the remaining BASE is sold
  * in equal chunks at debt ratio levels spread evenly from {@code startRatio} to {@code endRatio}, so the position
  * ends up all QUOTE before reaching the liquidation ratio.
  * <p>

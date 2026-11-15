@@ -110,8 +110,8 @@ public class MainForm {
                     for (Tab removed : change.getRemoved()) {
                         if (removed.getContent() instanceof PoplavokTab poplavokTab) {
                             poplavokTab.dispose();
-                        } else if (removed.getContent() instanceof SellDownGameTab sellDownGameTab) {
-                            sellDownGameTab.dispose();
+                        } else if (removed.getContent() instanceof SellDownApproximatorTab sellDownApproximatorTab) {
+                            sellDownApproximatorTab.dispose();
                         }
                     }
                 }
@@ -339,13 +339,13 @@ public class MainForm {
         stage.setMinHeight(stage.getHeight());
     }
 
-    public void showSellDownGame() {
+    public void showSellDownApproximator() {
         // A new tab each time so several scenarios can be compared
-        addSellDownGameTab(new SellDownGameTab(this::addSellDownGameTab), "Sell-down Game");
+        addSellDownApproximatorTab(new SellDownApproximatorTab(this::addSellDownApproximatorTab), "Sell-down Approximator");
     }
 
-    void addSellDownGameTab(SellDownGameTab game, String title) {
-        final Tab tab = new Tab(title, game);
+    void addSellDownApproximatorTab(SellDownApproximatorTab approximator, String title) {
+        final Tab tab = new Tab(title, approximator);
         tab.setClosable(true);
 
         addTab(tab);

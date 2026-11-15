@@ -33,9 +33,9 @@ import static com.flower.fxutils.JavaFxUtils.createDecimalTextFormatter;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.poplavok.data.utils.BigDecimalUtil.formatAmount;
 
-/** Sell-down game: plans equal BASE chunk sells at debt ratio levels so a long never gets liquidated. */
-public class SellDownGameTab extends VBox {
-    static final Logger LOGGER = LoggerFactory.getLogger(SellDownGameTab.class);
+/** Sell-down approximator: plans equal BASE chunk sells at debt ratio levels so a long never gets liquidated. */
+public class SellDownApproximatorTab extends VBox {
+    static final Logger LOGGER = LoggerFactory.getLogger(SellDownApproximatorTab.class);
     static final String NONE = "—";
     static final String DANGER_STYLE = "-fx-background-color: #ffd6d6;";
     static final BigDecimal DEFAULT_START_PERCENT = new BigDecimal("85");
@@ -59,16 +59,16 @@ public class SellDownGameTab extends VBox {
     @FXML @Nullable TableView<SellDownPlanner.Level> levelsTable;
     @FXML @Nullable Label summaryLabel;
 
-    /** Opens a new game tab (content, title); used by "Break even from here". */
-    final BiConsumer<SellDownGameTab, String> openTab;
+    /** Opens a new approximator tab (content, title); used by "Break even from here". */
+    final BiConsumer<SellDownApproximatorTab, String> openTab;
     @Nullable SellDownPlanner.Params lastParams;
     @Nullable SellDownPlanner.Plan lastPlan;
-    /** Folder of the last saved/loaded game, shared by all game tabs. */
+    /** Folder of the last saved/loaded approximation, shared by all approximator tabs. */
     static @Nullable File lastDirectory;
 
-    public SellDownGameTab(BiConsumer<SellDownGameTab, String> openTab) {
+    public SellDownApproximatorTab(BiConsumer<SellDownApproximatorTab, String> openTab) {
         this.openTab = openTab;
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("SellDownGameTab.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("SellDownApproximatorTab.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
         try {
@@ -211,36 +211,36 @@ public class SellDownGameTab extends VBox {
         return params == null || plan == null ? null : SellDownPlanner.breakEven(params, plan, level);
     }
 
-    /** New game tab starting from the position after breaking even at {@code level}, with the same settings. */
+    /** New approximator tab starting from the position after breaking even at {@code level}, with the same settings. */
     void openBreakEven(SellDownPlanner.Level level) {
         SellDownPlanner.BreakEven be = breakEven(level);
         if (be == null) {
             return;
         }
-        SellDownGameState current = state();
-        SellDownGameTab game = new SellDownGameTab(openTab);
+        SellDownApproximatorState current = state();
+        SellDownApproximatorTab approximator = new SellDownApproximatorTab(openTab);
         // Start ratio left out: the new tab derives it from the new position
-        game.apply(new SellDownGameState(current.symbol(),
+        approximator.apply(new SellDownApproximatorState(current.symbol(),
                 formatAmount(be.price().setScale(8, RoundingMode.HALF_UP)), formatAmount(be.debt()),
                 formatAmount(be.base().setScale(8, RoundingMode.DOWN)),
                 formatAmount(be.quote().setScale(8, RoundingMode.DOWN)), null, current.endRatio(),
                 current.liquidationRatio(), current.fillBuffer(), current.slippage(), current.makerFee(),
                 current.takerFee()));
         String symbol = current.symbol();
-        openTab.accept(game, "Sell-down" + (symbol == null ? "" : " " + symbol) + " (BE L" + be.fromLevel() + ")");
+        openTab.accept(approximator, "Sell-down" + (symbol == null ? "" : " " + symbol) + " (BE L" + be.fromLevel() + ")");
     }
 
     /** Current inputs as entered. */
-    SellDownGameState state() {
+    SellDownApproximatorState state() {
         TickerPricePicker picker = checkNotNull(tickerPricePicker);
-        return new SellDownGameState(picker.selectedSymbol(), picker.priceTextField().getText(),
+        return new SellDownApproximatorState(picker.selectedSymbol(), picker.priceTextField().getText(),
                 text(debtTextField), text(baseTextField), text(quoteTextField), text(startRatioTextField),
                 text(endRatioTextField), text(liquidationRatioTextField), text(fillBufferTextField),
                 text(slippageTextField), text(makerFeeTextField), text(takerFeeTextField));
     }
 
     /** Fills the inputs from {@code state} (price fixed, streaming off) and recalculates. Missing values are kept. */
-    void apply(SellDownGameState state) {
+    void apply(SellDownApproximatorState state) {
         // Pair first: selecting it overwrites the fees, and the position overwrites the start ratio
         checkNotNull(tickerPricePicker).selectFixedPrice(state.symbol(),
                 state.price() == null ? checkNotNull(tickerPricePicker).priceTextField().getText() : state.price());
@@ -267,11 +267,11 @@ public class SellDownGameTab extends VBox {
         }
     }
 
-    FileChooser gameFileChooser(String title) {
+    FileChooser fileChooser(String title) {
         FileChooser chooser = new FileChooser();
         chooser.setTitle(title);
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Sell-down Game (" +
-                SellDownGameState.EXTENSION + ")", SellDownGameState.EXTENSION));
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Sell-down Approximator (" +
+                SellDownApproximatorState.EXTENSION + ")", SellDownApproximatorState.EXTENSION));
         File directory = lastDirectory;
         if (directory != null && directory.isDirectory()) {
             chooser.setInitialDirectory(directory);
@@ -281,38 +281,38 @@ public class SellDownGameTab extends VBox {
 
     @FXML
     public void save() {
-        FileChooser chooser = gameFileChooser("Save Sell-down Game");
+        FileChooser chooser = fileChooser("Save Sell-down Approximator");
         String symbol = checkNotNull(tickerPricePicker).selectedSymbol();
-        chooser.setInitialFileName((symbol == null ? "game" : symbol) + ".sdg.yaml");
+        chooser.setInitialFileName((symbol == null ? "approximation" : symbol) + ".sd");
         File file = chooser.showSaveDialog(getScene().getWindow());
         if (file == null) {
             return;
         }
-        if (!file.getName().endsWith(".sdg.yaml")) {
-            file = new File(file.getParentFile(), file.getName() + ".sdg.yaml");
+        if (!file.getName().endsWith(".sd")) {
+            file = new File(file.getParentFile(), file.getName() + ".sd");
         }
         try {
             state().write(file);
             lastDirectory = file.getParentFile();
         } catch (IOException | RuntimeException e) {
-            LOGGER.error("Failed to save game to {}", file, e);
-            new Alert(Alert.AlertType.ERROR, "Failed to save game: " + e, ButtonType.OK).showAndWait();
+            LOGGER.error("Failed to save approximation to {}", file, e);
+            new Alert(Alert.AlertType.ERROR, "Failed to save approximation: " + e, ButtonType.OK).showAndWait();
         }
     }
 
     @FXML
     public void load() {
-        File file = gameFileChooser("Load Sell-down Game").showOpenDialog(getScene().getWindow());
+        File file = fileChooser("Load Sell-down Approximator").showOpenDialog(getScene().getWindow());
         if (file == null) {
             return;
         }
         try {
-            SellDownGameState state = SellDownGameState.read(file);
+            SellDownApproximatorState state = SellDownApproximatorState.read(file);
             lastDirectory = file.getParentFile();
             apply(state);
         } catch (IOException | RuntimeException e) {
-            LOGGER.error("Failed to load game from {}", file, e);
-            new Alert(Alert.AlertType.ERROR, "Failed to load game: " + e, ButtonType.OK).showAndWait();
+            LOGGER.error("Failed to load approximation from {}", file, e);
+            new Alert(Alert.AlertType.ERROR, "Failed to load approximation: " + e, ButtonType.OK).showAndWait();
         }
     }
 
@@ -379,7 +379,7 @@ public class SellDownGameTab extends VBox {
             text.append("If the last chunk doesn't fill, liquidation at ")
                     .append(priceWithDrop(last.liqPriceIfUnfilled(), last.sellPrice())).append('.');
         }
-        long dangerous = plan.levels().stream().filter(SellDownGameTab::isDangerous).count();
+        long dangerous = plan.levels().stream().filter(SellDownApproximatorTab::isDangerous).count();
         if (dangerous > 0) {
             text.append(" ").append(dangerous).append(" level(s) in red: missing that fill means liquidation.");
         }
