@@ -17,7 +17,7 @@ class SellDownApproximatorStateTest {
     @Test
     void roundTripsThroughYaml() throws Exception {
         SellDownApproximatorState state = new SellDownApproximatorState("LTC-USDT", "44.79", "19488.01257933", "363.693",
-                "5788.11331399", "88.27", "94.5", "95", "0.2", "0.1", "0.1", "0.1");
+                "5788.11331399", "88.27", "94.5", "95", "0.2", "0.1", "0.1", "0.1", true, true);
         File file = folder.resolve("approximation.sd").toFile();
         state.write(file);
         assertEquals(state, SellDownApproximatorState.read(file));
@@ -31,5 +31,7 @@ class SellDownApproximatorStateTest {
         assertEquals("LTC-USDT", state.symbol());
         assertEquals("100", state.debt());
         assertNull(state.startRatio());
+        assertNull(state.startRatioCurrent());
+        assertNull(state.streamPrice());
     }
 }

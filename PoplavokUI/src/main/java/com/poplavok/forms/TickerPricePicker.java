@@ -100,6 +100,15 @@ public class TickerPricePicker extends HBox {
         return priceTextField;
     }
 
+    public boolean isStreamSelected() {
+        return streamCheckBox.isSelected();
+    }
+
+    /** Checks/unchecks "stream"; streaming only runs while a pair is selected. */
+    public void setStreamSelected(boolean stream) {
+        streamCheckBox.setSelected(stream);
+    }
+
     public @Nullable String selectedSymbol() {
         MarketTicker ticker = tickerComboBox.getValue();
         return ticker == null ? null : ticker.getSymbol();

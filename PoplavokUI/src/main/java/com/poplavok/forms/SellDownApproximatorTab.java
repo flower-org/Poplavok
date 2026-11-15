@@ -9,6 +9,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
@@ -48,6 +49,7 @@ public class SellDownApproximatorTab extends VBox {
     @FXML @Nullable TextField baseTextField;
     @FXML @Nullable TextField quoteTextField;
     @FXML @Nullable TextField startRatioTextField;
+    @FXML @Nullable CheckBox startRatioCurrentCheckBox;
     @FXML @Nullable TextField endRatioTextField;
     @FXML @Nullable TextField liquidationRatioTextField;
     @FXML @Nullable TextField levelsTextField;
@@ -89,14 +91,32 @@ public class SellDownApproximatorTab extends VBox {
                     updateCurrencyLabels();
                     updateFee(newValue);
                 });
+        checkNotNull(startRatioCurrentCheckBox).selectedProperty()
+                .addListener((observable, oldValue, newValue) -> updateStartRatioMode());
         for (TextField input : new TextField[] { checkNotNull(tickerPricePicker).priceTextField(),
                 checkNotNull(debtTextField), checkNotNull(baseTextField), checkNotNull(quoteTextField) }) {
-            input.textProperty().addListener((observable, oldValue, newValue) -> updateStartRatio());
+            input.textProperty().addListener((observable, oldValue, newValue) -> {
+                if (checkNotNull(startRatioCurrentCheckBox).isSelected()) {
+                    updateStartRatio();
+                }
+            });
         }
+        updateStartRatioMode();
         initTable();
     }
 
-    /** Start debt ratio follows the current debt ratio (rounded up), but never below the default 85%. */
+    /** While "current" is checked the start debt ratio follows the current debt ratio and is read only. */
+    void updateStartRatioMode() {
+        boolean current = checkNotNull(startRatioCurrentCheckBox).isSelected();
+        TextField field = checkNotNull(startRatioTextField);
+        field.setEditable(!current);
+        field.setStyle(current ? TickerPricePicker.READ_ONLY_STYLE : "");
+        if (current) {
+            updateStartRatio();
+        }
+    }
+
+    /** Start debt ratio = current debt ratio, rounded up. */
     void updateStartRatio() {
         BigDecimal price = parse(checkNotNull(tickerPricePicker).priceTextField());
         BigDecimal debt = parse(debtTextField);
@@ -106,12 +126,10 @@ public class SellDownApproximatorTab extends VBox {
             return;
         }
         BigDecimal ratio = LiquidationCalculator.debtRatio(debt, true, base, quote, price);
-        if (ratio == null) {
-            return;
+        if (ratio != null) {
+            checkNotNull(startRatioTextField).setText(
+                    ratio.movePointRight(2).setScale(2, RoundingMode.CEILING).stripTrailingZeros().toPlainString());
         }
-        BigDecimal currentPercent = ratio.movePointRight(2).setScale(2, RoundingMode.CEILING);
-        checkNotNull(startRatioTextField).setText(
-                currentPercent.max(DEFAULT_START_PERCENT).stripTrailingZeros().toPlainString());
     }
 
     void updateCurrencyLabels() {
@@ -219,13 +237,12 @@ public class SellDownApproximatorTab extends VBox {
         }
         SellDownApproximatorState current = state();
         SellDownApproximatorTab approximator = new SellDownApproximatorTab(openTab);
-        // Start ratio left out: the new tab derives it from the new position
         approximator.apply(new SellDownApproximatorState(current.symbol(),
                 formatAmount(be.price().setScale(8, RoundingMode.HALF_UP)), formatAmount(be.debt()),
                 formatAmount(be.base().setScale(8, RoundingMode.DOWN)),
-                formatAmount(be.quote().setScale(8, RoundingMode.DOWN)), null, current.endRatio(),
+                formatAmount(be.quote().setScale(8, RoundingMode.DOWN)), current.startRatio(), current.endRatio(),
                 current.liquidationRatio(), current.fillBuffer(), current.slippage(), current.makerFee(),
-                current.takerFee()));
+                current.takerFee(), current.startRatioCurrent(), false));
         String symbol = current.symbol();
         openTab.accept(approximator, "Sell-down" + (symbol == null ? "" : " " + symbol) + " (BE L" + be.fromLevel() + ")");
     }
@@ -236,12 +253,16 @@ public class SellDownApproximatorTab extends VBox {
         return new SellDownApproximatorState(picker.selectedSymbol(), picker.priceTextField().getText(),
                 text(debtTextField), text(baseTextField), text(quoteTextField), text(startRatioTextField),
                 text(endRatioTextField), text(liquidationRatioTextField), text(fillBufferTextField),
-                text(slippageTextField), text(makerFeeTextField), text(takerFeeTextField));
+                text(slippageTextField), text(makerFeeTextField), text(takerFeeTextField),
+                checkNotNull(startRatioCurrentCheckBox).isSelected(), picker.isStreamSelected());
     }
 
-    /** Fills the inputs from {@code state} (price fixed, streaming off) and recalculates. Missing values are kept. */
+    /**
+     * Fills the inputs from {@code state} and recalculates. The saved price stays fixed unless the state streams it.
+     * Missing values are kept.
+     */
     void apply(SellDownApproximatorState state) {
-        // Pair first: selecting it overwrites the fees, and the position overwrites the start ratio
+        // Pair first: selecting it overwrites the fees
         checkNotNull(tickerPricePicker).selectFixedPrice(state.symbol(),
                 state.price() == null ? checkNotNull(tickerPricePicker).priceTextField().getText() : state.price());
         setText(endRatioTextField, state.endRatio());
@@ -254,7 +275,15 @@ public class SellDownApproximatorTab extends VBox {
         setText(baseTextField, state.base());
         setText(quoteTextField, state.quote());
         setText(startRatioTextField, state.startRatio());
-        start();
+        Boolean startRatioCurrent = state.startRatioCurrent();
+        if (startRatioCurrent != null) {
+            checkNotNull(startRatioCurrentCheckBox).setSelected(startRatioCurrent);
+        }
+        if (Boolean.TRUE.equals(state.streamPrice())) {
+            checkNotNull(tickerPricePicker).setStreamSelected(true);
+        }
+        updateStartRatioMode();
+        calculate();
     }
 
     static @Nullable String text(@Nullable TextField field) {
@@ -323,7 +352,7 @@ public class SellDownApproximatorTab extends VBox {
     }
 
     @FXML
-    public void start() {
+    public void calculate() {
         TableView<SellDownPlanner.Level> table = checkNotNull(levelsTable);
         Label summary = checkNotNull(summaryLabel);
         Label startState = checkNotNull(startStateLabel);
@@ -348,8 +377,7 @@ public class SellDownApproximatorTab extends VBox {
                     params.quote(), params.price());
             BigDecimal startLiq = LiquidationCalculator.priceAtDebtRatio(params.debt(), true, params.base(),
                     params.quote(), params.liquidationRatio());
-            startState.setText("Now: debt ratio " + percent(startRatio) + ", liquidation at "
-                    + priceWithDrop(startLiq, params.price()));
+            startState.setText(startState(startRatio, startLiq, params.price()));
 
             table.getItems().setAll(plan.levels());
             summary.setText(summarize(plan, params));
@@ -357,6 +385,14 @@ public class SellDownApproximatorTab extends VBox {
             startState.setText(String.valueOf(e.getMessage()));
             summary.setText("");
         }
+    }
+
+    /** Flags a debt ratio still below the designed 85% start; the start ratio itself is never changed. */
+    static String startState(@Nullable BigDecimal ratio, @Nullable BigDecimal liquidationPrice, BigDecimal price) {
+        String below = ratio != null
+                && ratio.movePointRight(2).setScale(2, RoundingMode.CEILING).compareTo(DEFAULT_START_PERCENT) < 0
+                ? " (< " + DEFAULT_START_PERCENT.toPlainString() + "%)" : "";
+        return "Debt ratio: " + percent(ratio) + below + ", liquidation at " + priceWithDrop(liquidationPrice, price);
     }
 
     static String summarize(SellDownPlanner.Plan plan, SellDownPlanner.Params params) {
