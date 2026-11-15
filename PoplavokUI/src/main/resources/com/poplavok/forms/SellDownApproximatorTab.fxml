@@ -17,6 +17,12 @@
     <padding>
         <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
     </padding>
+    <HBox alignment="CENTER_LEFT" spacing="10.0">
+        <Button defaultButton="true" mnemonicParsing="false" onAction="#calculate" text="Calculate" />
+        <Button mnemonicParsing="false" onAction="#save" text="Save…" />
+        <Button mnemonicParsing="false" onAction="#load" text="Load…" />
+        <Label fx:id="startStateLabel" wrapText="true" HBox.hgrow="ALWAYS" />
+    </HBox>
     <TickerPricePicker fx:id="tickerPricePicker" />
     <Label text="Long only: debt in QUOTE. Sell BASE in equal chunks at debt ratio levels as the price falls." wrapText="true" />
     <GridPane hgap="10.0" vgap="6.0">
@@ -58,12 +64,6 @@
             <TextField fx:id="takerFeeTextField" text="0.1" GridPane.columnIndex="5" GridPane.rowIndex="3" />
         </children>
     </GridPane>
-    <HBox alignment="CENTER_LEFT" spacing="10.0">
-        <Button defaultButton="true" mnemonicParsing="false" onAction="#calculate" text="Calculate" />
-        <Button mnemonicParsing="false" onAction="#save" text="Save…" />
-        <Button mnemonicParsing="false" onAction="#load" text="Load…" />
-        <Label fx:id="startStateLabel" wrapText="true" HBox.hgrow="ALWAYS" />
-    </HBox>
     <Separator />
     <TableView fx:id="levelsTable" VBox.vgrow="ALWAYS" />
     <Label fx:id="summaryLabel" wrapText="true" />
