@@ -2,10 +2,14 @@ package com.poplavok.forms;
 
 import org.junit.jupiter.api.Test;
 
+import com.poplavok.data.utils.SellDownPlanner;
+
 import java.io.File;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SellDownApproximatorTabTest {
     @Test
@@ -28,5 +32,14 @@ class SellDownApproximatorTabTest {
     void tabTitleFromFileName() {
         assertEquals("Sell-down: LTC-USDT", SellDownApproximatorTab.fileTitle(new File("/tmp/LTC-USDT.sd")));
         assertEquals("Sell-down: notes.txt", SellDownApproximatorTab.fileTitle(new File("notes.txt")));
+    }
+
+    @Test
+    void cantContinueWhenBuybackLandsAtOrAboveEndRatio() {
+        // Debt 945 against 10 BASE at 100: 94.5%
+        SellDownPlanner.BreakEven be = new SellDownPlanner.BreakEven(9, new BigDecimal("100"), new BigDecimal("945"),
+                BigDecimal.TEN, BigDecimal.ZERO);
+        assertTrue(SellDownApproximatorTab.cantContinue(be, new BigDecimal("0.945")));
+        assertFalse(SellDownApproximatorTab.cantContinue(be, new BigDecimal("0.946")));
     }
 }

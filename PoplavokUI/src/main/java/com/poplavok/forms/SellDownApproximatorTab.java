@@ -40,7 +40,11 @@ import static com.poplavok.data.utils.BigDecimalUtil.formatAmount;
 public class SellDownApproximatorTab extends VBox {
     static final Logger LOGGER = LoggerFactory.getLogger(SellDownApproximatorTab.class);
     static final String NONE = "—";
-    static final String DANGER_STYLE = "-fx-background-color: #ffd6d6;";
+    static final String DANGER_STYLE = "-fx-background-color: #ffe0b3; -fx-text-background-color: black;";
+    static final String DANGER_SELECTED_STYLE = "-fx-background-color: #ffb84d; -fx-text-background-color: black;";
+    static final String CANT_CONTINUE_STYLE = "-fx-background-color: #ffd6d6; -fx-text-background-color: black;";
+    static final String CANT_CONTINUE_SELECTED_STYLE =
+            "-fx-background-color: #ff8a8a; -fx-text-background-color: black;";
     static final BigDecimal DEFAULT_START_PERCENT = new BigDecimal("85");
 
     @FXML @Nullable TickerPricePicker tickerPricePicker;
@@ -200,7 +204,16 @@ public class SellDownApproximatorTab extends VBox {
                 @Override
                 protected void updateItem(@Nullable SellDownPlanner.Level level, boolean empty) {
                     super.updateItem(level, empty);
-                    setStyle(level != null && !empty && isDangerous(level) ? DANGER_STYLE : "");
+                    restyle();
+                }
+
+                {
+                    selectedProperty().addListener((observable, oldValue, newValue) -> restyle());
+                }
+
+                private void restyle() {
+                    SellDownPlanner.Level level = getItem();
+                    setStyle(level == null || isEmpty() ? "" : rowStyle(level, isSelected()));
                 }
             };
             MenuItem breakEvenItem = new MenuItem("Break even from here");
@@ -212,6 +225,7 @@ public class SellDownApproximatorTab extends VBox {
             });
             ContextMenu menu = new ContextMenu(breakEvenItem);
             menu.setOnShowing(event -> breakEvenItem.setDisable(row.getItem() == null
+                    || cantContinue(row.getItem())
                     || breakEven(row.getItem()) == null));
             row.contextMenuProperty().bind(Bindings.when(row.emptyProperty())
                     .then((ContextMenu) null).otherwise(menu));
@@ -360,6 +374,32 @@ public class SellDownApproximatorTab extends VBox {
         }
     }
 
+    /** Red: can't continue after buyback; orange: dangerous. Selected rows get a stronger shade. */
+    String rowStyle(SellDownPlanner.Level level, boolean selected) {
+        if (cantContinue(level)) {
+            return selected ? CANT_CONTINUE_SELECTED_STYLE : CANT_CONTINUE_STYLE;
+        }
+        if (isDangerous(level)) {
+            return selected ? DANGER_SELECTED_STYLE : DANGER_STYLE;
+        }
+        return "";
+    }
+
+    boolean cantContinue(SellDownPlanner.Level level) {
+        SellDownPlanner.Params params = lastParams;
+        SellDownPlanner.BreakEven be = breakEven(level);
+        return params != null && be != null && cantContinue(be, params.endRatio());
+    }
+
+    /**
+     * Buying back is possible, but the position after it is already at/above the end ratio, so the sell-down can't
+     * continue from there.
+     */
+    static boolean cantContinue(SellDownPlanner.BreakEven be, BigDecimal endRatio) {
+        BigDecimal ratio = LiquidationCalculator.debtRatio(be.debt(), true, be.base(), be.quote(), be.price());
+        return ratio != null && ratio.compareTo(endRatio) >= 0;
+    }
+
     /** A level is dangerous if the position would already be liquidated at its sell price should it not fill. */
     static boolean isDangerous(SellDownPlanner.Level level) {
         BigDecimal liq = level.liqPriceIfUnfilled();
@@ -395,7 +435,9 @@ public class SellDownApproximatorTab extends VBox {
             startState.setText(startState(startRatio, startLiq, params.price()));
 
             table.getItems().setAll(plan.levels());
-            summary.setText(summarize(plan, params));
+            long cantContinue = plan.levels().stream().filter(this::cantContinue).count();
+            summary.setText(summarize(plan, params) + (cantContinue > 0 ? " " + cantContinue
+                    + " level(s) in red: buyback possible, but the sell-down can't continue from there." : ""));
         } catch (IllegalArgumentException e) {
             startState.setText(String.valueOf(e.getMessage()));
             summary.setText("");
@@ -432,7 +474,7 @@ public class SellDownApproximatorTab extends VBox {
         }
         long dangerous = plan.levels().stream().filter(SellDownApproximatorTab::isDangerous).count();
         if (dangerous > 0) {
-            text.append(" ").append(dangerous).append(" level(s) in red: missing that fill means liquidation.");
+            text.append(" ").append(dangerous).append(" level(s) in orange: missing that fill means liquidation.");
         }
         return text.toString();
     }
