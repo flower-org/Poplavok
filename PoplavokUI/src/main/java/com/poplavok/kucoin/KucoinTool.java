@@ -41,7 +41,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class KucoinTool {
     final static Logger LOGGER = LoggerFactory.getLogger(KucoinTool.class);
 
-    private static KucoinApiClient createApiClient() {
+    /** Unauthenticated client for public endpoints, using the configured proxy (if any). */
+    public static KucoinApiClient createApiClient() {
         Proxy proxy = null;
         MainForm mainForm = MainForm.getInstance();
         if (mainForm != null) {

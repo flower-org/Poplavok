@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<fx:root prefWidth="560.0" spacing="8.0" type="VBox" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+    <padding>
+        <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
+    </padding>
+    <HBox alignment="CENTER_LEFT" spacing="8.0">
+        <Label minWidth="-Infinity" text="Ticker:" />
+        <TextField fx:id="tickerFilterTextField" onKeyTyped="#filterTickers" prefWidth="70.0" promptText="Filter" />
+        <ComboBox fx:id="tickerComboBox" prefWidth="140.0" />
+        <Label minWidth="-Infinity" text="Price:" />
+        <TextField fx:id="priceTextField" prefWidth="100.0" HBox.hgrow="ALWAYS" />
+        <CheckBox fx:id="streamPriceCheckBox" minWidth="-Infinity" mnemonicParsing="false" selected="true" text="stream" />
+    </HBox>
+    <Label fx:id="marginInfoLabel" wrapText="true" />
+    <Separator />
+    <GridPane hgap="10.0" vgap="6.0">
+        <columnConstraints>
+            <ColumnConstraints hgrow="NEVER" minWidth="-Infinity" />
+            <ColumnConstraints hgrow="ALWAYS" />
+        </columnConstraints>
+        <children>
+            <Label text="Debt:" />
+            <TextField fx:id="debtTextField" GridPane.columnIndex="1" />
+            <Label text="Debt in:" GridPane.rowIndex="1" />
+            <HBox alignment="CENTER_LEFT" minWidth="-Infinity" spacing="10.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                <RadioButton fx:id="debtInQuoteRadioButton" minWidth="-Infinity" mnemonicParsing="false" selected="true" text="QUOTE (long)">
+                    <toggleGroup>
+                        <ToggleGroup fx:id="debtInGroup" />
+                    </toggleGroup>
+                </RadioButton>
+                <RadioButton fx:id="debtInBaseRadioButton" minWidth="-Infinity" mnemonicParsing="false" text="BASE (short)" toggleGroup="$debtInGroup" />
+            </HBox>
+            <Label fx:id="holdingBaseLabel" text="Holding BASE:" GridPane.rowIndex="2" />
+            <TextField fx:id="holdingBaseTextField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+            <Label fx:id="holdingQuoteLabel" text="Holding QUOTE:" GridPane.rowIndex="3" />
+            <TextField fx:id="holdingQuoteTextField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+            <Label text="Liquidation debt ratio %:" GridPane.rowIndex="4" />
+            <TextField fx:id="liquidationRatioTextField" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+        </children>
+    </GridPane>
+    <Separator />
+    <GridPane hgap="10.0" vgap="6.0">
+        <columnConstraints>
+            <ColumnConstraints hgrow="NEVER" minWidth="-Infinity" />
+            <ColumnConstraints hgrow="ALWAYS" />
+        </columnConstraints>
+        <children>
+            <Label text="Current debt ratio:" />
+            <TextField fx:id="currentDebtRatioTextField" editable="false" GridPane.columnIndex="1" />
+            <Label fx:id="liquidationPriceLabel" text="Liquidation price:" GridPane.rowIndex="1" />
+            <TextField fx:id="liquidationPriceTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            <Label text="Price move to liquidation:" GridPane.rowIndex="2" />
+            <TextField fx:id="distanceToLiquidationTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+            <Label text="85% price:" GridPane.rowIndex="3" />
+            <TextField fx:id="price85TextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+            <Label text="90% price:" GridPane.rowIndex="4" />
+            <TextField fx:id="price90TextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+            <Label text="92% price (warning):" GridPane.rowIndex="5" />
+            <TextField fx:id="warningPriceTextField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+        </children>
+    </GridPane>
+    <Label fx:id="hintLabel" wrapText="true" />
+</fx:root>

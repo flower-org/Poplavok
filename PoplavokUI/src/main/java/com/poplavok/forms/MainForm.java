@@ -310,6 +310,20 @@ public class MainForm {
         }
     }
 
+    public void showLiquidationCalculator() {
+        // Not modal, and a new window each time so several scenarios can be compared side by side
+        Stage stage = new Stage();
+        stage.initOwner(checkNotNull(mainStage));
+        stage.initModality(Modality.NONE);
+        stage.setTitle("Liquidation Price Calculator");
+        LiquidationCalculatorDialog calculator = new LiquidationCalculatorDialog();
+        stage.setScene(new Scene(calculator));
+        stage.setOnHidden(event -> calculator.dispose());
+        stage.show();
+        stage.setMinWidth(stage.getWidth());
+        stage.setMinHeight(stage.getHeight());
+    }
+
     public void showMultiCoinChartsDialog() {
         if (multiCoinChartsStage == null) {
             // Not modal: the dialog can stay open while working in Poplavok

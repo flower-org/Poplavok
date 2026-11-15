@@ -70,6 +70,11 @@
           <MenuItem mnemonicParsing="false" onAction="#openMarketTickersTab" text="Market Tickers" />
         </items>
       </Menu>
+      <Menu mnemonicParsing="false" text="Calculators">
+        <items>
+          <MenuItem mnemonicParsing="false" onAction="#showLiquidationCalculator" text="Liquidation Price…" />
+        </items>
+      </Menu>
       <Menu mnemonicParsing="false" text="External">
         <items>
           <MenuItem mnemonicParsing="false" onAction="#showApiSettingsDialog" text="API settings" />
