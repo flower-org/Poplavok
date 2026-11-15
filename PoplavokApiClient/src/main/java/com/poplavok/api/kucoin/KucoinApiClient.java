@@ -17,11 +17,13 @@ import com.poplavok.api.kucoin.model.response.IsolatedMarginAccountInfo;
 import com.poplavok.api.kucoin.model.response.IsolatedSymbolResponse;
 import com.poplavok.api.kucoin.model.response.KucoinResponse;
 import com.poplavok.api.kucoin.model.response.MarginAccountResponse;
+import com.poplavok.api.kucoin.model.response.MarginOrdersPage;
 import com.poplavok.api.kucoin.model.response.OrderCreateResponse;
 import com.poplavok.api.kucoin.model.response.OrderResponse;
 import com.poplavok.api.kucoin.model.response.Pagination;
 import com.poplavok.api.kucoin.model.response.WebsocketTokenResponse;
 import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -48,6 +50,12 @@ public class KucoinApiClient {
     private final ObjectMapper mapper;
 
     public KucoinApiClient(@Nullable KucoinCredentialsProvider credentialsProvider, @Nullable Proxy proxy) {
+        this(credentialsProvider, proxy, null);
+    }
+
+    /** {@code interceptor}: added last, e.g. to answer requests in tests. */
+    KucoinApiClient(@Nullable KucoinCredentialsProvider credentialsProvider, @Nullable Proxy proxy,
+                    @Nullable Interceptor interceptor) {
         this.mapper = new ObjectMapper();
         this.mapper.registerModules(new GuavaModule());
         
@@ -62,6 +70,9 @@ public class KucoinApiClient {
         }
         if (proxy != null) {
             builder.proxy(proxy);
+        }
+        if (interceptor != null) {
+            builder.addInterceptor(interceptor);
         }
         this.httpClient = builder.build();
     }
@@ -162,6 +173,51 @@ public class KucoinApiClient {
     public OrderResponse getOrder(String orderId) throws IOException {
         Request request = new Request.Builder().url(BASE_URL + "api/v1/orders/" + orderId).get().build();
         return execute(request, new TypeReference<KucoinResponse<OrderResponse>>() {});
+    }
+
+    /** HF margin order (as placed by {@link #createMarginOrder}) by order id. */
+    public OrderResponse getMarginOrder(String orderId, String symbol) throws IOException {
+        HttpUrl url = HttpUrl.parse(BASE_URL + "api/v3/hf/margin/orders").newBuilder()
+                .addPathSegment(orderId).addQueryParameter("symbol", symbol).build();
+        return execute(new Request.Builder().url(url).get().build(),
+                new TypeReference<KucoinResponse<OrderResponse>>() {});
+    }
+
+    /** HF margin order by the client order id it was placed with. */
+    public OrderResponse getMarginOrderByClientOid(String clientOid, String symbol) throws IOException {
+        HttpUrl url = HttpUrl.parse(BASE_URL + "api/v3/hf/margin/orders/client-order").newBuilder()
+                .addPathSegment(clientOid).addQueryParameter("symbol", symbol).build();
+        return execute(new Request.Builder().url(url).get().build(),
+                new TypeReference<KucoinResponse<OrderResponse>>() {});
+    }
+
+    /** Open HF margin orders for {@code symbol}. {@code tradeType}: MARGIN_TRADE or MARGIN_ISOLATED_TRADE. */
+    public List<OrderResponse> getMarginActiveOrders(String symbol, String tradeType) throws IOException {
+        HttpUrl url = HttpUrl.parse(BASE_URL + "api/v3/hf/margin/orders/active").newBuilder()
+                .addQueryParameter("symbol", symbol).addQueryParameter("tradeType", tradeType).build();
+        return execute(new Request.Builder().url(url).get().build(),
+                new TypeReference<KucoinResponse<List<OrderResponse>>>() {});
+    }
+
+    /**
+     * Filled/cancelled HF margin orders for {@code symbol}, newest first. {@code tradeType}: MARGIN_TRADE or
+     * MARGIN_ISOLATED_TRADE. {@code lastId}: from the previous page; {@code limit}: page size (KuCoin default 20,
+     * max 100); {@code startAt}/{@code endAt}: epoch millis.
+     */
+    public MarginOrdersPage getMarginDoneOrders(String symbol, String tradeType, @Nullable String side,
+                                                @Nullable String type, @Nullable Long lastId,
+                                                @Nullable Integer limit, @Nullable Long startAt,
+                                                @Nullable Long endAt) throws IOException {
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(BASE_URL + "api/v3/hf/margin/orders/done").newBuilder()
+                .addQueryParameter("symbol", symbol).addQueryParameter("tradeType", tradeType);
+        if (side != null) urlBuilder.addQueryParameter("side", side);
+        if (type != null) urlBuilder.addQueryParameter("type", type);
+        if (lastId != null) urlBuilder.addQueryParameter("lastId", String.valueOf(lastId));
+        if (limit != null) urlBuilder.addQueryParameter("limit", String.valueOf(limit));
+        if (startAt != null) urlBuilder.addQueryParameter("startAt", String.valueOf(startAt));
+        if (endAt != null) urlBuilder.addQueryParameter("endAt", String.valueOf(endAt));
+        return execute(new Request.Builder().url(urlBuilder.build()).get().build(),
+                new TypeReference<KucoinResponse<MarginOrdersPage>>() {});
     }
 
     public CancelOrderResponse cancelOrder(String orderId) throws IOException {

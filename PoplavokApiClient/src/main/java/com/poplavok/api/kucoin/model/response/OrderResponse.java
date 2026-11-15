@@ -140,4 +140,33 @@ public interface OrderResponse {
     /** The type of trading */
     @Nullable
     String tradeType();
+
+    /** HF (v3) orders: true while the order is open, false once filled or cancelled */
+    @JsonProperty("active")
+    @Nullable
+    Boolean active();
+
+    /** HF (v3) orders: whether the order is resting in the order book */
+    @Nullable
+    Boolean inOrderBook();
+
+    /** HF (v3) orders: size not yet filled or cancelled */
+    @Nullable
+    BigDecimal remainSize();
+
+    /** HF (v3) orders: funds not yet filled or cancelled */
+    @Nullable
+    BigDecimal remainFunds();
+
+    /** HF (v3) orders: cancelled size */
+    @Nullable
+    BigDecimal cancelledSize();
+
+    /** HF (v3) orders: cancelled funds */
+    @Nullable
+    BigDecimal cancelledFunds();
+
+    /** HF (v3) orders: last update timestamp */
+    @Nullable
+    Date lastUpdatedAt();
 }
