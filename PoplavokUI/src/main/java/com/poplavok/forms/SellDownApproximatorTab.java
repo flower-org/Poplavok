@@ -5,6 +5,8 @@ import com.poplavok.data.utils.LiquidationCalculator;
 import com.poplavok.data.utils.SellDownPlanner;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Alert;
@@ -65,6 +67,8 @@ public class SellDownApproximatorTab extends VBox {
     final BiConsumer<SellDownApproximatorTab, String> openTab;
     @Nullable SellDownPlanner.Params lastParams;
     @Nullable SellDownPlanner.Plan lastPlan;
+    /** Tab title; becomes "Sell-down: {file name}" after saving/loading. */
+    final StringProperty title = new SimpleStringProperty("Sell-down Approximator");
     /** Folder of the last saved/loaded approximation, shared by all approximator tabs. */
     static @Nullable File lastDirectory;
 
@@ -296,9 +300,18 @@ public class SellDownApproximatorTab extends VBox {
         }
     }
 
-    FileChooser fileChooser(String title) {
+    public StringProperty titleProperty() {
+        return title;
+    }
+
+    static String fileTitle(File file) {
+        String name = file.getName();
+        return "Sell-down: " + (name.endsWith(".sd") ? name.substring(0, name.length() - 3) : name);
+    }
+
+    FileChooser fileChooser(String dialogTitle) {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle(title);
+        chooser.setTitle(dialogTitle);
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Sell-down Approximator (" +
                 SellDownApproximatorState.EXTENSION + ")", SellDownApproximatorState.EXTENSION));
         File directory = lastDirectory;
@@ -323,6 +336,7 @@ public class SellDownApproximatorTab extends VBox {
         try {
             state().write(file);
             lastDirectory = file.getParentFile();
+            title.set(fileTitle(file));
         } catch (IOException | RuntimeException e) {
             LOGGER.error("Failed to save approximation to {}", file, e);
             new Alert(Alert.AlertType.ERROR, "Failed to save approximation: " + e, ButtonType.OK).showAndWait();
@@ -338,6 +352,7 @@ public class SellDownApproximatorTab extends VBox {
         try {
             SellDownApproximatorState state = SellDownApproximatorState.read(file);
             lastDirectory = file.getParentFile();
+            title.set(fileTitle(file));
             apply(state);
         } catch (IOException | RuntimeException e) {
             LOGGER.error("Failed to load approximation from {}", file, e);

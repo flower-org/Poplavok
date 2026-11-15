@@ -345,7 +345,9 @@ public class MainForm {
     }
 
     void addSellDownApproximatorTab(SellDownApproximatorTab approximator, String title) {
+        approximator.titleProperty().set(title);
         final Tab tab = new Tab(title, approximator);
+        tab.textProperty().bind(approximator.titleProperty());
         tab.setClosable(true);
 
         addTab(tab);

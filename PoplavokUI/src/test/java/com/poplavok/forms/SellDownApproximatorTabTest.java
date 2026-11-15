@@ -2,6 +2,7 @@ package com.poplavok.forms;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -21,5 +22,11 @@ class SellDownApproximatorTabTest {
                 SellDownApproximatorTab.startState(new BigDecimal("0.84999"), null, BigDecimal.ONE));
         assertEquals("Debt ratio: 90.00%, liquidation at —",
                 SellDownApproximatorTab.startState(new BigDecimal("0.9"), null, BigDecimal.ONE));
+    }
+
+    @Test
+    void tabTitleFromFileName() {
+        assertEquals("Sell-down: LTC-USDT", SellDownApproximatorTab.fileTitle(new File("/tmp/LTC-USDT.sd")));
+        assertEquals("Sell-down: notes.txt", SellDownApproximatorTab.fileTitle(new File("notes.txt")));
     }
 }
