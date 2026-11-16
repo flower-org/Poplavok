@@ -19,8 +19,9 @@
         <Circle fx:id="statusCircle" radius="7" />
         <Button fx:id="startStopButton" mnemonicParsing="false" onAction="#startStop" text="Start bot" />
         <Label text="Price:" />
+        <CheckBox fx:id="livePriceBox" mnemonicParsing="false" onAction="#toggleLivePrice" text="live" />
         <TextField fx:id="priceField" onAction="#setPrice" prefWidth="120.0" />
-        <Button mnemonicParsing="false" onAction="#setPrice" text="Send price update" />
+        <Button fx:id="sendPriceButton" mnemonicParsing="false" onAction="#setPrice" text="Send price update" />
         <Label fx:id="currentPriceLabel" style="-fx-font-weight: bold;" />
     </HBox>
     <SplitPane fx:id="splitPane" dividerPositions="0.6" orientation="VERTICAL" VBox.vgrow="ALWAYS">

@@ -2,6 +2,7 @@ package com.poplavok.forms;
 
 import com.poplavok.data.bot.BotExchange;
 import com.poplavok.data.bot.SimulatedExchange;
+import com.poplavok.kucoin.TickerPriceService;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -31,6 +32,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -52,6 +54,10 @@ public class SimulatedExchangeTab extends VBox {
     final Tooltip statusTooltip = new Tooltip();
     @FXML @Nullable TextField priceField;
     @FXML @Nullable Label currentPriceLabel;
+    @FXML @Nullable CheckBox livePriceBox;
+    @FXML @Nullable Button sendPriceButton;
+    /** Forwards KuCoin's streamed price to the simulated exchange (and the price field) while "live" is checked. */
+    final TickerPriceService.PriceListener livePriceListener = this::onLivePrice;
     @FXML @Nullable CheckBox failPlaceBox;
     @FXML @Nullable CheckBox failPollBox;
     @FXML @Nullable CheckBox failCancelBox;
@@ -264,6 +270,38 @@ public class SimulatedExchangeTab extends VBox {
     }
 
     @FXML
+    public void toggleLivePrice() {
+        boolean live = checkNotNull(livePriceBox).isSelected();
+        checkNotNull(priceField).setDisable(live);
+        checkNotNull(sendPriceButton).setDisable(live);
+        if (live) {
+            TickerPriceService.getInstance().subscribe(bot.state().definition().symbol(), livePriceListener);
+        } else {
+            stopLivePrice();
+        }
+    }
+
+    /** Streamed on the websocket thread; the bot reacts on its own thread. */
+    void onLivePrice(String symbol, @Nullable BigDecimal price) {
+        if (price != null && price.signum() > 0) {
+            try {
+                scheduler.execute(() -> exchange.setPrice(price));
+                Platform.runLater(() -> {
+                    if (checkNotNull(livePriceBox).isSelected()) {
+                        checkNotNull(priceField).setText(price.toPlainString());
+                    }
+                });
+            } catch (RejectedExecutionException closed) {
+                // tab closed
+            }
+        }
+    }
+
+    void stopLivePrice() {
+        TickerPriceService.getInstance().unsubscribe(bot.state().definition().symbol(), livePriceListener);
+    }
+
+    @FXML
     public void setPrice() {
         message("");
         try {
@@ -317,6 +355,7 @@ public class SimulatedExchangeTab extends VBox {
 
     /** Stops the bot and its thread and saves the bot file; call when the tab closes. */
     public void close() {
+        stopLivePrice();
         bot.stop();
         scheduler.shutdownNow();
         saveOnExit();
