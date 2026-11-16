@@ -151,7 +151,7 @@ public class SimulatedExchangeTab extends VBox {
 
     static String title(File file) {
         String name = file.getName();
-        return "Simulation: " + (name.endsWith(".sdb") ? name.substring(0, name.length() - 4) : name);
+        return "Simulation: " + (name.endsWith(".bot") ? name.substring(0, name.length() - 4) : name);
     }
 
     /** Each checkbox makes every such bot call fail while checked. */

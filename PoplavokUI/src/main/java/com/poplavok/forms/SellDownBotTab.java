@@ -92,7 +92,7 @@ public class SellDownBotTab extends VBox {
 
     static String fileTitle(File file) {
         String name = file.getName();
-        return "Sell-down Bot: " + (name.endsWith(".sdb") ? name.substring(0, name.length() - 4) : name);
+        return "Sell-down Bot: " + (name.endsWith(".bot") ? name.substring(0, name.length() - 4) : name);
     }
 
     void initDefinition() {

@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Sell-down bot file (.sdb), created by the approximator. {@code definition}: the plan frozen at creation, never
+ * Sell-down bot file (.bot), created by the approximator. {@code definition}: the plan frozen at creation, never
  * changed; the rest is the state of the bot acting upon it in a single sell-down cycle.
  * {@code levels}: each definition level's status, by level number.
  * {@code history}: the bot's actions, oldest first; missing in a file reads as empty.
@@ -32,7 +32,7 @@ import java.util.Objects;
  */
 public record SellDownBotState(Definition definition, List<Level> levels, List<Event> history, List<BotOrder> orders,
                                @Nullable String exchangeName) {
-    public static final String EXTENSION = "*.sdb";
+    public static final String EXTENSION = "*.bot";
     static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
     public SellDownBotState {

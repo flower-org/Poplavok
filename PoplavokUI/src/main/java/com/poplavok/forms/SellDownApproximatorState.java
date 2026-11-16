@@ -23,7 +23,7 @@ public record SellDownApproximatorState(@Nullable String symbol, @Nullable Strin
                                 @Nullable String fillBuffer, @Nullable String slippage,
                                 @Nullable String makerFee, @Nullable String takerFee,
                                 @Nullable Boolean startRatioCurrent, @Nullable Boolean streamPrice) {
-    public static final String EXTENSION = "*.sd";
+    public static final String EXTENSION = "*.def";
     static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
     public void write(File file) throws IOException {

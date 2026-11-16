@@ -342,7 +342,7 @@ public class SellDownApproximatorTab extends VBox {
 
     static String fileTitle(File file) {
         String name = file.getName();
-        return "Sell-down: " + (name.endsWith(".sd") ? name.substring(0, name.length() - 3) : name);
+        return "Sell-down: " + (name.endsWith(".def") ? name.substring(0, name.length() - 4) : name);
     }
 
     FileChooser fileChooser(String dialogTitle) {
@@ -361,13 +361,13 @@ public class SellDownApproximatorTab extends VBox {
     public void save() {
         FileChooser chooser = fileChooser("Save Sell-down Approximator");
         String symbol = checkNotNull(tickerPricePicker).selectedSymbol();
-        chooser.setInitialFileName((symbol == null ? "approximation" : symbol) + ".sd");
+        chooser.setInitialFileName((symbol == null ? "approximation" : symbol) + ".def");
         File file = chooser.showSaveDialog(getScene().getWindow());
         if (file == null) {
             return;
         }
-        if (!file.getName().endsWith(".sd")) {
-            file = new File(file.getParentFile(), file.getName() + ".sd");
+        if (!file.getName().endsWith(".def")) {
+            file = new File(file.getParentFile(), file.getName() + ".def");
         }
         try {
             state().write(file);
@@ -396,7 +396,7 @@ public class SellDownApproximatorTab extends VBox {
         }
     }
 
-    /** Saves the last calculated plan as a sell-down bot definition (.sdb). */
+    /** Saves the last calculated plan as a sell-down bot definition (.bot). */
     @FXML
     public void createBot() {
         SellDownPlanner.Params params = lastParams;
@@ -415,13 +415,13 @@ public class SellDownApproximatorTab extends VBox {
         if (directory != null && directory.isDirectory()) {
             chooser.setInitialDirectory(directory);
         }
-        chooser.setInitialFileName(symbol + ".sdb");
+        chooser.setInitialFileName(symbol + ".bot");
         File file = chooser.showSaveDialog(getScene().getWindow());
         if (file == null) {
             return;
         }
-        if (!file.getName().endsWith(".sdb")) {
-            file = new File(file.getParentFile(), file.getName() + ".sdb");
+        if (!file.getName().endsWith(".bot")) {
+            file = new File(file.getParentFile(), file.getName() + ".bot");
         }
         try {
             SellDownBotState.of(symbol, params, plan, Instant.now()).write(file);

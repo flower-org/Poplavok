@@ -237,7 +237,7 @@ class SellDownBotTest {
         bot.onPrice(new BigDecimal("50"));
         assertEquals("1", SimulatedExchangeTab.levelOf(bot.state(), "o1"));
         assertEquals(SellDownApproximatorTab.NONE, SimulatedExchangeTab.levelOf(bot.state(), "o9"));
-        assertEquals("Simulation: LTC-USDT", SimulatedExchangeTab.title(new java.io.File("/tmp/LTC-USDT.sdb")));
+        assertEquals("Simulation: LTC-USDT", SimulatedExchangeTab.title(new java.io.File("/tmp/LTC-USDT.bot")));
     }
 
     @Test

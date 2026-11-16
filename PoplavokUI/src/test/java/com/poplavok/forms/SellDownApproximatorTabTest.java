@@ -30,7 +30,7 @@ class SellDownApproximatorTabTest {
 
     @Test
     void tabTitleFromFileName() {
-        assertEquals("Sell-down: LTC-USDT", SellDownApproximatorTab.fileTitle(new File("/tmp/LTC-USDT.sd")));
+        assertEquals("Sell-down: LTC-USDT", SellDownApproximatorTab.fileTitle(new File("/tmp/LTC-USDT.def")));
         assertEquals("Sell-down: notes.txt", SellDownApproximatorTab.fileTitle(new File("notes.txt")));
     }
 

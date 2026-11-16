@@ -58,7 +58,7 @@ class SellDownBotStateTest {
 
     @Test
     void missingHistoryReadsAsEmpty() throws Exception {
-        File file = folder.resolve("old.sdb").toFile();
+        File file = folder.resolve("old.bot").toFile();
         Files.writeString(file.toPath(), "definition:\n  symbol: LTC-USDT\n");
         assertEquals(List.of(), SellDownBotState.read(file).history());
         assertNull(SellDownBotState.read(file).exchangeName());
@@ -71,7 +71,7 @@ class SellDownBotStateTest {
                 Instant.parse("2026-11-15T21:00:00Z"));
         assertEquals("LTC-USDT — single sell-down cycle, " + state.levels().size()
                 + " level(s), created 2026-11-15T21:00:00Z, exchange: not bound yet. Not running.", SellDownBotTab.header(state));
-        assertEquals("Sell-down Bot: LTC-USDT", SellDownBotTab.fileTitle(new File("/tmp/LTC-USDT.sdb")));
+        assertEquals("Sell-down Bot: LTC-USDT", SellDownBotTab.fileTitle(new File("/tmp/LTC-USDT.bot")));
         assertEquals("88.27%", SellDownBotTab.percent(state.definition().startRatio()));
         assertEquals(SellDownApproximatorTab.NONE, SellDownBotTab.amount(null));
     }
@@ -89,7 +89,7 @@ class SellDownBotStateTest {
                 com.poplavok.data.bot.BotExchange.OrderStatus.OPEN);
         state = state.withOrder(SellDownBotState.BotOrder.placed(1, order, Instant.parse("2026-11-15T21:05:00Z"))
                 .cancelRequested(Instant.parse("2026-11-15T21:06:00Z")));
-        File file = folder.resolve("LTC-USDT.sdb").toFile();
+        File file = folder.resolve("LTC-USDT.bot").toFile();
         state = state.withExchangeName("SIMULATED");
         state.write(file);
         assertEquals(state, SellDownBotState.read(file));
