@@ -1,7 +1,9 @@
 package com.poplavok.data.bot;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.MathContext;
 
 /**
  * What the sell-down bot needs from an exchange: place and cancel limit orders on the symbol's trading account
@@ -14,12 +16,21 @@ public interface BotExchange {
     /** OPEN: resting (possibly partially filled); FILLED: fully filled; CANCELLED: cancelled (possibly partially filled). */
     enum OrderStatus { OPEN, FILLED, CANCELLED }
 
-    /** Order snapshot. {@code filledFunds}: QUOTE value of the filled part; {@code fee} in QUOTE. */
+    /**
+     * Order snapshot. {@code price}: limit price; fills happen at it or better. {@code filledFunds}: QUOTE value of the
+     * filled part; {@code fee} in QUOTE.
+     */
     record Order(String orderId, Side side, BigDecimal price, BigDecimal size, BigDecimal filledSize,
                  BigDecimal filledFunds, BigDecimal fee, OrderStatus status) {
         /** Size still waiting to fill; zero once the order is done. */
         public BigDecimal remainingSize() {
             return status == OrderStatus.OPEN ? size.subtract(filledSize) : BigDecimal.ZERO;
+        }
+
+        /** Average fill price, or null if nothing filled. */
+        public @Nullable BigDecimal averageFillPrice() {
+            return filledSize.signum() == 0 ? null
+                    : filledFunds.divide(filledSize, MathContext.DECIMAL128);
         }
 
         public boolean isDone() {

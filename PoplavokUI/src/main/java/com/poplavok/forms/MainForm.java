@@ -18,11 +18,14 @@ import javafx.scene.control.Slider;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
+import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nullable;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.prefs.Preferences;
@@ -112,6 +115,8 @@ public class MainForm {
                             poplavokTab.dispose();
                         } else if (removed.getContent() instanceof SellDownApproximatorTab sellDownApproximatorTab) {
                             sellDownApproximatorTab.dispose();
+                        } else if (removed.getContent() instanceof SimulatedExchangeTab simulation) {
+                            simulation.close();
                         }
                     }
                 }
@@ -220,6 +225,13 @@ public class MainForm {
     }
 
     public void quit() { checkNotNull(mainStage).close(); }
+
+    /** Stops running simulations and saves their bot files; call on app exit. */
+    public void closeSimulations() {
+        checkNotNull(tabs).getTabs().stream()
+                .filter(tab -> tab.getContent() instanceof SimulatedExchangeTab)
+                .forEach(tab -> ((SimulatedExchangeTab) tab.getContent()).close());
+    }
 
     public void closeAllTabs() {
         checkNotNull(tabs).getTabs().clear();
@@ -351,6 +363,53 @@ public class MainForm {
         tab.setClosable(true);
 
         addTab(tab);
+    }
+
+    /** A bot tab is only ever opened from a definition created by the approximator. */
+    public void openSellDownBot() {
+        File file = chooseSellDownBotFile("Open Sell-down Bot");
+        SellDownBotState state = file == null ? null : readSellDownBot(file);
+        if (file == null || state == null) {
+            return;
+        }
+        final Tab tab = new Tab(SellDownBotTab.fileTitle(file), new SellDownBotTab(state));
+        tab.setClosable(true);
+        addTab(tab);
+    }
+
+    public void simulateSellDownBot() {
+        File file = chooseSellDownBotFile("Simulate Sell-down Bot");
+        SellDownBotState state = file == null ? null : readSellDownBot(file);
+        if (file == null || state == null) {
+            return;
+        }
+        SimulatedExchangeTab simulation = new SimulatedExchangeTab(state, file);
+        final Tab tab = new Tab(SimulatedExchangeTab.title(file), simulation);
+        tab.setClosable(true);
+        addTab(tab);
+    }
+
+    @Nullable File chooseSellDownBotFile(String title) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(title);
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Sell-down Bot ("
+                + SellDownBotState.EXTENSION + ")", SellDownBotState.EXTENSION));
+        File directory = SellDownApproximatorTab.lastDirectory;
+        if (directory != null && directory.isDirectory()) {
+            chooser.setInitialDirectory(directory);
+        }
+        return chooser.showOpenDialog(checkNotNull(mainStage));
+    }
+
+    @Nullable SellDownBotState readSellDownBot(File file) {
+        try {
+            SellDownBotState state = SellDownBotState.read(file);
+            SellDownApproximatorTab.lastDirectory = file.getParentFile();
+            return state;
+        } catch (IOException | RuntimeException e) {
+            new Alert(Alert.AlertType.ERROR, "Failed to open sell-down bot: " + e, ButtonType.OK).showAndWait();
+            return null;
+        }
     }
 
     public void showMultiCoinChartsDialog() {

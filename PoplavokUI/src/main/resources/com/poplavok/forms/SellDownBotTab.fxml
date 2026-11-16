@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.VBox?>
+
+<fx:root prefHeight="560.0" prefWidth="1100.0" spacing="8.0" type="VBox" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+    <padding>
+        <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
+    </padding>
+    <Label fx:id="headerLabel" style="-fx-font-weight: bold;" wrapText="true" />
+    <GridPane fx:id="definitionGrid" hgap="10.0" vgap="6.0" />
+    <Separator />
+    <GridPane fx:id="currentGrid" hgap="10.0" vgap="6.0" />
+    <Separator />
+    <SplitPane dividerPositions="0.55" orientation="VERTICAL" VBox.vgrow="ALWAYS">
+        <TableView fx:id="levelsTable" />
+        <TabPane tabClosingPolicy="UNAVAILABLE">
+            <Tab text="History">
+                <TableView fx:id="historyTable" />
+            </Tab>
+            <Tab text="Orders">
+                <SplitPane dividerPositions="0.65">
+                    <TableView fx:id="ordersTable" />
+                    <TableView fx:id="orderHistoryTable" />
+                </SplitPane>
+            </Tab>
+        </TabPane>
+    </SplitPane>
+</fx:root>

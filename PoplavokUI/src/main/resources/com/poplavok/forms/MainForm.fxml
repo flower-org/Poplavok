@@ -75,6 +75,8 @@
           <MenuItem mnemonicParsing="false" onAction="#showLiquidationCalculator" text="Liquidation Price…" />
           <MenuItem mnemonicParsing="false" onAction="#showTradeCalculator" text="Trade Calculator…" />
           <MenuItem mnemonicParsing="false" onAction="#showSellDownApproximator" text="Sell-down Approximator…" />
+          <MenuItem mnemonicParsing="false" onAction="#openSellDownBot" text="Open Sell-down Bot…" />
+          <MenuItem mnemonicParsing="false" onAction="#simulateSellDownBot" text="Simulate Sell-down Bot…" />
         </items>
       </Menu>
       <Menu mnemonicParsing="false" text="External">
