@@ -5,7 +5,9 @@ import com.poplavok.data.bot.SimulatedExchange;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
@@ -232,6 +234,16 @@ public class SimulatedExchangeTab extends VBox {
         botTab.update(bot.state(), bot.isRunning(), price);
     }
 
+    /** Asks before an unbound bot gets bound to this exchange for good. */
+    boolean confirmBind() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Starting binds this bot to the "
+                + exchange.exchangeName() + " exchange. After that it will only run on " + exchange.exchangeName()
+                + ". Bind and start?", ButtonType.YES, ButtonType.NO);
+        alert.setTitle("Bind bot to exchange");
+        alert.setHeaderText(null);
+        return alert.showAndWait().filter(ButtonType.YES::equals).isPresent();
+    }
+
     @FXML
     public void startStop() {
         message("");
@@ -239,6 +251,9 @@ public class SimulatedExchangeTab extends VBox {
             bot.stop();
             saveOnExit();
         } else {
+            if (bot.state().exchangeName() == null && !confirmBind()) {
+                return;
+            }
             try {
                 bot.start(scheduler, POLL_MILLIS);
             } catch (IOException e) {

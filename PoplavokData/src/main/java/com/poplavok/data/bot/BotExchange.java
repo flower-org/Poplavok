@@ -57,6 +57,9 @@ public interface BotExchange {
     /** Requests cancellation; the final state is seen via {@link #getOrder}. */
     void cancelOrder(String symbol, String orderId) throws IOException;
 
+    /** Identifies the exchange (and account); a bot bound to one name won't run on another. */
+    String exchangeName();
+
     /** Last trade price updates for {@code symbol}. */
     Subscription subscribePrice(String symbol, PriceListener listener) throws IOException;
 }

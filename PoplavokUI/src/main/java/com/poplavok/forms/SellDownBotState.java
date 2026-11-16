@@ -27,7 +27,11 @@ import java.util.Objects;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record SellDownBotState(Definition definition, List<Level> levels, List<Event> history, List<BotOrder> orders) {
+/**
+ * {@code exchangeName}: the {@link BotExchange#exchangeName()} the bot is bound to on its first start; it won't run on any other.
+ */
+public record SellDownBotState(Definition definition, List<Level> levels, List<Event> history, List<BotOrder> orders,
+                               @Nullable String exchangeName) {
     public static final String EXTENSION = "*.sdb";
     static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
@@ -77,7 +81,7 @@ public record SellDownBotState(Definition definition, List<Level> levels, List<E
     public enum Status { PENDING, SELLING, SOLD, BUYING_BACK, BROKEN_EVEN }
 
     public enum EventType {
-        CREATED, ORDER_PLACED, ORDER_FILLED, ORDER_CANCELLED, SOLD, BROKEN_EVEN, FINISHED, ERROR
+        CREATED, BOUND, ORDER_PLACED, ORDER_FILLED, ORDER_CANCELLED, SOLD, BROKEN_EVEN, FINISHED, ERROR
     }
 
     /**
@@ -96,13 +100,13 @@ public record SellDownBotState(Definition definition, List<Level> levels, List<E
     public SellDownBotState withEvent(Event event) {
         List<Event> events = new ArrayList<>(history);
         events.add(event);
-        return new SellDownBotState(definition, levels, events, orders);
+        return new SellDownBotState(definition, levels, events, orders, exchangeName);
     }
 
     /** Same state with {@code level} replacing the level with the same number. */
     public SellDownBotState withLevel(Level level) {
         return new SellDownBotState(definition,
-                levels.stream().map(l -> l.number() == level.number() ? level : l).toList(), history, orders);
+                levels.stream().map(l -> l.number() == level.number() ? level : l).toList(), history, orders, exchangeName);
     }
 
     /** Same state with {@code order} replacing the order with the same id, or appended if new. */
@@ -114,7 +118,12 @@ public record SellDownBotState(Definition definition, List<Level> levels, List<E
         } else {
             updated.set(index, order);
         }
-        return new SellDownBotState(definition, levels, history, updated);
+        return new SellDownBotState(definition, levels, history, updated, exchangeName);
+    }
+
+    /** Same state bound to {@code newExchangeName}. */
+    public SellDownBotState withExchangeName(String newExchangeName) {
+        return new SellDownBotState(definition, levels, history, orders, newExchangeName);
     }
 
     public @Nullable BotOrder order(String orderId) {
@@ -304,7 +313,7 @@ public record SellDownBotState(Definition definition, List<Level> levels, List<E
         return new SellDownBotState(definition,
                 plan.levels().stream().map(level -> new Level(level.number(), Status.PENDING, null)).toList(),
                 List.of(new Event(createdAt.toString(), EventType.CREATED, null, plain(params.price()), null, null,
-                        null, plan.levels().size() + " level(s)")), List.of());
+                        null, plan.levels().size() + " level(s)")), List.of(), null);
     }
 
     static String plain(BigDecimal value) {

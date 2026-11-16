@@ -60,8 +60,21 @@ public class SellDownBot {
         if (pollTask != null) {
             return;
         }
+        bind();
         priceSubscription = exchange.subscribePrice(state.definition().symbol(), this::onPrice);
         pollTask = scheduler.scheduleWithFixedDelay(this::poll, 0, pollMillis, TimeUnit.MILLISECONDS);
+    }
+
+    /** Binds an unbound bot to this exchange; refuses one bound to another. */
+    private void bind() throws IOException {
+        String bound = state.exchangeName();
+        if (bound == null) {
+            state = state.withExchangeName(exchange.exchangeName());
+            event(EventType.BOUND, null, null, null, null, null, exchange.exchangeName());
+            onChange.accept(state);
+        } else if (!bound.equals(exchange.exchangeName())) {
+            throw new IOException("bot is bound to " + bound + ", not " + exchange.exchangeName());
+        }
     }
 
     /** Stops reacting; open orders stay on the exchange and are picked up again on the next start. */

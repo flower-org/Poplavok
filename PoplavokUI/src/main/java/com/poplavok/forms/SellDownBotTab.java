@@ -86,7 +86,8 @@ public class SellDownBotTab extends VBox {
     static String header(SellDownBotState state, boolean running) {
         SellDownBotState.Definition definition = state.definition();
         return definition.symbol() + " — single sell-down cycle, " + state.levels().size() + " level(s), created "
-                + definition.createdAt() + ". " + (state.isFinished() ? "Finished." : running ? "Running." : "Not running.");
+                + definition.createdAt() + ", exchange: "
+                + (state.exchangeName() == null ? "not bound yet" : state.exchangeName()) + ". " + (state.isFinished() ? "Finished." : running ? "Running." : "Not running.");
     }
 
     static String fileTitle(File file) {

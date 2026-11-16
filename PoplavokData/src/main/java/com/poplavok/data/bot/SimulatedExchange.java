@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
  */
 public class SimulatedExchange implements BotExchange {
     public static final int MAX_POLLS = 50;
+    public static final String NAME = "SIMULATED";
 
     /** One {@link #getOrder} call and the order it returned; {@code failed}: an injected error was thrown instead. */
     public record Poll(Instant time, Order order, boolean failed) {
@@ -125,6 +126,11 @@ public class SimulatedExchange implements BotExchange {
                     filledSize.compareTo(order.size()) >= 0 ? OrderStatus.FILLED : OrderStatus.OPEN));
         }
         changed();
+    }
+
+    @Override
+    public String exchangeName() {
+        return NAME;
     }
 
     /** Puts back an order as it was (e.g. from a reloaded bot); new ids continue after it. */

@@ -24,6 +24,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SellDownBotTest {
     static class FakeExchange implements BotExchange {
         final Map<String, Order> orders = new LinkedHashMap<>();
+
+        @Override
+        public String exchangeName() {
+            return "FAKE";
+        }
+
         final List<String> cancelled = new ArrayList<>();
         boolean failNext;
 
@@ -88,7 +94,7 @@ class SellDownBotTest {
         return new SellDownBotState(new SellDownBotState.Definition("LTC-USDT", "2026-11-15T21:00:00Z", "60", "1000",
                 "30", "0", "80", "90", "95", "1", "0.1", "0.1", "0.1", List.of(plans)),
                 java.util.Arrays.stream(plans).map(plan -> new Level(plan.number(), Status.PENDING, null)).toList(),
-                List.of(), List.of());
+                List.of(), List.of(), null);
     }
 
     SellDownBot bot(SellDownBotState state) {
@@ -304,6 +310,30 @@ class SellDownBotTest {
         assertEquals(Status.SOLD, bot.state().levels().get(0).status());
         assertEquals(List.of(EventType.ERROR, EventType.ORDER_PLACED, EventType.ERROR, EventType.ORDER_FILLED,
                 EventType.SOLD), events(bot).subList(0, 5));
+    }
+
+    @Test
+    void bindsToExchangeOnFirstStartAndRefusesOthers() throws Exception {
+        java.util.concurrent.ScheduledExecutorService scheduler =
+                java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
+        try {
+            SellDownBot bot = bot(threeLevels());
+            bot.start(scheduler, 60_000);
+            bot.stop();
+            assertEquals("FAKE", bot.state().exchangeName());
+            assertEquals(EventType.BOUND, bot.state().history().get(0).type());
+            bot.start(scheduler, 60_000);
+            bot.stop();
+            assertEquals(1, bot.state().history().stream().filter(e -> e.type() == EventType.BOUND).count());
+
+            SellDownBot elsewhere = bot(threeLevels().withExchangeName("KUCOIN"));
+            IOException e = org.junit.jupiter.api.Assertions.assertThrows(IOException.class,
+                    () -> elsewhere.start(scheduler, 60_000));
+            assertTrue(e.getMessage().contains("KUCOIN"), e.getMessage());
+            assertFalse(elsewhere.isRunning());
+        } finally {
+            scheduler.shutdownNow();
+        }
     }
 
     @Test

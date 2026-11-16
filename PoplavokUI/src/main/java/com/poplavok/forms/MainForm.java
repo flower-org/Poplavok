@@ -2,6 +2,7 @@ package com.poplavok.forms;
 
 import com.flower.fxutils.ModalWindow;
 import com.flower.fxutils.Refreshable;
+import com.poplavok.data.bot.SimulatedExchange;
 import com.poplavok.data.model.Currency;
 import com.poplavok.mcc.MultiCoinChartsService;
 import javafx.application.HostServices;
@@ -381,6 +382,12 @@ public class MainForm {
         File file = chooseSellDownBotFile("Simulate Sell-down Bot");
         SellDownBotState state = file == null ? null : readSellDownBot(file);
         if (file == null || state == null) {
+            return;
+        }
+        String bound = state.exchangeName();
+        if (bound != null && !bound.equals(SimulatedExchange.NAME)) {
+            new Alert(Alert.AlertType.ERROR, "This bot is bound to " + bound + "; it can't run on the simulated exchange.",
+                    ButtonType.OK).showAndWait();
             return;
         }
         SimulatedExchangeTab simulation = new SimulatedExchangeTab(state, file);
