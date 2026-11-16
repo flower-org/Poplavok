@@ -164,8 +164,7 @@ public class SellDownBotTab extends VBox {
         table.getColumns().add(column("Fee paid (QUOTE)", level -> stat(state.holdings(level).fee())));
         // Plan columns: the level's definition
         table.getColumns().add(column("Target ratio", level -> percent(plan(level).targetRatio())));
-        table.getColumns().add(column("Sell price", level -> amount(plan(level).sellPrice())
-                + (plan(level).immediate() ? " (now)" : "")));
+        table.getColumns().add(column("Sell price", level -> amount(plan(level).sellPrice())));
         table.getColumns().add(column("Sell trigger price", level -> amount(plan(level).sellTriggerPrice())));
         table.getColumns().add(column("BASE to sell", level -> amount(plan(level).baseToSell())));
         table.getColumns().add(column("Expected QUOTE", level -> amount(plan(level).expectedQuote())));
