@@ -58,13 +58,13 @@ public record SellDownBotState(Definition definition, List<Level> levels, List<E
     }
 
     /**
-     * One planned sell level: sell {@code baseToSell} at {@code sellPrice}, starting at {@code sellTriggerPrice}
-     * ({@code immediate}: at market right away). Break-even prices are null for level 1.
+     * One planned sell level: sell {@code baseToSell} at {@code sellPrice}, starting at {@code sellTriggerPrice}.
+     * Break-even prices are null for level 1.
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record LevelPlan(int number, String targetRatio, String sellPrice, String sellTriggerPrice,
-                            boolean immediate, String baseToSell, String expectedQuote,
+                            String baseToSell, String expectedQuote,
                             @Nullable String breakEvenPrice, @Nullable String breakEvenTriggerPrice) {
     }
 
@@ -307,7 +307,7 @@ public record SellDownBotState(Definition definition, List<Level> levels, List<E
                 percent(params.endRatio()), percent(params.liquidationRatio()), percent(params.fillBuffer()),
                 percent(params.slippage()), percent(params.makerFee()), percent(params.takerFee()),
                 plan.levels().stream().map(level -> new LevelPlan(level.number(), percent(level.targetRatio()),
-                        plain(level.sellPrice()), plain(level.sellTriggerPrice()), level.immediate(),
+                        plain(level.sellPrice()), plain(level.sellTriggerPrice()),
                         plain(level.baseSold()), plain(level.quoteReceived()), plainOrNull(level.breakEvenPrice()),
                         plainOrNull(level.breakEvenTriggerPrice()))).toList());
         return new SellDownBotState(definition,

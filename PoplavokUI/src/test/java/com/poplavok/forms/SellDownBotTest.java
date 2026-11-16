@@ -84,9 +84,9 @@ class SellDownBotTest {
     final FakeExchange exchange = new FakeExchange();
     final List<SellDownBotState> saved = new ArrayList<>();
 
-    static SellDownBotState.LevelPlan level(int n, String sell, String trigger, boolean immediate,
+    static SellDownBotState.LevelPlan level(int n, String sell, String trigger,
                                             String beTrigger) {
-        return new SellDownBotState.LevelPlan(n, "80", sell, trigger, immediate, "10", "100",
+        return new SellDownBotState.LevelPlan(n, "80", sell, trigger, "10", "100",
                 beTrigger == null ? null : "6" + n, beTrigger);
     }
 
@@ -103,8 +103,8 @@ class SellDownBotTest {
     }
 
     static SellDownBotState threeLevels() {
-        return state(level(1, "50", "50.5", false, null), level(2, "45", "45.5", false, "55"),
-                level(3, "40", "40.5", false, "50"));
+        return state(level(1, "50", "50.5", null), level(2, "45", "45.5", "55"),
+                level(3, "40", "40.5", "50"));
     }
 
     List<EventType> events(SellDownBot bot) {
@@ -212,9 +212,11 @@ class SellDownBotTest {
     }
 
     @Test
-    void immediateLevelSellsWithoutPrice() {
-        SellDownBot bot = bot(state(level(1, "59", "70", true, null), level(2, "45", "45.5", false, "65")));
+    void nothingIsSoldWithoutPrice() {
+        SellDownBot bot = bot(state(level(1, "59", "70", null), level(2, "45", "45.5", "65")));
         bot.poll();
+        assertTrue(exchange.orders.isEmpty());
+        bot.onPrice(new BigDecimal("60"));
         assertEquals(new BigDecimal("59"), exchange.orders.get("o1").price());
     }
 

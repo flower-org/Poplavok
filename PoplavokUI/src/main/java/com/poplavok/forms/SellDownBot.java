@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 /**
  * Runs one sell-down cycle of a {@link SellDownBotState} on a {@link BotExchange}:
  * <ol>
- * <li>Every PENDING level whose sell trigger the price is at/below (immediate levels: right away) gets a SELL limit
+ * <li>Every PENDING level whose sell trigger the price is at/below gets a SELL limit
  * order for its BASE at its sell price, so a sudden drop places several at once. SELLING, then SOLD when filled.</li>
  * <li>Latest SOLD level N > 1: when the price is at/above its break-even trigger, all open sells are cancelled and a BUY
  * limit order is placed at its break-even price for the BASE sold by levels N-1 and N. BUYING_BACK, then BROKEN_EVEN
@@ -156,8 +156,8 @@ public class SellDownBot {
         }
         for (Level level : state.levels()) {
             LevelPlan plan = state.plan(level);
-            if (level.status() == Status.PENDING && (plan.immediate()
-                    || (price != null && price.compareTo(new BigDecimal(plan.sellTriggerPrice())) <= 0))) {
+            if (level.status() == Status.PENDING && price != null
+                    && price.compareTo(new BigDecimal(plan.sellTriggerPrice())) <= 0) {
                 sell(level);
             }
         }
