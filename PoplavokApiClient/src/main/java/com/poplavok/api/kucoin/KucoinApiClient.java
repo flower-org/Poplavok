@@ -21,6 +21,7 @@ import com.poplavok.api.kucoin.model.response.MarginOrdersPage;
 import com.poplavok.api.kucoin.model.response.OrderCreateResponse;
 import com.poplavok.api.kucoin.model.response.OrderResponse;
 import com.poplavok.api.kucoin.model.response.Pagination;
+import com.poplavok.api.kucoin.model.response.SymbolResponse;
 import com.poplavok.api.kucoin.model.response.WebsocketTokenResponse;
 import okhttp3.HttpUrl;
 import okhttp3.Interceptor;
@@ -54,8 +55,8 @@ public class KucoinApiClient {
     }
 
     /** {@code interceptor}: added last, e.g. to answer requests in tests. */
-    KucoinApiClient(@Nullable KucoinCredentialsProvider credentialsProvider, @Nullable Proxy proxy,
-                    @Nullable Interceptor interceptor) {
+    public KucoinApiClient(@Nullable KucoinCredentialsProvider credentialsProvider, @Nullable Proxy proxy,
+                           @Nullable Interceptor interceptor) {
         this.mapper = new ObjectMapper();
         this.mapper.registerModules(new GuavaModule());
         
@@ -218,6 +219,21 @@ public class KucoinApiClient {
         if (endAt != null) urlBuilder.addQueryParameter("endAt", String.valueOf(endAt));
         return execute(new Request.Builder().url(urlBuilder.build()).get().build(),
                 new TypeReference<KucoinResponse<MarginOrdersPage>>() {});
+    }
+
+    /** Cancels an HF margin order (as placed by {@link #createMarginOrder}); the result is seen via its status. */
+    public OrderCreateResponse cancelMarginOrder(String orderId, String symbol) throws IOException {
+        HttpUrl url = HttpUrl.parse(BASE_URL + "api/v3/hf/margin/orders").newBuilder()
+                .addPathSegment(orderId).addQueryParameter("symbol", symbol).build();
+        return execute(new Request.Builder().url(url).delete().build(),
+                new TypeReference<KucoinResponse<OrderCreateResponse>>() {});
+    }
+
+    /** Trading rules (increments, minimums) of {@code symbol}. */
+    public SymbolResponse getSymbol(String symbol) throws IOException {
+        HttpUrl url = HttpUrl.parse(BASE_URL + "api/v2/symbols").newBuilder().addPathSegment(symbol).build();
+        return execute(new Request.Builder().url(url).get().build(),
+                new TypeReference<KucoinResponse<SymbolResponse>>() {});
     }
 
     public CancelOrderResponse cancelOrder(String orderId) throws IOException {

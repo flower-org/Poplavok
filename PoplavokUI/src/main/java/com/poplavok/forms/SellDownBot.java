@@ -32,7 +32,8 @@ import java.util.function.Consumer;
  * </ol>
  * Orders are tracked by polling ({@link #poll}). Every order is kept in the state with its own history (placed,
  * updated, cancel requested, closed); bot actions go to the state's history. Every change is passed to
- * {@code onChange} (e.g. to save the state file). Sizes and prices are used as planned, without exchange rounding.
+ * {@code onChange} (e.g. to save the state file). Sizes and prices are as planned; the exchange rounds them in the
+ * bot's favour. A rest to sell that's below the exchange minimum counts as sold.
  */
 public class SellDownBot {
     private final BotExchange exchange;
@@ -136,11 +137,16 @@ public class SellDownBot {
             event(EventType.ORDER_CANCELLED, level.number(), order);
             state = state.withLevel(level.withStatus(selling ? Status.PENDING : Status.SOLD, null));
         }
+        finishIfDone();
+        onChange.accept(state);
+    }
+
+    /** Records FINISHED and stops once the cycle is finished and no order is open. */
+    private void finishIfDone() {
         if (state.isFinished() && state.levels().stream().noneMatch(l -> l.orderId() != null)) {
             event(EventType.FINISHED, null, null, null, null, null, null);
             stop();
         }
-        onChange.accept(state);
     }
 
     private void act() {
@@ -171,6 +177,7 @@ public class SellDownBot {
         if (remaining.signum() <= 0) {
             state = state.withLevel(level.withStatus(Status.SOLD, null));
             event(EventType.SOLD, level.number(), null, null, null, null, "already sold by earlier orders");
+            finishIfDone();
             onChange.accept(state);
             return;
         }
@@ -220,6 +227,17 @@ public class SellDownBot {
             state = state.withLevel(level.withStatus(status, order.orderId()))
                     .withOrder(SellDownBotState.BotOrder.placed(level.number(), order, clock.instant()));
             event(EventType.ORDER_PLACED, level.number(), plain(price), plain(size), null, order.orderId(), note);
+            onChange.accept(state);
+        } catch (BotExchange.OrderTooSmallException e) {
+            if (side != BotExchange.Side.SELL) {
+                error(level.number(), "place buy", note, e);
+                return;
+            }
+            // Dust the exchange won't take: nothing more can be sold for this level
+            state = state.withLevel(level.withStatus(Status.SOLD, null));
+            event(EventType.SOLD, level.number(), plain(price), plain(size), null, null,
+                    "rest below the exchange minimum, counted as sold: " + e.getMessage());
+            finishIfDone();
             onChange.accept(state);
         } catch (IOException | RuntimeException e) {
             error(level.number(), "place " + side.name().toLowerCase(java.util.Locale.ROOT), note, e);

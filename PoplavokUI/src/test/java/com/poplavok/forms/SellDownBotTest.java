@@ -32,12 +32,16 @@ class SellDownBotTest {
 
         final List<String> cancelled = new ArrayList<>();
         boolean failNext;
+        BigDecimal minSize = BigDecimal.ZERO;
 
         @Override
         public Order placeLimitOrder(String symbol, Side side, BigDecimal price, BigDecimal size) throws IOException {
             if (failNext) {
                 failNext = false;
                 throw new IOException("boom");
+            }
+            if (size.compareTo(minSize) < 0) {
+                throw new OrderTooSmallException("size " + size + " is below the minimum " + minSize);
             }
             String id = "o" + (orders.size() + 1);
             Order order = new Order(id, side, price, size, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
@@ -396,6 +400,23 @@ class SellDownBotTest {
         assertTrue(exchange.orders.isEmpty());
         bot.onPrice(new BigDecimal("60"));
         assertEquals(new BigDecimal("59"), exchange.orders.get("o1").price());
+    }
+
+    @Test
+    void restBelowTheExchangeMinimumCountsAsSold() {
+        SellDownBot bot = bot(threeLevels());
+        exchange.minSize = BigDecimal.ONE;
+        bot.onPrice(new BigDecimal("50"));
+        exchange.partialFill("o1", "9.5");
+        exchange.cancel("o1");
+        bot.poll();
+
+        assertEquals(Status.SOLD, bot.state().levels().get(0).status());
+        assertEquals(1, exchange.orders.size(), "no order for the 0.5 left");
+        SellDownBotState.Event last = bot.state().history().get(bot.state().history().size() - 1);
+        assertEquals(EventType.SOLD, last.type());
+        assertTrue(String.valueOf(last.note()).startsWith("rest below the exchange minimum"), last.note());
+        assertEquals("0.5", last.base());
     }
 
     @Test

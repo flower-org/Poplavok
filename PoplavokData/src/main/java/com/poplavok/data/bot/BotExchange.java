@@ -9,6 +9,11 @@ import java.math.MathContext;
  * What the sell-down bot needs from an exchange: place and cancel limit orders on the symbol's trading account
  * (on KuCoin: its isolated margin account), poll their status and receive price updates. Implemented by KuCoin and by a
  * simulated exchange. Listeners may be called on any thread.
+ * <p>
+ * Contract: orders never borrow and never repay, so the debt stays as it is and the QUOTE a sell brings in stays in
+ * the account for the break-even buy. Fees are reported in QUOTE (0 if paid in another currency). The exchange may
+ * round a limit order to its increments, only in the bot's favour: sizes down, sell prices up, buy prices down; the
+ * returned {@link Order} shows what was placed.
  */
 public interface BotExchange {
     enum Side { BUY, SELL }
@@ -48,7 +53,20 @@ public interface BotExchange {
         void close();
     }
 
-    /** Places a limit order without borrowing. */
+    /** The order is below the exchange's minimum size or value, after rounding; it can't be placed. */
+    class OrderTooSmallException extends IOException {
+        private static final long serialVersionUID = 1L;
+
+        public OrderTooSmallException(String message) {
+            super(message);
+        }
+    }
+
+    /**
+     * Places a limit order without borrowing or repaying.
+     *
+     * @throws OrderTooSmallException if it's below the exchange's minimum size or value
+     */
     Order placeLimitOrder(String symbol, Side side, BigDecimal price, BigDecimal size) throws IOException;
 
     /** Current state of an order: fills so far and status. */

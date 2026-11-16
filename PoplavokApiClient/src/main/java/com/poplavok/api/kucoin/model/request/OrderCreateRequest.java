@@ -88,4 +88,8 @@ public interface OrderCreateRequest {
     /** isIsolated flag for v3 margin orders */
     @Nullable
     Boolean isIsolated();
+
+    /** auto repay flag for v3 margin orders: repay the debt with what the order brings in (KuCoin default false) */
+    @Nullable
+    Boolean autoRepay();
 }
