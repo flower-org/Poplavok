@@ -29,9 +29,13 @@ import java.util.Objects;
 @JsonIgnoreProperties(ignoreUnknown = true)
 /**
  * {@code exchangeName}: the {@link BotExchange#exchangeName()} the bot is bound to on its first start; it won't run on any other.
+ * {@code manualBreakEvenTrigger}: break-even trigger set by hand for the whole bot; overrides every level's planned
+ * break-even until cleared. {@code manualBreakEvenPrice}: its buy price, worked out once when it's set (trigger plus
+ * the fill buffer). Both null if none.
  */
 public record SellDownBotState(Definition definition, List<Level> levels, List<Event> history, List<BotOrder> orders,
-                               @Nullable String exchangeName) {
+                               @Nullable String exchangeName, @Nullable String manualBreakEvenTrigger,
+                               @Nullable String manualBreakEvenPrice) {
     public static final String EXTENSION = "*.bot";
     static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
@@ -40,6 +44,11 @@ public record SellDownBotState(Definition definition, List<Level> levels, List<E
         levels = levels == null ? List.of() : List.copyOf(levels);
         history = history == null ? List.of() : List.copyOf(history);
         orders = orders == null ? List.of() : List.copyOf(orders);
+    }
+
+    public SellDownBotState(Definition definition, List<Level> levels, List<Event> history, List<BotOrder> orders,
+                            @Nullable String exchangeName) {
+        this(definition, levels, history, orders, exchangeName, null, null);
     }
 
     /**
@@ -81,32 +90,95 @@ public record SellDownBotState(Definition definition, List<Level> levels, List<E
     public enum Status { PENDING, SELLING, SOLD, BUYING_BACK, BROKEN_EVEN }
 
     public enum EventType {
-        CREATED, BOUND, ORDER_PLACED, ORDER_FILLED, ORDER_CANCELLED, SOLD, BROKEN_EVEN, FINISHED, ERROR
+        CREATED, BOUND, ORDER_PLACED, ORDER_FILLED, ORDER_CANCELLED, SOLD, BREAK_EVEN_SET, BROKEN_EVEN, FINISHED,
+        ERROR
     }
 
     /**
      * One bot action. {@code time}: ISO-8601 instant. {@code level}: level number, null if not about a level.
      * {@code price}, {@code base}, {@code quote}: what was ordered/filled, where relevant. {@code orderId}: exchange
      * order, where relevant. {@code note}: free text, e.g. an error message.
+     * <p>
+     * ERROR events are statistical: consecutive errors are merged into one event. {@code errors}: how many of each
+     * type; {@code time}/{@code lastTime}: first and latest; {@code note}: the latest message; {@code level}: null if
+     * they were about different levels.
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Event(String time, EventType type, @Nullable Integer level, @Nullable String price,
                         @Nullable String base, @Nullable String quote, @Nullable String orderId,
-                        @Nullable String note) {
+                        @Nullable String note, @Nullable String lastTime, @Nullable List<ErrorCount> errors) {
+        public Event {
+            errors = errors == null ? null : List.copyOf(errors);
+        }
+
+        public Event(String time, EventType type, @Nullable Integer level, @Nullable String price,
+                     @Nullable String base, @Nullable String quote, @Nullable String orderId,
+                     @Nullable String note) {
+            this(time, type, level, price, base, quote, orderId, note, null, null);
+        }
+
+        /** Total number of errors in this event (1 for a plain ERROR event). */
+        public int errorCount() {
+            return errors == null ? (type == EventType.ERROR ? 1 : 0)
+                    : errors.stream().mapToInt(ErrorCount::count).sum();
+        }
+
+        /** "type x count, ..." for the errors in this event; empty if none. */
+        public String errorSummary() {
+            return errors == null ? "" : errors.stream().map(e -> e.type() + " x" + e.count())
+                    .collect(java.util.stream.Collectors.joining(", "));
+        }
+    }
+
+    /** How many errors of {@code type} (operation and exception, e.g. "place sell: IOException") an ERROR event holds. */
+    public record ErrorCount(String type, int count) {
+    }
+
+    /**
+     * Same state with an error recorded: merged into the last history event if that's an ERROR (counted by
+     * {@code errorType}), else appended as a new ERROR event.
+     */
+    public SellDownBotState withError(String time, @Nullable Integer level, String errorType, String message) {
+        Event last = history.isEmpty() ? null : history.get(history.size() - 1);
+        Event event;
+        if (last != null && last.type() == EventType.ERROR) {
+            List<ErrorCount> counts = new ArrayList<>(last.errors() == null ? List.of() : last.errors());
+            int index = counts.stream().map(ErrorCount::type).toList().indexOf(errorType);
+            if (index < 0) {
+                counts.add(new ErrorCount(errorType, 1));
+            } else {
+                counts.set(index, new ErrorCount(errorType, counts.get(index).count() + 1));
+            }
+            event = new Event(last.time(), EventType.ERROR, Objects.equals(last.level(), level) ? level : null,
+                    null, null, null, null, message, time, counts);
+        } else {
+            event = new Event(time, EventType.ERROR, level, null, null, null, null, message, time,
+                    List.of(new ErrorCount(errorType, 1)));
+        }
+        List<Event> events = new ArrayList<>(history);
+        if (last != null && last.type() == EventType.ERROR) {
+            events.set(events.size() - 1, event);
+        } else {
+            events.add(event);
+        }
+        return new SellDownBotState(definition, levels, events, orders, exchangeName, manualBreakEvenTrigger,
+                manualBreakEvenPrice);
     }
 
     /** Same state with {@code event} appended to the history. */
     public SellDownBotState withEvent(Event event) {
         List<Event> events = new ArrayList<>(history);
         events.add(event);
-        return new SellDownBotState(definition, levels, events, orders, exchangeName);
+        return new SellDownBotState(definition, levels, events, orders, exchangeName, manualBreakEvenTrigger,
+                manualBreakEvenPrice);
     }
 
     /** Same state with {@code level} replacing the level with the same number. */
     public SellDownBotState withLevel(Level level) {
         return new SellDownBotState(definition,
-                levels.stream().map(l -> l.number() == level.number() ? level : l).toList(), history, orders, exchangeName);
+                levels.stream().map(l -> l.number() == level.number() ? level : l).toList(), history, orders, exchangeName,
+                manualBreakEvenTrigger, manualBreakEvenPrice);
     }
 
     /** Same state with {@code order} replacing the order with the same id, or appended if new. */
@@ -118,12 +190,19 @@ public record SellDownBotState(Definition definition, List<Level> levels, List<E
         } else {
             updated.set(index, order);
         }
-        return new SellDownBotState(definition, levels, history, updated, exchangeName);
+        return new SellDownBotState(definition, levels, history, updated, exchangeName, manualBreakEvenTrigger,
+                manualBreakEvenPrice);
     }
 
     /** Same state bound to {@code newExchangeName}. */
     public SellDownBotState withExchangeName(String newExchangeName) {
-        return new SellDownBotState(definition, levels, history, orders, newExchangeName);
+        return new SellDownBotState(definition, levels, history, orders, newExchangeName, manualBreakEvenTrigger,
+                manualBreakEvenPrice);
+    }
+
+    /** Same state with the bot-wide manual break-even trigger and its buy price set (nulls: cleared). */
+    public SellDownBotState withManualBreakEven(@Nullable String trigger, @Nullable String price) {
+        return new SellDownBotState(definition, levels, history, orders, exchangeName, trigger, price);
     }
 
     public @Nullable BotOrder order(String orderId) {
@@ -290,6 +369,113 @@ public record SellDownBotState(Definition definition, List<Level> levels, List<E
     }
 
     /**
+     * Break-even of the latest SOLD level N > 1: spend all the QUOTE levels N-1 and N actually received
+     * ({@code quote}, after fees) on BASE; at the planned price that buys back all the BASE they sold ({@code base}),
+     * below it more (gain), above it less (loss). {@code autoPrice}, {@code autoTrigger}: level N's planned break-even
+     * price and trigger, from the definition. {@code autoUnavailable}: why the bot won't break even automatically
+     * (it would buy back less BASE than sold, or collide with the next sell), else null. {@code manualTrigger}: the bot-wide one set by
+     * hand (e.g. the current price), overrides the automatic one; {@code manualPrice}: its buy price, the trigger plus the
+     * fill buffer, like the planned ones. {@code price}, {@code trigger}: what the bot uses (manual, else automatic if
+     * available), else null.
+     */
+    public record BreakEven(int level, BigDecimal base, BigDecimal quote, BigDecimal autoPrice, BigDecimal autoTrigger,
+                            @Nullable String autoUnavailable, @Nullable BigDecimal manualTrigger,
+                            @Nullable BigDecimal manualPrice,
+                            @Nullable BigDecimal price, @Nullable BigDecimal trigger) {
+    }
+
+    /**
+     * Break-even of the latest SOLD level (or the one BUYING_BACK / BROKEN_EVEN), or null if there is none or it's
+     * level 1. {@code base} and {@code quote} are net of what break-even buys already filled.
+     */
+    public @Nullable BreakEven breakEven() {
+        Level latest = levels.stream().filter(l -> l.status() == Status.SOLD || l.status() == Status.BUYING_BACK
+                || l.status() == Status.BROKEN_EVEN).reduce((first, second) -> second).orElse(null);
+        if (latest == null || latest.number() < 2) {
+            return null;
+        }
+        int number = latest.number();
+        LevelPlan plan = plan(latest);
+        if (plan.breakEvenPrice() == null || plan.breakEvenTriggerPrice() == null) {
+            return null;
+        }
+        Holdings bought = new Holdings(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+        for (BotOrder order : orders) {
+            if (order.level() == number && order.side() == BotExchange.Side.BUY) {
+                bought = bought.with(order);
+            }
+        }
+        BigDecimal base = soldBase(number - 1).add(soldBase(number)).subtract(bought.base());
+        BigDecimal quote = sold(number - 1).quote().add(sold(number).quote()).add(bought.quote());
+        BigDecimal autoPrice = new BigDecimal(plan.breakEvenPrice());
+        BigDecimal autoTrigger = new BigDecimal(plan.breakEvenTriggerPrice());
+        BigDecimal autoGain = size(quote, autoPrice).subtract(base);
+        String unavailable = null;
+        if (autoGain.signum() < 0) {
+            unavailable = "would buy back " + plain(autoGain.negate().setScale(6, java.math.RoundingMode.HALF_UP))
+                    + " BASE less than sold at the planned price " + plain(autoPrice);
+        } else if (number < levels.size()) {
+            Level next = levels.get(number);
+            BigDecimal nextTrigger = new BigDecimal(plan(next).sellTriggerPrice());
+            if ((next.status() == Status.PENDING || next.status() == Status.SELLING)
+                    && autoTrigger.compareTo(nextTrigger) <= 0) {
+                unavailable = "its trigger " + plain(autoTrigger.setScale(6, java.math.RoundingMode.HALF_UP))
+                        + " is at or below level " + next.number() + "'s sell trigger " + plain(nextTrigger);
+            }
+        }
+        BigDecimal manualTrigger = manualBreakEvenTrigger == null ? null : new BigDecimal(manualBreakEvenTrigger);
+        BigDecimal manual = manualTrigger == null || manualBreakEvenPrice == null ? null
+                : new BigDecimal(manualBreakEvenPrice);
+        if (manual == null) {
+            manualTrigger = null;
+        }
+        BigDecimal price = manual != null ? manual : unavailable == null ? autoPrice : null;
+        BigDecimal trigger = manualTrigger != null ? manualTrigger : unavailable == null ? autoTrigger : null;
+        return new BreakEven(number, base, quote, autoPrice, autoTrigger, unavailable, manualTrigger, manual, price,
+                trigger);
+    }
+
+    /** Break-even buy price for a trigger: trigger / (1 - fill buffer), as the planner does (trigger = price x (1 - buffer)). */
+    public BigDecimal breakEvenPriceForTrigger(BigDecimal trigger) {
+        BigDecimal buffer = BigDecimal.ONE.subtract(new BigDecimal(definition.fillBuffer()).movePointLeft(2));
+        return trigger.divide(buffer, 10, java.math.RoundingMode.HALF_UP).stripTrailingZeros();
+    }
+
+    /** BASE the break-even buys at {@code price}: all its QUOTE, maker fee on top. */
+    public BigDecimal breakEvenSize(BreakEven breakEven, BigDecimal price) {
+        return size(breakEven.quote(), price);
+    }
+
+    /** BASE bought back beyond what was sold, at {@code price}; negative: loss (less BASE back than sold). */
+    public BigDecimal breakEvenGain(BreakEven breakEven, BigDecimal price) {
+        return breakEvenSize(breakEven, price).subtract(breakEven.base());
+    }
+
+    /** Debt ratio of the whole position right after the break-even buy at {@code price}. */
+    public @Nullable BigDecimal debtRatioAfterBreakEven(BreakEven breakEven, BigDecimal price) {
+        Holdings now = holdings();
+        BigDecimal size = breakEvenSize(breakEven, price);
+        return com.poplavok.data.utils.LiquidationCalculator.debtRatio(new BigDecimal(definition.debt()), true,
+                now.base().add(size), now.quote().subtract(size.multiply(price).multiply(BigDecimal.ONE.add(makerFee()))),
+                price);
+    }
+
+    /** BASE that {@code quote} buys at {@code price} with the maker fee on top, rounded down. */
+    BigDecimal size(BigDecimal quote, BigDecimal price) {
+        return quote.signum() <= 0 ? BigDecimal.ZERO : quote.divide(price.multiply(BigDecimal.ONE.add(makerFee())), 10,
+                java.math.RoundingMode.FLOOR).stripTrailingZeros();
+    }
+
+    BigDecimal makerFee() {
+        return new BigDecimal(definition.makerFee()).movePointLeft(2);
+    }
+
+    /** BASE the level's sells actually filled. */
+    BigDecimal soldBase(int number) {
+        return new BigDecimal(plan(levels.get(number - 1)).baseToSell()).subtract(sold(number).base());
+    }
+
+    /**
      * State of definition level {@code number}. {@code orderId}: the open order (SELLING or BUYING_BACK), else null.
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -313,7 +499,7 @@ public record SellDownBotState(Definition definition, List<Level> levels, List<E
         return new SellDownBotState(definition,
                 plan.levels().stream().map(level -> new Level(level.number(), Status.PENDING, null)).toList(),
                 List.of(new Event(createdAt.toString(), EventType.CREATED, null, plain(params.price()), null, null,
-                        null, plan.levels().size() + " level(s)")), List.of(), null);
+                        null, plan.levels().size() + " level(s)")), List.of(), null, null, null);
     }
 
     static String plain(BigDecimal value) {

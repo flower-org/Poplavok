@@ -21,10 +21,13 @@ import java.util.function.Consumer;
  * Runs one sell-down cycle of a {@link SellDownBotState} on a {@link BotExchange}:
  * <ol>
  * <li>Every PENDING level whose sell trigger the price is at/below gets a SELL limit
- * order for its BASE at its sell price, so a sudden drop places several at once. SELLING, then SOLD when filled.</li>
- * <li>Latest SOLD level N > 1: when the price is at/above its break-even trigger, all open sells are cancelled and a BUY
- * limit order is placed at its break-even price for the BASE sold by levels N-1 and N. BUYING_BACK, then BROKEN_EVEN
+ * order for what it has left to sell at its sell price, so a sudden drop places several at once. SELLING, then SOLD
  * when filled.</li>
+ * <li>Latest SOLD level N > 1: when the price is at/above its break-even trigger, all open sells are cancelled and a BUY
+ * limit order is placed at its break-even price, spending all the QUOTE levels N-1 and N actually received. The price
+ * is the planned one ({@link SellDownBotState#breakEven}; off if it would buy back less BASE than sold), or set by hand
+ * via its trigger; with neither available, nothing happens.
+ * BUYING_BACK, then BROKEN_EVEN when filled.</li>
  * <li>After break-even, or once all levels are SOLD, the cycle is finished.</li>
  * </ol>
  * Orders are tracked by polling ({@link #poll}). Every order is kept in the state with its own history (placed,
@@ -102,7 +105,7 @@ public class SellDownBot {
                 try {
                     track(level, exchange.getOrder(state.definition().symbol(), orderId));
                 } catch (IOException | RuntimeException e) {
-                    error(level.number(), "getOrder " + orderId + ": " + e.getMessage());
+                    error(level.number(), "getOrder", "getOrder " + orderId, e);
                 }
             }
         }
@@ -145,13 +148,11 @@ public class SellDownBot {
             return;
         }
         BigDecimal price = lastPrice;
-        Level latestSold = state.levels().stream().filter(l -> l.status() == Status.SOLD)
-                .reduce((first, second) -> second).orElse(null);
-        String breakEvenTrigger = latestSold == null ? null : state.plan(latestSold).breakEvenTriggerPrice();
-        if (price != null && latestSold != null && breakEvenTrigger != null
-                && price.compareTo(new BigDecimal(breakEvenTrigger)) >= 0) {
+        SellDownBotState.BreakEven breakEven = state.breakEven();
+        if (price != null && breakEven != null && breakEven.trigger() != null
+                && price.compareTo(breakEven.trigger()) >= 0) {
             state.levels().stream().filter(l -> l.status() == Status.SELLING).forEach(this::cancel);
-            breakEven(latestSold);
+            breakEven(breakEven);
             return;
         }
         for (Level level : state.levels()) {
@@ -177,12 +178,39 @@ public class SellDownBot {
                 remaining.compareTo(new BigDecimal(plan.baseToSell())) < 0 ? "sell of the rest" : "sell");
     }
 
-    private void breakEven(Level level) {
-        LevelPlan plan = state.plan(level);
-        LevelPlan previous = state.plan(state.levels().get(level.number() - 2));
-        BigDecimal size = new BigDecimal(previous.baseToSell()).add(new BigDecimal(plan.baseToSell()));
-        place(level, BotExchange.Side.BUY, new BigDecimal(Objects.requireNonNull(plan.breakEvenPrice())),
-                size, Status.BUYING_BACK, "break-even buy of levels " + previous.number() + "-" + level.number());
+    /** Spends all the QUOTE levels N-1 and N received on BASE, at the break-even price (the manual one if set). */
+    private void breakEven(SellDownBotState.BreakEven breakEven) {
+        Level level = state.levels().get(breakEven.level() - 1);
+        BigDecimal price = Objects.requireNonNull(breakEven.price());
+        place(level, BotExchange.Side.BUY, price, state.breakEvenSize(breakEven, price),
+                Status.BUYING_BACK, "break-even buy of levels " + (breakEven.level() - 1) + "-" + breakEven.level()
+                        + (breakEven.manualPrice() != null ? " at the manual price" : ""));
+    }
+
+    /**
+     * Sets the bot-wide hand-set break-even trigger (buy price: trigger plus the fill buffer), overriding every
+     * level's planned break-even; null clears it. If a break-even buy is open, it's cancelled and placed again (for
+     * the QUOTE left) under the new setting.
+     */
+    public synchronized void setManualBreakEvenTrigger(@Nullable BigDecimal trigger) {
+        if (state.isFinished()) {
+            throw new IllegalStateException("The bot is finished");
+        }
+        if (trigger != null && trigger.signum() <= 0) {
+            throw new IllegalArgumentException("Break-even trigger must be positive");
+        }
+        String price = trigger == null ? null : plain(state.breakEvenPriceForTrigger(trigger));
+        state = state.withManualBreakEven(trigger == null ? null : plain(trigger), price);
+        event(EventType.BREAK_EVEN_SET, null, price,
+                null, null, null, trigger == null ? "manual break-even cleared"
+                        : "manual break-even set: trigger " + plain(trigger));
+        onChange.accept(state);
+        Level buying = state.levels().stream().filter(l -> l.status() == Status.BUYING_BACK).findFirst().orElse(null);
+        if (buying != null) {
+            cancel(buying);
+        } else if (pollTask != null) {
+            act();
+        }
     }
 
     private void place(Level level, BotExchange.Side side, BigDecimal price, BigDecimal size, Status status,
@@ -194,7 +222,7 @@ public class SellDownBot {
             event(EventType.ORDER_PLACED, level.number(), plain(price), plain(size), null, order.orderId(), note);
             onChange.accept(state);
         } catch (IOException | RuntimeException e) {
-            error(level.number(), note + ": " + e.getMessage());
+            error(level.number(), "place " + side.name().toLowerCase(java.util.Locale.ROOT), note, e);
         }
     }
 
@@ -211,12 +239,14 @@ public class SellDownBot {
                 onChange.accept(state);
             }
         } catch (IOException | RuntimeException e) {
-            error(level.number(), "cancel " + orderId + ": " + e.getMessage());
+            error(level.number(), "cancel", "cancel " + orderId, e);
         }
     }
 
-    private void error(@Nullable Integer level, String note) {
-        event(EventType.ERROR, level, null, null, null, null, note);
+    /** Records an error; consecutive errors are counted in one ERROR event by "operation: exception class". */
+    private void error(@Nullable Integer level, String operation, String note, Exception e) {
+        state = state.withError(clock.instant().toString(), level, operation + ": " + e.getClass().getSimpleName(),
+                note + ": " + e.getMessage());
         onChange.accept(state);
     }
 

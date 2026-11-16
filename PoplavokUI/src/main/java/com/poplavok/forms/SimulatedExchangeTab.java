@@ -42,7 +42,7 @@ import static com.poplavok.data.utils.BigDecimalUtil.formatAmount;
  * Runs a sell-down bot against a {@link SimulatedExchange} the user operates: set the price, then fill (partially or
  * fully, at the limit price or better) or cancel the bot's orders. The bot form above shows how the bot reacts.
  * While the bot runs, every change is saved to {@code <file>.bak}; on exit (stop, finish, tab close) the bot file is
- * overwritten.
+ * overwritten and the backup deleted. So a backup found when loading means the bot didn't shut down cleanly.
  */
 public class SimulatedExchangeTab extends VBox {
     private static final Logger LOGGER = LoggerFactory.getLogger(SimulatedExchangeTab.class);
@@ -103,6 +103,7 @@ public class SimulatedExchangeTab extends VBox {
         VBox.setVgrow(botTab, Priority.ALWAYS);
         checkNotNull(botPane).getChildren().add(botTab);
         bot = new SellDownBot(state, exchange, Clock.systemUTC(), this::onBotChange);
+        botTab.setManualBreakEvenSetter(bot::setManualBreakEvenTrigger);
         exchange.addChangeListener(() -> Platform.runLater(this::refreshOrders));
 
         initFailures();
@@ -131,10 +132,15 @@ public class SimulatedExchangeTab extends VBox {
         Platform.runLater(this::refreshBot);
     }
 
-    /** Overwrites the bot file with the bot's state, if it changed. */
+    /** Overwrites the bot file with the bot's state (if it changed), then deletes the backup. */
     synchronized void saveOnExit() {
         if (unsaved && write(latest, file)) {
             unsaved = false;
+        }
+        File backup = backupFile(file);
+        if (!unsaved && backup.exists() && !backup.delete()) {
+            LOGGER.error("Failed to delete {}", backup);
+            Platform.runLater(() -> message("Couldn't delete " + backup.getName()));
         }
     }
 

@@ -408,8 +408,38 @@ public class MainForm {
         return chooser.showOpenDialog(checkNotNull(mainStage));
     }
 
+    /**
+     * Reads a bot file. A {@code .bak} next to it means the bot didn't shut down cleanly; the user chooses to recover
+     * from it (it becomes the bot file), discard it, or cancel.
+     */
     @Nullable SellDownBotState readSellDownBot(File file) {
+        boolean simulated = checkNotNull(tabs).getTabs().stream().anyMatch(tab ->
+                tab.getContent() instanceof SimulatedExchangeTab simulation && simulation.file.equals(file));
+        if (simulated) {
+            new Alert(Alert.AlertType.ERROR, file.getName() + " is already open in a simulation tab.", ButtonType.OK)
+                    .showAndWait();
+            return null;
+        }
         try {
+            File backup = SimulatedExchangeTab.backupFile(file);
+            if (backup.exists()) {
+                ButtonType recover = new ButtonType("Recover from backup");
+                ButtonType discard = new ButtonType("Discard backup");
+                Alert alert = new Alert(Alert.AlertType.WARNING, backup.getName() + " exists: the bot didn't shut down "
+                        + "cleanly (crashed?). The backup holds its latest state. Recover from it?", recover, discard,
+                        ButtonType.CANCEL);
+                alert.setTitle("Bot backup found");
+                alert.setHeaderText(null);
+                ButtonType choice = alert.showAndWait().orElse(ButtonType.CANCEL);
+                if (choice == recover) {
+                    SellDownBotState.read(backup).write(file);
+                } else if (choice != discard) {
+                    return null;
+                }
+                if (!backup.delete()) {
+                    throw new IOException("Couldn't delete " + backup);
+                }
+            }
             SellDownBotState state = SellDownBotState.read(file);
             SellDownApproximatorTab.lastDirectory = file.getParentFile();
             return state;

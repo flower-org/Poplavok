@@ -84,10 +84,12 @@ class SellDownBotTest {
     final FakeExchange exchange = new FakeExchange();
     final List<SellDownBotState> saved = new ArrayList<>();
 
-    static SellDownBotState.LevelPlan level(int n, String sell, String trigger,
-                                            String beTrigger) {
-        return new SellDownBotState.LevelPlan(n, "80", sell, trigger, "10", "100",
-                beTrigger == null ? null : "6" + n, beTrigger);
+    static SellDownBotState.LevelPlan level(int n, String sell, String trigger) {
+        return new SellDownBotState.LevelPlan(n, "80", sell, trigger, "10", "100", null, null);
+    }
+
+    static SellDownBotState.LevelPlan level(int n, String sell, String trigger, String bePrice, String beTrigger) {
+        return new SellDownBotState.LevelPlan(n, "80", sell, trigger, "10", "100", bePrice, beTrigger);
     }
 
     static SellDownBotState state(SellDownBotState.LevelPlan... plans) {
@@ -103,8 +105,9 @@ class SellDownBotTest {
     }
 
     static SellDownBotState threeLevels() {
-        return state(level(1, "50", "50.5", null), level(2, "45", "45.5", "55"),
-                level(3, "40", "40.5", "50"));
+        // Levels 1-2 sell 20 BASE for 950 QUOTE; break-even at 47.4 costs 20 * 47.4 * 1.001 = 948.948: no loss
+        return state(level(1, "50", "50.5"), level(2, "45", "45.5", "47.4", "47"),
+                level(3, "40", "40.5", "42.4", "42"));
     }
 
     List<EventType> events(SellDownBot bot) {
@@ -166,17 +169,17 @@ class SellDownBotTest {
         bot.onPrice(new BigDecimal("40"));
         assertEquals(Status.SELLING, bot.state().levels().get(2).status());
 
-        bot.onPrice(new BigDecimal("54.9"));
+        bot.onPrice(new BigDecimal("46.99"));
         assertEquals(3, exchange.orders.size(), "below level 2 break-even trigger");
 
-        bot.onPrice(new BigDecimal("55"));
-        bot.onPrice(new BigDecimal("56"));
+        bot.onPrice(new BigDecimal("47"));
+        bot.onPrice(new BigDecimal("48"));
         assertEquals(List.of("o3"), exchange.cancelled);
         assertEquals(4, exchange.orders.size());
         BotExchange.Order buy = exchange.orders.get("o4");
         assertEquals(BotExchange.Side.BUY, buy.side());
-        assertEquals(new BigDecimal("62"), buy.price());
-        assertEquals(new BigDecimal("20"), buy.size());
+        assertEquals(new BigDecimal("47.4"), buy.price());
+        assertEquals(new BigDecimal("20.0221719209"), buy.size(), "all 950 QUOTE / (47.4 x 1.001)");
         assertEquals(Status.BUYING_BACK, bot.state().levels().get(1).status());
 
         exchange.cancel("o3");
@@ -212,8 +215,183 @@ class SellDownBotTest {
     }
 
     @Test
+    void breakEvenUsesActualFills() {
+        SellDownBot bot = bot(threeLevels());
+        bot.onPrice(new BigDecimal("50"));
+        exchange.partialFill("o1", "4");
+        exchange.cancel("o1");
+        bot.poll();
+        exchange.fill("o2");
+        bot.poll();
+        bot.onPrice(new BigDecimal("45"));
+        exchange.fill("o3");
+        bot.poll();
+
+        SellDownBotState.BreakEven breakEven = bot.state().breakEven();
+        assertEquals(2, breakEven.level());
+        assertEquals(0, new BigDecimal("20").compareTo(breakEven.base()));
+        assertEquals(0, new BigDecimal("950").compareTo(breakEven.quote()));
+        assertEquals(new BigDecimal("47.4"), breakEven.price(), "planned price");
+        assertEquals(new BigDecimal("0.0221719209"), bot.state().breakEvenGain(breakEven, breakEven.price()),
+                "BASE back beyond the 20 sold");
+    }
+
+    @Test
+    void plannedBreakEvenAtALossIsOff() {
+        // 20 * 48 * 1.001 = 960.96 > the 950 QUOTE received
+        SellDownBot bot = bot(state(level(1, "50", "50.5"), level(2, "45", "45.5", "48", "47.5"),
+                level(3, "40", "40.5", "42.4", "42")));
+        bot.onPrice(new BigDecimal("50"));
+        exchange.fill("o1");
+        bot.poll();
+        bot.onPrice(new BigDecimal("45"));
+        exchange.fill("o2");
+        bot.poll();
+
+        SellDownBotState.BreakEven breakEven = bot.state().breakEven();
+        assertEquals("would buy back 0.228105 BASE less than sold at the planned price 48", breakEven.autoUnavailable());
+        assertEquals(null, breakEven.price());
+        assertEquals(SellDownBotTab.Outlook.OFF, SellDownBotTab.breakEvenOutlook(bot.state(), breakEven));
+        assertTrue(SellDownBotTab.breakEvenText(bot.state(), breakEven).contains("OFF, WON'T TRIGGER"));
+        bot.onPrice(new BigDecimal("60"));
+        assertEquals(2, exchange.orders.size(), "no automatic break-even");
+    }
+
+    @Test
+    void autoBreakEvenCollidingWithNextSellTriggerIsUnavailable() {
+        // Level 3 triggers at 47.5, above level 2's break-even trigger (~46.98)
+        SellDownBot bot = bot(state(level(1, "50", "50.5"), level(2, "45", "45.5", "47.4", "47"),
+                level(3, "47", "47.5", "42.4", "42")));
+        bot.onPrice(new BigDecimal("50"));
+        exchange.fill("o1");
+        bot.poll();
+        bot.onPrice(new BigDecimal("45"));
+        exchange.fill("o2");
+        bot.poll();
+        int placed = exchange.orders.size();
+
+        SellDownBotState.BreakEven breakEven = bot.state().breakEven();
+        assertTrue(breakEven.autoUnavailable().contains("level 3's sell trigger 47.5"), breakEven.autoUnavailable());
+        assertEquals(null, breakEven.price());
+        bot.onPrice(new BigDecimal("60"));
+        assertEquals(placed, exchange.orders.size(), "no automatic break-even");
+        assertTrue(SellDownBotTab.breakEvenText(bot.state(), breakEven).contains("AUTO BREAK-EVEN (levels 1-2): OFF"));
+    }
+
+    @Test
+    void manualBreakEvenTriggerOverridesAutomatic() throws IOException {
+        SellDownBot bot = bot(threeLevels());
+        bot.onPrice(new BigDecimal("50"));
+        exchange.fill("o1");
+        bot.poll();
+        bot.onPrice(new BigDecimal("45"));
+        exchange.fill("o2");
+        bot.poll();
+        bot.onPrice(new BigDecimal("43"));
+        bot.start(java.util.concurrent.Executors.newSingleThreadScheduledExecutor(), 3_600_000);
+        try {
+            // Buy price = trigger / (1 - 1% fill buffer) = 43.56 / 0.99 = 44
+            bot.setManualBreakEvenTrigger(new BigDecimal("43.56"));
+            assertEquals(EventType.BREAK_EVEN_SET, events(bot).get(events(bot).size() - 1));
+            SellDownBotState.BreakEven breakEven = bot.state().breakEven();
+            assertEquals(new BigDecimal("44"), breakEven.price());
+            assertTrue(bot.state().breakEvenGain(breakEven, new BigDecimal("44")).signum() > 0);
+            assertTrue(bot.state().breakEvenGain(breakEven, new BigDecimal("48")).signum() < 0);
+
+            bot.onPrice(new BigDecimal("43.5"));
+            assertTrue(exchange.orders.values().stream().noneMatch(o -> o.side() == BotExchange.Side.BUY),
+                    "below the manual trigger 43.56");
+            bot.onPrice(new BigDecimal("43.6"));
+            BotExchange.Order buy = exchange.orders.values().stream().filter(o -> o.side() == BotExchange.Side.BUY)
+                    .findFirst().orElseThrow();
+            assertEquals(0, new BigDecimal("44").compareTo(buy.price()));
+            assertEquals(new BigDecimal("21.5693397511"), buy.size(), "all 950 QUOTE / (44 x 1.001)");
+        } finally {
+            bot.stop();
+        }
+    }
+
+    @Test
+    void manualBreakEvenIsBotWide() throws IOException {
+        SellDownBot bot = bot(threeLevels());
+        bot.setManualBreakEvenTrigger(new BigDecimal("60"));
+        assertTrue(SellDownBotTab.breakEvenText(bot.state(), bot.state().breakEven())
+                .contains("MANUAL trigger 60"));
+        bot.onPrice(new BigDecimal("50"));
+        exchange.fill("o1");
+        bot.poll();
+        bot.onPrice(new BigDecimal("45"));
+        exchange.fill("o2");
+        bot.poll();
+        assertEquals(new BigDecimal("60"), bot.state().breakEven().trigger(), "applies to level 2");
+        bot.onPrice(new BigDecimal("40"));
+        exchange.fill("o3");
+        bot.poll();
+        SellDownBotState.BreakEven breakEven = bot.state().breakEven();
+        assertEquals(3, breakEven.level());
+        assertEquals(new BigDecimal("60"), breakEven.trigger(), "and to level 3, replacing its planned 42");
+
+        java.io.File file = java.io.File.createTempFile("bot", ".bot");
+        file.deleteOnExit();
+        bot.state().write(file);
+        SellDownBotState saved = SellDownBotState.read(file);
+        assertEquals("60", saved.manualBreakEvenTrigger());
+        assertEquals("60.6060606061", saved.manualBreakEvenPrice(), "60 / 0.99, saved when set");
+    }
+
+    @Test
+    void manualBreakEvenAtTheCurrentPriceBuysAboveIt() throws IOException {
+        SellDownBot bot = bot(threeLevels());
+        bot.onPrice(new BigDecimal("50"));
+        exchange.fill("o1");
+        bot.poll();
+        bot.onPrice(new BigDecimal("45"));
+        exchange.fill("o2");
+        bot.poll();
+        bot.onPrice(new BigDecimal("43"));
+        bot.start(java.util.concurrent.Executors.newSingleThreadScheduledExecutor(), 3_600_000);
+        try {
+            bot.setManualBreakEvenTrigger(new BigDecimal("43"));
+            BotExchange.Order buy = exchange.orders.values().stream().filter(o -> o.side() == BotExchange.Side.BUY)
+                    .findFirst().orElseThrow();
+            assertEquals(new BigDecimal("43.4343434343"), buy.price(), "43 / 0.99");
+
+            // Still shown and changeable while the buy is open
+            SellDownBotState.BreakEven breakEven = bot.state().breakEven();
+            assertEquals(2, breakEven.level());
+            assertEquals(new BigDecimal("43"), breakEven.manualTrigger());
+            String text = SellDownBotTab.breakEvenText(bot.state(), breakEven);
+            assertTrue(text.startsWith("MANUAL BREAK-EVEN (bot-wide), trigger 43"), text);
+            assertTrue(text.contains("BUY ORDER OPEN"), text);
+
+            // Half the buy fills, then the trigger is moved: the buy is cancelled and only the rest is bought again
+            exchange.partialFill(buy.orderId(), "10");
+            bot.setManualBreakEvenTrigger(new BigDecimal("42.57"));
+            assertTrue(exchange.cancelled.contains(buy.orderId()));
+            exchange.cancel(buy.orderId());
+            bot.poll();
+            BotExchange.Order rebuy = exchange.orders.values().stream()
+                    .filter(o -> o.side() == BotExchange.Side.BUY && !o.orderId().equals(buy.orderId()))
+                    .findFirst().orElseThrow();
+            assertEquals(0, new BigDecimal("43").compareTo(rebuy.price()), "42.57 / 0.99");
+            assertEquals(new BigDecimal("11.9800331216"), rebuy.size(), "the QUOTE left: (950 - 10 x 43.4343434343) / (43 x 1.001)");
+
+            // Clearing it while buying: cancelled, and the automatic one (trigger 47) is not hit at 43
+            bot.setManualBreakEvenTrigger(null);
+            assertTrue(exchange.cancelled.contains(rebuy.orderId()));
+            exchange.cancel(rebuy.orderId());
+            bot.poll();
+            assertEquals(Status.SOLD, bot.state().levels().get(1).status());
+            assertTrue(SellDownBotTab.breakEvenText(bot.state(), bot.state().breakEven())
+                    .startsWith("AUTO BREAK-EVEN (levels 1-2): ON"));
+        } finally {
+            bot.stop();
+        }
+    }
+
+    @Test
     void nothingIsSoldWithoutPrice() {
-        SellDownBot bot = bot(state(level(1, "59", "70", null), level(2, "45", "45.5", "65")));
+        SellDownBot bot = bot(state(level(1, "59", "70"), level(2, "45", "45.5", "50", "49")));
         bot.poll();
         assertTrue(exchange.orders.isEmpty());
         bot.onPrice(new BigDecimal("60"));
@@ -260,7 +438,9 @@ class SellDownBotTest {
 
     @Test
     void ordersKeepTheirHistory() {
-        SellDownBot bot = bot(threeLevels());
+        // 4 + 10 BASE sold for 650 QUOTE; break-even at 46 costs 14 * 46 * 1.001 = 644.644: no loss
+        SellDownBot bot = bot(state(level(1, "50", "50.5"), level(2, "45", "45.5", "46", "45.5"),
+                level(3, "40", "40.5", "42.4", "42")));
         bot.onPrice(new BigDecimal("50"));
         bot.poll();
         exchange.partialFill("o1", "4");
@@ -306,6 +486,48 @@ class SellDownBotTest {
         order = bot.state().lastOrder(1);
         assertEquals("508", order.filledQuote());
         assertEquals("0.508", order.fee());
+    }
+
+    @Test
+    void consecutiveErrorsAreCountedInOneEvent() throws Exception {
+        com.poplavok.data.bot.SimulatedExchange sim = new com.poplavok.data.bot.SimulatedExchange(BigDecimal.ZERO);
+        SellDownBot bot = new SellDownBot(threeLevels(), sim, Clock.systemUTC(), saved::add);
+        sim.setFailing(com.poplavok.data.bot.SimulatedExchange.Failure.PLACE, true);
+        for (int i = 0; i < 5; i++) {
+            bot.onPrice(new BigDecimal("50"));
+        }
+        sim.setFailing(com.poplavok.data.bot.SimulatedExchange.Failure.PLACE, false);
+        bot.onPrice(new BigDecimal("50"));
+        sim.setFailing(com.poplavok.data.bot.SimulatedExchange.Failure.POLL, true);
+        bot.poll();
+        bot.poll();
+        sim.setFailing(com.poplavok.data.bot.SimulatedExchange.Failure.POLL, false);
+        sim.fill("sim-1", new BigDecimal("10"));
+        bot.poll();
+        SellDownBotState state = bot.state().withError("t1", 2, "place sell: IOException", "a")
+                .withError("t2", 1, "getOrder: IOException", "b");
+
+        assertEquals(List.of(EventType.ERROR, EventType.ORDER_PLACED, EventType.ERROR, EventType.ORDER_FILLED,
+                EventType.SOLD), events(bot));
+        assertEquals(EventType.ERROR, state.history().get(state.history().size() - 1).type());
+        assertEquals(bot.state().history().size() + 1, state.history().size());
+        List<SellDownBotState.Event> errors = new java.util.ArrayList<>(bot.state().history().stream()
+                .filter(e -> e.type() == EventType.ERROR).toList());
+        errors.add(state.history().get(state.history().size() - 1));
+        assertEquals(List.of(new SellDownBotState.ErrorCount("place sell: IOException", 5)), errors.get(0).errors());
+        assertEquals(5, errors.get(0).errorCount());
+        assertEquals(Integer.valueOf(1), errors.get(0).level());
+        assertEquals(List.of(new SellDownBotState.ErrorCount("getOrder: IOException", 2)), errors.get(1).errors());
+        assertEquals("place sell: IOException x1, getOrder: IOException x1", errors.get(2).errorSummary(),
+                "different types are counted apart in the same event");
+        assertEquals(null, errors.get(2).level(), "levels 2 and 1");
+        assertEquals("t1", errors.get(2).time());
+        assertEquals("t2", errors.get(2).lastTime());
+        assertEquals("b", errors.get(2).note(), "latest message");
+
+        SellDownBotState loaded = SellDownBotState.MAPPER.readValue(
+                SellDownBotState.MAPPER.writeValueAsString(state), SellDownBotState.class);
+        assertEquals(state.history(), loaded.history());
     }
 
     @Test
