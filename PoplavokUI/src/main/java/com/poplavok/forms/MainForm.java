@@ -2,8 +2,11 @@ package com.poplavok.forms;
 
 import com.flower.fxutils.ModalWindow;
 import com.flower.fxutils.Refreshable;
+import com.poplavok.api.kucoin.KucoinApiClient;
+import com.poplavok.api.kucoin.auth.KucoinCredentialsProvider;
 import com.poplavok.data.bot.SimulatedExchange;
 import com.poplavok.data.model.Currency;
+import com.poplavok.kucoin.KucoinBotExchange;
 import com.poplavok.mcc.MultiCoinChartsService;
 import javafx.application.HostServices;
 import javafx.application.Platform;
@@ -118,6 +121,8 @@ public class MainForm {
                             sellDownApproximatorTab.dispose();
                         } else if (removed.getContent() instanceof SimulatedExchangeTab simulation) {
                             simulation.close();
+                        } else if (removed.getContent() instanceof KucoinBotTab kucoinBot) {
+                            kucoinBot.close();
                         }
                     }
                 }
@@ -227,11 +232,15 @@ public class MainForm {
 
     public void quit() { checkNotNull(mainStage).close(); }
 
-    /** Stops running simulations and saves their bot files; call on app exit. */
-    public void closeSimulations() {
-        checkNotNull(tabs).getTabs().stream()
-                .filter(tab -> tab.getContent() instanceof SimulatedExchangeTab)
-                .forEach(tab -> ((SimulatedExchangeTab) tab.getContent()).close());
+    /** Stops running bots (on KuCoin and simulated) and saves their bot files; call on app exit. */
+    public void closeBots() {
+        checkNotNull(tabs).getTabs().forEach(tab -> {
+            if (tab.getContent() instanceof SimulatedExchangeTab simulation) {
+                simulation.close();
+            } else if (tab.getContent() instanceof KucoinBotTab kucoinBot) {
+                kucoinBot.close();
+            }
+        });
     }
 
     public void closeAllTabs() {
@@ -366,14 +375,40 @@ public class MainForm {
         addTab(tab);
     }
 
-    /** A bot tab is only ever opened from a definition created by the approximator. */
+    /**
+     * Opens a bot (created from an approximator definition) to run on KuCoin with the loaded API key, asking for API
+     * settings first if they aren't loaded. Without credentials, or if the bot is bound to another exchange, it can't be
+     * started.
+     */
     public void openSellDownBot() {
         File file = chooseSellDownBotFile("Open Sell-down Bot");
         SellDownBotState state = file == null ? null : readSellDownBot(file);
         if (file == null || state == null) {
             return;
         }
-        final Tab tab = new Tab(SellDownBotTab.fileTitle(file), new SellDownBotTab(state));
+        ApiSettingsDialog settings = getApiSettingsDialog();
+        KucoinCredentialsProvider provider = settings.getCredentialsProvider();
+        if (provider == null) {
+            // Credentials load on "Done" in API Settings; wait for it
+            showApiSettingsDialog();
+            Stage settingsStage = checkNotNull(appSettingsStage);
+            settingsStage.hide();
+            settingsStage.showAndWait();
+            provider = settings.getCredentialsProvider();
+        }
+        String readOnlyReason = null;
+        if (provider == null) {
+            readOnlyReason = "no KuCoin API credentials loaded (API Settings → Done), reopen the bot after loading them.";
+        } else {
+            String bound = state.exchangeName();
+            if (bound != null && !bound.equals(KucoinBotExchange.NAME)) {
+                readOnlyReason = "bound to " + bound + ", not " + KucoinBotExchange.NAME + ".";
+            }
+        }
+        KucoinBotTab kucoinBot = readOnlyReason != null || provider == null
+                ? KucoinBotTab.readOnly(state, file, String.valueOf(readOnlyReason))
+                : new KucoinBotTab(state, file, new KucoinApiClient(provider, settings.getProxy()));
+        final Tab tab = new Tab(SellDownBotTab.fileTitle(file), kucoinBot);
         tab.setClosable(true);
         addTab(tab);
     }
@@ -413,15 +448,16 @@ public class MainForm {
      * from it (it becomes the bot file), discard it, or cancel.
      */
     @Nullable SellDownBotState readSellDownBot(File file) {
-        boolean simulated = checkNotNull(tabs).getTabs().stream().anyMatch(tab ->
-                tab.getContent() instanceof SimulatedExchangeTab simulation && simulation.file.equals(file));
-        if (simulated) {
-            new Alert(Alert.AlertType.ERROR, file.getName() + " is already open in a simulation tab.", ButtonType.OK)
+        boolean running = checkNotNull(tabs).getTabs().stream().anyMatch(tab ->
+                (tab.getContent() instanceof SimulatedExchangeTab simulation && simulation.file.equals(file))
+                        || (tab.getContent() instanceof KucoinBotTab kucoinBot && kucoinBot.file.equals(file)));
+        if (running) {
+            new Alert(Alert.AlertType.ERROR, file.getName() + " is already open in a bot tab.", ButtonType.OK)
                     .showAndWait();
             return null;
         }
         try {
-            File backup = SimulatedExchangeTab.backupFile(file);
+            File backup = BotFile.backupFile(file);
             if (backup.exists()) {
                 ButtonType recover = new ButtonType("Recover from backup");
                 ButtonType discard = new ButtonType("Discard backup");

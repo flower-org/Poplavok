@@ -37,7 +37,7 @@ public class App extends Application {
 
             //Close all threads when we close JavaFX windows.
             mainStage.setOnHidden(event -> {
-                mainForm.closeSimulations();
+                mainForm.closeBots();
                 MultiCoinChartsService.getInstance().shutdown();
                 TickerPriceService.getInstance().shutdown();
                 HibernateUtil.shutdown();

@@ -56,7 +56,7 @@ class KucoinBotExchangeTest {
                     .body(ResponseBody.create(code == 200 ? json : "{\"msg\":\"down\"}",
                             MediaType.parse("application/json"))).build();
         };
-        return new KucoinBotExchange(new KucoinApiClient(null, null, interceptor), "KuCoin test",
+        return new KucoinBotExchange(new KucoinApiClient(null, null, interceptor),
                 (symbol, listener) -> () -> { }, () -> "cid");
     }
 

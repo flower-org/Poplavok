@@ -19,9 +19,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
@@ -41,11 +38,9 @@ import static com.poplavok.data.utils.BigDecimalUtil.formatAmount;
 /**
  * Runs a sell-down bot against a {@link SimulatedExchange} the user operates: set the price, then fill (partially or
  * fully, at the limit price or better) or cancel the bot's orders. The bot form above shows how the bot reacts.
- * While the bot runs, every change is saved to {@code <file>.bak}; on exit (stop, finish, tab close) the bot file is
- * overwritten and the backup deleted. So a backup found when loading means the bot didn't shut down cleanly.
+ * Saved like a live bot, see {@link BotFile}.
  */
 public class SimulatedExchangeTab extends VBox {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SimulatedExchangeTab.class);
     static final long POLL_MILLIS = 1000;
     static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm:ss.SSS").withZone(ZoneId.systemDefault());
 
@@ -73,10 +68,7 @@ public class SimulatedExchangeTab extends VBox {
     /** Order whose limit price was last put into the fill price field. */
     @Nullable String fillPriceOrderId;
     final File file;
-    /** Bot's latest state, so saving never takes the bot's lock (the bot holds it when calling us). */
-    SellDownBotState latest;
-    /** True if {@code latest} isn't written to the bot file yet. */
-    boolean unsaved;
+    final BotFile botFile;
     final SellDownBot bot;
     final SellDownBotTab botTab;
     final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
@@ -87,7 +79,7 @@ public class SimulatedExchangeTab extends VBox {
 
     public SimulatedExchangeTab(SellDownBotState state, File file) {
         this.file = file;
-        this.latest = state;
+        this.botFile = new BotFile(file, state, this::message);
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("SimulatedExchangeTab.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
@@ -115,44 +107,13 @@ public class SimulatedExchangeTab extends VBox {
         refreshOrders();
     }
 
-    static File backupFile(File file) {
-        return new File(file.getPath() + ".bak");
-    }
-
     /** Called by the bot, holding its lock, on every change. */
     void onBotChange(SellDownBotState state) {
-        synchronized (this) {
-            latest = state;
-            unsaved = true;
-            write(state, backupFile(file));
-        }
+        botFile.changed(state);
         if (!bot.isRunning()) {
-            saveOnExit();
+            botFile.saveOnExit();
         }
         Platform.runLater(this::refreshBot);
-    }
-
-    /** Overwrites the bot file with the bot's state (if it changed), then deletes the backup. */
-    synchronized void saveOnExit() {
-        if (unsaved && write(latest, file)) {
-            unsaved = false;
-        }
-        File backup = backupFile(file);
-        if (!unsaved && backup.exists() && !backup.delete()) {
-            LOGGER.error("Failed to delete {}", backup);
-            Platform.runLater(() -> message("Couldn't delete " + backup.getName()));
-        }
-    }
-
-    boolean write(SellDownBotState state, File target) {
-        try {
-            state.write(target);
-            return true;
-        } catch (IOException | RuntimeException e) {
-            LOGGER.error("Failed to save sell-down bot to {}", target, e);
-            Platform.runLater(() -> message("Save to " + target.getName() + " failed: " + e.getMessage()));
-            return false;
-        }
     }
 
     static String title(File file) {
@@ -261,7 +222,7 @@ public class SimulatedExchangeTab extends VBox {
         message("");
         if (bot.isRunning()) {
             bot.stop();
-            saveOnExit();
+            botFile.saveOnExit();
         } else {
             if (bot.state().exchangeName() == null && !confirmBind()) {
                 return;
@@ -364,7 +325,7 @@ public class SimulatedExchangeTab extends VBox {
         stopLivePrice();
         bot.stop();
         scheduler.shutdownNow();
-        saveOnExit();
+        botFile.saveOnExit();
     }
 
     /** Lets a running bot see the change right away instead of on its next poll. */

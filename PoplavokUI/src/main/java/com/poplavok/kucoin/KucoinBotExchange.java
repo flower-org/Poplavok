@@ -29,6 +29,8 @@ import java.util.function.Supplier;
  */
 public class KucoinBotExchange implements BotExchange {
     static final String TRADE_TYPE = "MARGIN_ISOLATED_TRADE";
+    /** Exchange name bots bind to. */
+    public static final String NAME = "KuCoin isolated margin";
 
     /** Where price updates come from. */
     public interface PriceSource {
@@ -36,18 +38,16 @@ public class KucoinBotExchange implements BotExchange {
     }
 
     private final KucoinApiClient client;
-    private final String name;
     private final PriceSource prices;
     private final Supplier<String> clientOids;
     private final Map<String, SymbolResponse> rules = new ConcurrentHashMap<>();
 
-    public KucoinBotExchange(KucoinApiClient client, String name, PriceSource prices) {
-        this(client, name, prices, () -> UUID.randomUUID().toString());
+    public KucoinBotExchange(KucoinApiClient client, PriceSource prices) {
+        this(client, prices, () -> UUID.randomUUID().toString());
     }
 
-    KucoinBotExchange(KucoinApiClient client, String name, PriceSource prices, Supplier<String> clientOids) {
+    KucoinBotExchange(KucoinApiClient client, PriceSource prices, Supplier<String> clientOids) {
         this.client = client;
-        this.name = name;
         this.prices = prices;
         this.clientOids = clientOids;
     }
@@ -158,7 +158,7 @@ public class KucoinBotExchange implements BotExchange {
 
     @Override
     public String exchangeName() {
-        return name;
+        return NAME;
     }
 
     @Override
