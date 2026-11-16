@@ -163,10 +163,18 @@ public class SellDownBot {
         }
     }
 
+    /** Sells what the level still has left: its BASE to sell minus what its earlier sells already filled. */
     private void sell(Level level) {
         LevelPlan plan = state.plan(level);
-        place(level, BotExchange.Side.SELL, new BigDecimal(plan.sellPrice()), new BigDecimal(plan.baseToSell()),
-                Status.SELLING, "sell");
+        BigDecimal remaining = state.sold(level.number()).base();
+        if (remaining.signum() <= 0) {
+            state = state.withLevel(level.withStatus(Status.SOLD, null));
+            event(EventType.SOLD, level.number(), null, null, null, null, "already sold by earlier orders");
+            onChange.accept(state);
+            return;
+        }
+        place(level, BotExchange.Side.SELL, new BigDecimal(plan.sellPrice()), remaining, Status.SELLING,
+                remaining.compareTo(new BigDecimal(plan.baseToSell())) < 0 ? "sell of the rest" : "sell");
     }
 
     private void breakEven(Level level) {

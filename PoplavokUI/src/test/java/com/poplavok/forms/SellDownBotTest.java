@@ -221,6 +221,22 @@ class SellDownBotTest {
     }
 
     @Test
+    void cancelledPartialSellOnlySellsTheRest() {
+        SellDownBot bot = bot(threeLevels());
+        bot.onPrice(new BigDecimal("50"));
+        exchange.partialFill("o1", "4");
+        exchange.cancel("o1");
+        bot.poll();
+        assertEquals(new BigDecimal("6"), exchange.orders.get("o2").size());
+
+        exchange.partialFill("o2", "6");
+        exchange.cancel("o2");
+        bot.poll();
+        assertEquals(Status.SOLD, bot.state().levels().get(0).status());
+        assertEquals(2, exchange.orders.size(), "nothing left to sell");
+    }
+
+    @Test
     void placeErrorIsRecordedAndRetried() {
         SellDownBot bot = bot(threeLevels());
         exchange.failNext = true;
