@@ -25,7 +25,6 @@ import java.time.Clock;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.poplavok.data.utils.BigDecimalUtil.formatAmount;
@@ -56,10 +55,10 @@ public class KucoinBotTab extends VBox {
         thread.setDaemon(true);
         return thread;
     });
-    /** Latest streamed price not handed to the bot yet; ticks arriving meanwhile replace it. */
-    final AtomicReference<BigDecimal> pendingBotPrice = new AtomicReference<>();
-    /** Latest streamed price not shown yet. */
-    final AtomicReference<BigDecimal> pendingShownPrice = new AtomicReference<>();
+    final LatestValueDispatcher<BigDecimal> shownPrice = new LatestValueDispatcher<>(Platform::runLater, latest -> {
+        price = latest;
+        refresh();
+    });
     final TickerPriceService.PriceListener shownPriceListener = this::onShownPrice;
     @Nullable BigDecimal price;
 
@@ -109,17 +108,13 @@ public class KucoinBotTab extends VBox {
     /** The bot gets prices on its own thread, never on the websocket's, and only the latest if it falls behind. */
     BotExchange.Subscription subscribeOnBotThread(String symbol, BotExchange.PriceListener listener)
             throws IOException {
+        LatestValueDispatcher<BigDecimal> botPrice = new LatestValueDispatcher<>(scheduler, listener::onPrice);
         return KucoinBotExchange.tickerPrices().subscribe(symbol, streamed -> {
-            if (streamed.signum() <= 0 || pendingBotPrice.getAndSet(streamed) != null) {
+            if (streamed.signum() <= 0) {
                 return;
             }
             try {
-                scheduler.execute(() -> {
-                    BigDecimal latest = pendingBotPrice.getAndSet(null);
-                    if (latest != null) {
-                        listener.onPrice(latest);
-                    }
-                });
+                botPrice.submit(streamed);
             } catch (RejectedExecutionException closed) {
                 // tab closed
             }
@@ -127,14 +122,8 @@ public class KucoinBotTab extends VBox {
     }
 
     void onShownPrice(String symbol, @Nullable BigDecimal streamed) {
-        if (streamed != null && streamed.signum() > 0 && pendingShownPrice.getAndSet(streamed) == null) {
-            Platform.runLater(() -> {
-                BigDecimal latest = pendingShownPrice.getAndSet(null);
-                if (latest != null) {
-                    price = latest;
-                    refresh();
-                }
-            });
+        if (streamed != null && streamed.signum() > 0) {
+            shownPrice.submit(streamed);
         }
     }
 

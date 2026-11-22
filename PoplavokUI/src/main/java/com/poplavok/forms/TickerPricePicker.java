@@ -24,7 +24,6 @@ import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.flower.fxutils.JavaFxUtils.createDecimalTextFormatter;
 import static com.poplavok.data.utils.BigDecimalUtil.formatAmount;
@@ -45,7 +44,11 @@ public class TickerPricePicker extends HBox {
     final FilteredList<MarketTicker> tickers;
 
     @Nullable String streamedSymbol;
-    final AtomicReference<BigDecimal> pendingPrice = new AtomicReference<>();
+    final LatestValueDispatcher<StreamedPrice> shownPrice = new LatestValueDispatcher<>(Platform::runLater, latest -> {
+        if (latest.symbol().equals(streamedSymbol)) {
+            priceTextField.setText(formatAmount(latest.price()));
+        }
+    });
     final TickerPriceService.PriceListener priceListener = this::onStreamedPrice;
 
     public TickerPricePicker() {
@@ -186,16 +189,10 @@ public class TickerPricePicker extends HBox {
         if (price == null) {
             return;
         }
-        // Coalesce bursts into a single FX update with the latest price
-        if (pendingPrice.getAndSet(price) == null) {
-            Platform.runLater(() -> {
-                BigDecimal latest = pendingPrice.getAndSet(null);
-                if (latest != null && symbol.equals(streamedSymbol)) {
-                    priceTextField.setText(formatAmount(latest));
-                }
-            });
-        }
+        shownPrice.submit(new StreamedPrice(symbol, price));
     }
+
+    record StreamedPrice(String symbol, BigDecimal price) {}
 
     /** Stops price streaming. Safe to call multiple times. */
     public void dispose() {

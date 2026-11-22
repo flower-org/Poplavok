@@ -147,8 +147,12 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
     @Nullable protected String streamedSymbol;
     @Nullable protected TickerPriceService.PriceListener priceListener;
     protected boolean streaming = false;
-    // Latest price awaiting display; coalesces bursts of ticks into a single UI update.
-    protected final AtomicReference<BigDecimal> pendingPrice = new AtomicReference<>(null);
+    // Coalesces bursts of ticks into a single UI update with the latest price.
+    protected final LatestValueDispatcher<BigDecimal> shownPrice = new LatestValueDispatcher<>(Platform::runLater, latest -> {
+        if (priceTextField != null && priceCheckBox != null && priceCheckBox.isSelected()) {
+            priceTextField.setText(formatAmount(latest));
+        }
+    });
     // Most recent streamed price, tracked even while auto-update is off so re-enabling applies it immediately.
     protected final AtomicReference<BigDecimal> lastKnownPrice = new AtomicReference<>(null);
 
@@ -228,18 +232,7 @@ public class PoplavokTab extends AnchorPane implements Refreshable {
                 return;
             }
             lastKnownPrice.set(price);
-            // Keep only the most recent price and schedule a single UI update per burst:
-            // if a refresh is already pending (previous value non-null), it will pick up
-            // this latest value, so we avoid flooding the FX thread with runLater tasks.
-            if (pendingPrice.getAndSet(price) == null) {
-                Platform.runLater(() -> {
-                    BigDecimal latest = pendingPrice.getAndSet(null);
-                    if (latest != null && priceTextField != null
-                            && priceCheckBox != null && priceCheckBox.isSelected()) {
-                        priceTextField.setText(formatAmount(latest));
-                    }
-                });
-            }
+            shownPrice.submit(price);
         };
 
         // Stay subscribed while the tab is open; the checkbox only controls whether the field follows the stream.
