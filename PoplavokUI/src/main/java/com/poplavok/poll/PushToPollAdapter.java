@@ -20,11 +20,11 @@ import java.util.function.Consumer;
  * Only the last {@code capacity} updates are kept, so a client that fell behind sees a gap in
  * {@link Update#updateNo()}. {@code null} values are ignored.
  *
- * <p>Updates are numbered {@code startAfter + 1}, {@code startAfter + 2}, ... (1, 2, ... by default) without gaps and kept in a ring buffer, so finding where a poll
- * starts is O(1) and a poll costs only the number of updates it returns.
+ * <p>Updates are numbered {@code startAfter + 1}, {@code startAfter + 2}, ... (1, 2, ... by default)
+ * without gaps and kept in a ring buffer, so finding where a poll starts is O(1) and a poll costs only
+ * the number of updates it returns.
  *
- * <p>Subscription lifecycle is the caller's concern; see {@link KeyedPushToPollAdapter} for a keyed
- * variant that subscribes on demand and evicts idle keys.
+ * <p>Subscription lifecycle is the caller's concern.
  */
 public final class PushToPollAdapter<V> implements Consumer<V>, AutoCloseable {
     public record Update<V>(long updateNo, V value) {}
@@ -34,9 +34,9 @@ public final class PushToPollAdapter<V> implements Consumer<V>, AutoCloseable {
     record Completion<V>(CompletableFuture<List<Update<V>>> future, List<Update<V>> updates) {}
 
     /**
-     * Guards all state below. Package-private so {@link KeyedPushToPollAdapter} can guard its per-key
-     * state with the same lock; holders must not call {@link #accept} or {@link #close} if the futures
-     * they complete must run outside it.
+     * Guards all state below. Package-private so a wrapper in this package can guard its own state with
+     * the same lock; holders must not call {@link #accept} or {@link #close} if the futures they
+     * complete must run outside it.
      */
     final ReentrantLock lock = new ReentrantLock();
     /**
