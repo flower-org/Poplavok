@@ -107,8 +107,36 @@ class PushToPollAdapterTest {
     }
 
     @Test
-    void rejectsNonPositiveCapacity() {
+    void rejectsNonPositiveCapacityAndNegativeStartAfter() {
         assertThrows(IllegalArgumentException.class, () -> new PushToPollAdapter<String>(0));
+        assertThrows(IllegalArgumentException.class, () -> new PushToPollAdapter<String>(3, -1));
+    }
+
+    @Test
+    void numberingStartsAfterStartAfterAndWrapsCorrectly() {
+        PushToPollAdapter<String> offset = new PushToPollAdapter<>(3, 100);
+        assertEquals(100, offset.lastUpdateNo());
+        CompletableFuture<List<PushToPollAdapter.Update<String>>> pending = offset.poll(0);
+        offset.accept("a");
+        assertEquals(List.of(101L), pending.join().stream().map(PushToPollAdapter.Update::updateNo).toList());
+
+        for (String v : List.of("b", "c", "d", "e")) {
+            offset.accept(v);
+        }
+        // Buffered: c=103, d=104, e=105.
+        assertEquals(List.of("c", "d", "e"), values(offset.poll(0)));
+        assertEquals(List.of("e"), values(offset.poll(104)));
+        assertFalse(offset.poll(105).isDone());
+        assertEquals(105, offset.lastUpdateNo());
+    }
+
+    @Test
+    void lastUpdateNoIsFinalAfterClose() {
+        adapter.accept("a");
+        adapter.accept("b");
+        adapter.close();
+        adapter.accept("c");
+        assertEquals(2, adapter.lastUpdateNo());
     }
 
     @Test

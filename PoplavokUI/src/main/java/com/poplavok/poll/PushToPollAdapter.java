@@ -20,7 +20,7 @@ import java.util.function.Consumer;
  * Only the last {@code capacity} updates are kept, so a client that fell behind sees a gap in
  * {@link Update#updateNo()}. {@code null} values are ignored.
  *
- * <p>Updates are numbered 1, 2, 3, ... without gaps and kept in a ring buffer, so finding where a poll
+ * <p>Updates are numbered {@code startAfter + 1}, {@code startAfter + 2}, ... (1, 2, ... by default) without gaps and kept in a ring buffer, so finding where a poll
  * starts is O(1) and a poll costs only the number of updates it returns.
  *
  * <p>Subscription lifecycle is the caller's concern; see {@link KeyedPushToPollAdapter} for a keyed
@@ -33,23 +33,39 @@ public final class PushToPollAdapter<V> implements Consumer<V>, AutoCloseable {
 
     record Completion<V>(CompletableFuture<List<Update<V>>> future, List<Update<V>> updates) {}
 
-    private final ReentrantLock lock = new ReentrantLock();
     /**
-     * Holds the last {@code min(lastUpdateNo, length)} updates. Update numbers have no gaps, so update
-     * {@code n} always sits in slot {@code (n - 1) % length}; no head or size needs tracking.
+     * Guards all state below. Package-private so {@link KeyedPushToPollAdapter} can guard its per-key
+     * state with the same lock; holders must not call {@link #accept} or {@link #close} if the futures
+     * they complete must run outside it.
+     */
+    final ReentrantLock lock = new ReentrantLock();
+    /**
+     * Holds the last {@code min(lastUpdateNo - startAfter, length)} updates. Update numbers have no gaps,
+     * so update {@code n} always sits in slot {@code (n - 1) % length}; no head or size needs tracking.
      */
     private final Update<V>[] ringBuffer;
-    private long lastUpdateNo = 0;
+    private final long startAfter;
+    private long lastUpdateNo;
     /** Insertion-ordered for fairness; a set so a cancelled waiter can be removed in O(1). */
     private final Set<Waiter<V>> waiters = new LinkedHashSet<>();
     private boolean closed = false;
 
-    @SuppressWarnings("unchecked")
     public PushToPollAdapter(int capacity) {
+        this(capacity, 0);
+    }
+
+    /** The first update is numbered {@code startAfter + 1}. */
+    @SuppressWarnings("unchecked")
+    public PushToPollAdapter(int capacity, long startAfter) {
         if (capacity <= 0) {
             throw new IllegalArgumentException("capacity must be positive: " + capacity);
         }
+        if (startAfter < 0) {
+            throw new IllegalArgumentException("startAfter must not be negative: " + startAfter);
+        }
         this.ringBuffer = (Update<V>[]) new Update<?>[capacity];
+        this.startAfter = startAfter;
+        this.lastUpdateNo = startAfter;
     }
 
     @Override
@@ -135,7 +151,7 @@ public final class PushToPollAdapter<V> implements Consumer<V>, AutoCloseable {
         if (lastUpdate >= lastUpdateNo) {
             return List.of();
         }
-        long firstBufferedNo = Math.max(1, lastUpdateNo - ringBuffer.length + 1);
+        long firstBufferedNo = Math.max(startAfter + 1, lastUpdateNo - ringBuffer.length + 1);
         // Compared before adding 1, so an extreme lastUpdate can't overflow.
         long from = lastUpdate < firstBufferedNo ? firstBufferedNo : lastUpdate + 1;
         List<Update<V>> result = new ArrayList<>((int) (lastUpdateNo - from + 1));
@@ -145,7 +161,16 @@ public final class PushToPollAdapter<V> implements Consumer<V>, AutoCloseable {
         return result;
     }
 
-    /** For tests. */
+    /** Number of the newest update, or {@code startAfter} if none; final once {@link #close()} returns. */
+    long lastUpdateNo() {
+        lock.lock();
+        try {
+            return lastUpdateNo;
+        } finally {
+            lock.unlock();
+        }
+    }
+
     int waiterCount() {
         lock.lock();
         try {
