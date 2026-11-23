@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * away. This lets multiple forms watch the same ticker without subscribing more
  * than once.
  */
-public class TickerPriceService {
+public class TickerPriceService implements PriceFeed {
     final static Logger LOGGER = LoggerFactory.getLogger(TickerPriceService.class);
 
     private static final TickerPriceService INSTANCE = new TickerPriceService();
@@ -49,6 +49,7 @@ public class TickerPriceService {
     }
 
     /** Registers {@code listener} for price updates of {@code symbol}. */
+    @Override
     public void subscribe(String symbol, PriceListener listener) {
         synchronized (lock) {
             TickerDataStreamer activeStreamer = ensureStreamerStarted();
@@ -80,6 +81,7 @@ public class TickerPriceService {
     }
 
     /** Unregisters a previously registered {@code listener} for {@code symbol}. */
+    @Override
     public void unsubscribe(String symbol, PriceListener listener) {
         synchronized (lock) {
             Set<PriceListener> listeners = listenersBySymbol.get(symbol);
