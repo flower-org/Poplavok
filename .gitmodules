@@ -10,3 +10,6 @@
 [submodule "MultiCoinChartsServer/src/main/resources/multicoincharts-minimal"]
 	path = MultiCoinChartsServer/src/main/resources/multicoincharts-minimal
 	url = https://github.com/flower-org/multicoincharts-minimal.git
+[submodule "flower"]
+	path = flower
+	url = https://github.com/flower-org/flower
