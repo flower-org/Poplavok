@@ -48,7 +48,7 @@ public class KucoinBotTab extends VBox {
     final File file;
     @Nullable final BotFile botFile;
     @Nullable final KucoinBotExchange exchange;
-    @Nullable final SellDownBot bot;
+    @Nullable final SellDownBotEngine bot;
     final SellDownBotTab botTab;
     final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
         Thread thread = new Thread(runnable, "sell-down-bot-kucoin");
@@ -172,7 +172,7 @@ public class KucoinBotTab extends VBox {
 
     @FXML
     public void startStop() {
-        SellDownBot bot = this.bot;
+        SellDownBotEngine bot = this.bot;
         if (bot == null) {
             return;
         }

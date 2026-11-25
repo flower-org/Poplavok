@@ -35,7 +35,7 @@ import java.util.function.Consumer;
  * {@code onChange} (e.g. to save the state file). Sizes and prices are as planned; the exchange rounds them in the
  * bot's favour. A rest to sell that's below the exchange minimum counts as sold.
  */
-public class SellDownBot {
+public class SellDownBot implements SellDownBotEngine {
     private final BotExchange exchange;
     private final Clock clock;
     private final Consumer<SellDownBotState> onChange;
@@ -51,15 +51,18 @@ public class SellDownBot {
         this.onChange = onChange;
     }
 
+    @Override
     public synchronized SellDownBotState state() {
         return state;
     }
 
+    @Override
     public synchronized boolean isRunning() {
         return pollTask != null;
     }
 
     /** Subscribes to the price and polls open orders every {@code pollMillis}. */
+    @Override
     public synchronized void start(ScheduledExecutorService scheduler, long pollMillis) throws IOException {
         if (pollTask != null) {
             return;
@@ -82,6 +85,7 @@ public class SellDownBot {
     }
 
     /** Stops reacting; open orders stay on the exchange and are picked up again on the next start. */
+    @Override
     public synchronized void stop() {
         if (priceSubscription != null) {
             priceSubscription.close();
@@ -99,6 +103,7 @@ public class SellDownBot {
     }
 
     /** Checks open orders, then acts on the last price. */
+    @Override
     public synchronized void poll() {
         for (Level level : state.levels()) {
             String orderId = level.orderId();
@@ -199,6 +204,7 @@ public class SellDownBot {
      * level's planned break-even; null clears it. If a break-even buy is open, it's cancelled and placed again (for
      * the QUOTE left) under the new setting.
      */
+    @Override
     public synchronized void setManualBreakEvenTrigger(@Nullable BigDecimal trigger) {
         if (state.isFinished()) {
             throw new IllegalStateException("The bot is finished");

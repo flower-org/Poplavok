@@ -69,7 +69,7 @@ public class SimulatedExchangeTab extends VBox {
     @Nullable String fillPriceOrderId;
     final File file;
     final BotFile botFile;
-    final SellDownBot bot;
+    final SellDownBotEngine bot;
     final SellDownBotTab botTab;
     final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
         Thread thread = new Thread(runnable, "sell-down-bot-simulation");
