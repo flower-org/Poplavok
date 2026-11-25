@@ -1,4 +1,4 @@
-package com.poplavok.forms;
+package com.poplavok.bots.selldown;
 
 import javax.annotation.Nullable;
 import java.io.IOException;

@@ -1,9 +1,11 @@
 package com.poplavok.forms;
 
+import com.poplavok.bots.selldown.SellDownBot;
+import com.poplavok.bots.selldown.SellDownBotState;
 import com.poplavok.data.bot.BotExchange;
-import com.poplavok.forms.SellDownBotState.EventType;
-import com.poplavok.forms.SellDownBotState.Level;
-import com.poplavok.forms.SellDownBotState.Status;
+import com.poplavok.bots.selldown.SellDownBotState.EventType;
+import com.poplavok.bots.selldown.SellDownBotState.Level;
+import com.poplavok.bots.selldown.SellDownBotState.Status;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.Test;
 

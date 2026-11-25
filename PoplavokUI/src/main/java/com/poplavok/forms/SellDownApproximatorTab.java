@@ -1,5 +1,6 @@
 package com.poplavok.forms;
 
+import com.poplavok.bots.selldown.SellDownBotState;
 import com.poplavok.data.model.MarketTicker;
 import com.poplavok.data.utils.LiquidationCalculator;
 import com.poplavok.data.utils.SellDownPlanner;

@@ -1,5 +1,9 @@
 package com.poplavok.forms;
 
+import com.poplavok.bots.selldown.BotFile;
+import com.poplavok.bots.selldown.SellDownBot;
+import com.poplavok.bots.selldown.SellDownBotEngine;
+import com.poplavok.bots.selldown.SellDownBotState;
 import com.poplavok.data.bot.BotExchange;
 import com.poplavok.data.bot.SimulatedExchange;
 import com.poplavok.kucoin.TickerPriceService;

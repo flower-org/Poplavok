@@ -1,4 +1,4 @@
-package com.poplavok.forms;
+package com.poplavok.bots.selldown;
 
 import javafx.application.Platform;
 import org.slf4j.Logger;
@@ -12,7 +12,7 @@ import java.util.function.Consumer;
  * Saves a running bot: every change goes to {@code <file>.bak}; on exit (stop, finish, tab close) the bot file is
  * overwritten and the backup deleted. So a backup found when loading means the bot didn't shut down cleanly.
  */
-final class BotFile {
+public final class BotFile {
     private static final Logger LOGGER = LoggerFactory.getLogger(BotFile.class);
 
     final File file;
@@ -23,25 +23,25 @@ final class BotFile {
     /** True if {@code latest} isn't written to the bot file yet. */
     private boolean unsaved;
 
-    BotFile(File file, SellDownBotState state, Consumer<String> messages) {
+    public BotFile(File file, SellDownBotState state, Consumer<String> messages) {
         this.file = file;
         this.latest = state;
         this.messages = messages;
     }
 
-    static File backupFile(File file) {
+    public static File backupFile(File file) {
         return new File(file.getPath() + ".bak");
     }
 
     /** Called by the bot, holding its lock, on every change. */
-    synchronized void changed(SellDownBotState state) {
+    public synchronized void changed(SellDownBotState state) {
         latest = state;
         unsaved = true;
         write(state, backupFile(file));
     }
 
     /** Overwrites the bot file with the bot's state (if it changed), then deletes the backup. */
-    synchronized void saveOnExit() {
+    public synchronized void saveOnExit() {
         if (unsaved && write(latest, file)) {
             unsaved = false;
         }

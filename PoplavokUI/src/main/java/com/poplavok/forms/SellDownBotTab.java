@@ -1,8 +1,9 @@
 package com.poplavok.forms;
 
+import com.poplavok.bots.selldown.SellDownBotState;
 import com.poplavok.data.bot.BotExchange;
 import com.poplavok.data.utils.LiquidationCalculator;
-import com.poplavok.forms.SellDownBotState.Status;
+import com.poplavok.bots.selldown.SellDownBotState.Status;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;

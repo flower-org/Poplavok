@@ -1,4 +1,4 @@
-package com.poplavok.forms;
+package com.poplavok.bots.selldown;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -37,7 +37,7 @@ public record SellDownBotState(Definition definition, List<Level> levels, List<E
                                @Nullable String exchangeName, @Nullable String manualBreakEvenTrigger,
                                @Nullable String manualBreakEvenPrice) {
     public static final String EXTENSION = "*.bot";
-    static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
+    public static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
     public SellDownBotState {
         Objects.requireNonNull(definition, "definition");

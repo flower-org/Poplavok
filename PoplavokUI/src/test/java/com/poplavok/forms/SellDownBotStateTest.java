@@ -1,5 +1,6 @@
 package com.poplavok.forms;
 
+import com.poplavok.bots.selldown.SellDownBotState;
 import com.poplavok.data.utils.SellDownPlanner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

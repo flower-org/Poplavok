@@ -4,6 +4,8 @@ import com.flower.fxutils.ModalWindow;
 import com.flower.fxutils.Refreshable;
 import com.poplavok.api.kucoin.KucoinApiClient;
 import com.poplavok.api.kucoin.auth.KucoinCredentialsProvider;
+import com.poplavok.bots.selldown.BotFile;
+import com.poplavok.bots.selldown.SellDownBotState;
 import com.poplavok.data.bot.SimulatedExchange;
 import com.poplavok.data.model.Currency;
 import com.poplavok.kucoin.KucoinBotExchange;

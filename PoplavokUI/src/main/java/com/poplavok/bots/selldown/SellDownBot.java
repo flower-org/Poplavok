@@ -1,11 +1,11 @@
-package com.poplavok.forms;
+package com.poplavok.bots.selldown;
 
 import com.poplavok.data.bot.BotExchange;
-import com.poplavok.forms.SellDownBotState.Event;
-import com.poplavok.forms.SellDownBotState.EventType;
-import com.poplavok.forms.SellDownBotState.Level;
-import com.poplavok.forms.SellDownBotState.LevelPlan;
-import com.poplavok.forms.SellDownBotState.Status;
+import com.poplavok.bots.selldown.SellDownBotState.Event;
+import com.poplavok.bots.selldown.SellDownBotState.EventType;
+import com.poplavok.bots.selldown.SellDownBotState.Level;
+import com.poplavok.bots.selldown.SellDownBotState.LevelPlan;
+import com.poplavok.bots.selldown.SellDownBotState.Status;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
