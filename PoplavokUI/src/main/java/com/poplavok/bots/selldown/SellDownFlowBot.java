@@ -17,7 +17,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 /**
- * Drop-in replacement for {@link SellDownBot}: each start runs a {@link SellDownFlow} on its own Flower engine over
+ * The {@link SellDownBotEngine} the bot tabs run: each start runs a {@link SellDownFlow} on its own Flower engine over
  * the host's scheduler, and talks to it through push-to-poll adapters (prices, commands) and an
  * {@link OrderStatusPoller}.
  * <p>

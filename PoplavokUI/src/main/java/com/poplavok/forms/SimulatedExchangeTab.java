@@ -1,8 +1,8 @@
 package com.poplavok.forms;
 
 import com.poplavok.bots.selldown.BotFile;
-import com.poplavok.bots.selldown.SellDownBot;
 import com.poplavok.bots.selldown.SellDownBotEngine;
+import com.poplavok.bots.selldown.SellDownFlowBot;
 import com.poplavok.bots.selldown.SellDownBotState;
 import com.poplavok.data.bot.BotExchange;
 import com.poplavok.data.bot.SimulatedExchange;
@@ -98,7 +98,7 @@ public class SimulatedExchangeTab extends VBox {
         botTab = new SellDownBotTab(state);
         VBox.setVgrow(botTab, Priority.ALWAYS);
         checkNotNull(botPane).getChildren().add(botTab);
-        bot = new SellDownBot(state, exchange, Clock.systemUTC(), this::onBotChange);
+        bot = new SellDownFlowBot(state, exchange, Clock.systemUTC(), this::onBotChange);
         botTab.setManualBreakEvenSetter(bot::setManualBreakEvenTrigger);
         exchange.addChangeListener(() -> Platform.runLater(this::refreshOrders));
 
@@ -111,7 +111,7 @@ public class SimulatedExchangeTab extends VBox {
         refreshOrders();
     }
 
-    /** Called by the bot, holding its lock, on every change. */
+    /** Called by the bot, on its thread, on every change. */
     void onBotChange(SellDownBotState state) {
         botFile.changed(state);
         if (!bot.isRunning()) {

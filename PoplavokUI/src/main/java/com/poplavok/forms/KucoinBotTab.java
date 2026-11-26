@@ -2,8 +2,8 @@ package com.poplavok.forms;
 
 import com.poplavok.api.kucoin.KucoinApiClient;
 import com.poplavok.bots.selldown.BotFile;
-import com.poplavok.bots.selldown.SellDownBot;
 import com.poplavok.bots.selldown.SellDownBotEngine;
+import com.poplavok.bots.selldown.SellDownFlowBot;
 import com.poplavok.bots.selldown.SellDownBotState;
 import com.poplavok.data.bot.BotExchange;
 import com.poplavok.kucoin.KucoinBotExchange;
@@ -94,7 +94,7 @@ public class KucoinBotTab extends VBox {
         if (client != null && readOnlyReason == null) {
             botFile = new BotFile(file, state, this::message);
             exchange = new KucoinBotExchange(client, this::subscribeOnBotThread);
-            SellDownBot runnable = new SellDownBot(state, exchange, Clock.systemUTC(), this::onBotChange);
+            SellDownFlowBot runnable = new SellDownFlowBot(state, exchange, Clock.systemUTC(), this::onBotChange);
             bot = runnable;
             botTab.setManualBreakEvenSetter(runnable::setManualBreakEvenTrigger);
             checkNotNull(exchangeLabel).setText(KucoinBotExchange.NAME);
@@ -131,7 +131,7 @@ public class KucoinBotTab extends VBox {
         }
     }
 
-    /** Called by the bot, holding its lock, on every change. */
+    /** Called by the bot, on its thread, on every change. */
     void onBotChange(SellDownBotState state) {
         BotFile saver = checkNotNull(botFile);
         saver.changed(state);

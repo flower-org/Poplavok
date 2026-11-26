@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * {@link SellDownBotTest}'s scenarios run against {@link SellDownFlowBot}. The bot runs on a real scheduler with a
+ * Sell-down bot scenarios, run against {@link SellDownFlowBot}. The bot runs on a real scheduler with a
  * one-hour poll period, so orders are only checked when a test calls {@link #poll}; every action is followed by
  * {@link #settle()}, which waits until the scheduler has nothing left to run now.
  */
@@ -267,7 +267,7 @@ class SellDownFlowBotTest {
         price(bot, "47");
         price(bot, "48");
         assertEquals(List.of("o3"), exchange.cancelled);
-        // Unlike SellDownBot, the buy waits until an order snapshot shows the cancelled sell closed
+        // The buy waits until an order snapshot shows the cancelled sell closed
         assertEquals(3, exchange.orders.size(), "sell o3 not seen closed yet");
         exchange.cancel("o3");
         poll(bot);
@@ -307,7 +307,7 @@ class SellDownFlowBotTest {
         poll(bot);
         price(bot, "55");
         assertEquals(List.of("o3"), exchange.cancelled);
-        // Unlike SellDownBot, the buy waits until an order snapshot shows the cancelled sell closed
+        // The buy waits until an order snapshot shows the cancelled sell closed
         assertEquals(3, exchange.orders.size(), "sell o3 not seen closed yet");
         exchange.cancel("o3");
         poll(bot);
@@ -537,7 +537,7 @@ class SellDownFlowBotTest {
         assertEquals(List.of(EventType.ERROR), events(bot));
         assertEquals(Status.PENDING, bot.state().levels().get(0).status());
 
-        // Unlike SellDownBot, a failure holds the bot until the next order snapshot: a new price alone doesn't retry
+        // A failure holds the bot until the next order snapshot: a new price alone doesn't retry
         price(bot, "50");
         assertEquals(Status.PENDING, bot.state().levels().get(0).status(), "on hold");
         poll(bot);
@@ -611,7 +611,7 @@ class SellDownFlowBotTest {
         com.poplavok.data.bot.SimulatedExchange sim = new com.poplavok.data.bot.SimulatedExchange(BigDecimal.ZERO);
         SellDownFlowBot bot = simBot(sim, threeLevels());
         sim.setFailing(com.poplavok.data.bot.SimulatedExchange.Failure.PLACE, true);
-        // Unlike SellDownBot, a failure holds the bot until the next order snapshot, so retries come with polls
+        // A failure holds the bot until the next order snapshot, so retries come with polls
         price(bot, "50");
         for (int i = 1; i < 5; i++) {
             poll(bot);
@@ -658,7 +658,7 @@ class SellDownFlowBotTest {
         price(bot, "50");
         assertEquals(Status.PENDING, bot.state().levels().get(0).status());
         sim.setFailing(com.poplavok.data.bot.SimulatedExchange.Failure.PLACE, false);
-        // Unlike SellDownBot, a failure holds the bot until the next order snapshot: a new price alone doesn't retry
+        // A failure holds the bot until the next order snapshot: a new price alone doesn't retry
         price(bot, "50");
         assertEquals(Status.PENDING, bot.state().levels().get(0).status(), "on hold");
         poll(bot);
