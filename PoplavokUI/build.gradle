@@ -71,6 +71,7 @@ dependencies {
     implementation project(':KeyManagerFx')
     implementation project(':PoplavokApiClient')
     implementation project(':MultiCoinChartsServer')
+    implementation project(':flower')
 
     annotationProcessor "org.immutables:value:2.10.1"
     annotationProcessor "com.uber.nullaway:nullaway:0.10.26"
